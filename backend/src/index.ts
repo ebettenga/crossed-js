@@ -1,6 +1,4 @@
 import "reflect-metadata";
-import { FastifyInstance } from "fastify";
-
 import fastifySecureSession from "@fastify/secure-session";
 import fastifyIO from "fastify-socket.io";
 import { registerDb } from "./db";
@@ -55,7 +53,7 @@ const start = async () => {
     );
   } catch (err) {
     console.error(err);
-    fastify.log.error(err);
+    fastify.logger.error(err);
     process.exit(1);
   }
 };
