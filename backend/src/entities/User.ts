@@ -1,5 +1,4 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToOne } from "typeorm";
-import { Role } from "./Role";
 
 @Entity()
 export class User {
@@ -9,15 +8,11 @@ export class User {
   @Column("text")
   username: string;
 
+  @Column("text", { nullable: true })
+  githubId?: string;
 
-  @Column("text")
-  _password: string;
-
-  @Column("text")
-  githubId: string;
-
-  @OneToOne(() => Role)
-  role: Role;
+  @Column("enum", { enum: ['USER', 'ADMIN'], default: 'USER' })
+  role: string;
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   created_at: Date;

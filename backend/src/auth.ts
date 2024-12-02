@@ -16,6 +16,8 @@ userPassport.use(
       callbackURL: `http://${config.api.host}:${config.api.port}/auth/github/callback`,
     },
     async (accessToken, refreshToken, profile, cb) => {
+      fastify.logger.info("Got here");
+      fastify.logger.info("Profile: %o", profile);
       try {
         const user = await fastify.orm
           .getRepository(User)
