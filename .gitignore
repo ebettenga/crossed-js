@@ -1,4 +1,5 @@
 */.env
 */node_modules
 
+backend/combined.log
 backend/dist
