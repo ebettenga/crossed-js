@@ -6,10 +6,6 @@ describe('Server', () => {
     await fastify.ready();
   });
 
-  afterAll(async () => {
-    await fastify.close();
-  });
-
   it('should start the server without errors', async () => {
     const response = await fastify.inject({
       method: 'GET',
