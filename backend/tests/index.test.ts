@@ -12,7 +12,7 @@ describe('Server', () => {
   it('should start the server without errors', async () => {
     const response = await fastify.inject({
       method: 'GET',
-      url: '/',
+      url: '/api/health',
     });
 
     expect(response.statusCode).toBe(200);

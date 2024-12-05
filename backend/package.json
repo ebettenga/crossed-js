@@ -9,7 +9,7 @@
     "build": "pkgroll",
     "dev": "tsx --env-file=.env --watch ./src/index.ts",
     "commands": "tsx --env-file=.env ./src/commands/cli.ts",
-    "test": "jest"
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
   },
   "dependencies": {
     "@fastify/autoload": "^6.0.2",

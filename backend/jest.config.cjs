@@ -4,6 +4,6 @@ module.exports = {
   moduleFileExtensions: ['ts', 'js'],
   testMatch: ['**/tests/**/*.test.[tj]s?(x)'],
   transform: {
-    '^.+\\.ts$': ['ts-jest', { tsconfig: 'tsconfig.json' }],
+    '^.+\\.ts$': ['ts-jest', { tsconfig: './tsconfig.json' }],
   },
 };

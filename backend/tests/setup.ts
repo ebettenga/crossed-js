@@ -13,25 +13,31 @@ import { join } from "path";
 import { User } from "../src/entities/User";
 
 // get the directory name of the current module
-const __dirname = path.resolve();
+const dirname = path.resolve(__dirname, '../');
 
 // Function to find the config directory
-function findConfigDir(startPath: string): string | null {
-  let currentPath = startPath;
-  while (currentPath !== path.parse(currentPath).root) {
-    const configPath = path.join(currentPath, 'config');
-    if (fs.existsSync(configPath) && fs.statSync(configPath).isDirectory()) {
-      return configPath;
+const findConfigDir = (startPath: string, ignoreDirs: string[] = []): string | null => {
+    const directories = fs.readdirSync(startPath, { withFileTypes: true });
+    for (const dirent of directories) {
+        if (dirent.isDirectory() && !ignoreDirs.includes(dirent.name)) {
+            const configPath = path.join(startPath, dirent.name, 'config');
+            if (fs.existsSync(configPath) && fs.statSync(configPath).isDirectory()) {
+                return configPath;
+            }
+            const nestedConfigPath = findConfigDir(path.join(startPath, dirent.name), ignoreDirs);
+            if (nestedConfigPath) {
+                return nestedConfigPath;
+            }
+        }
     }
-    currentPath = path.dirname(currentPath);
-  }
-  return null;
+    return null;
 }
 
-const configDir = findConfigDir(__dirname);
+let configDir = findConfigDir(dirname, ['node_modules', 'dist', 'build', 'coverage', 'tests']);
 if (!configDir) {
   throw new Error('Config directory not found');
 }
+
 
 const secretKeyPath = path.join(configDir, 'secret-key');
 if (fs.existsSync(secretKeyPath)) {
@@ -71,7 +77,7 @@ fastify.addHook('preValidation', (request, reply, done) => {
 fastify.register(fastifyIO);
 
 fastify.register(fastifyAutoload, {
-  dir: join(__dirname, "../src/routes"),
+  dir: join(dirname, "src/routes"), // Corrected path
   dirNameRoutePrefix: true,
   options: { prefix: config.api.prefix },
 });
