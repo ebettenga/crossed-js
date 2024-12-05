@@ -40,14 +40,6 @@ jobs:
         with:
           node-version: 22
 
-      - name: Cache node_modules
-        uses: actions/cache@v3
-        with:
-          path: backend/node_modules
-          key: ${{ runner.os }}-node-modules-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-node-modules-
-
       - name: Install dependencies
         run: yarn install
         working-directory: backend
@@ -78,4 +70,4 @@ jobs:
           path: backend/node_modules
           key: ${{ hashFiles('**/yarn.lock') }}
           restore-keys: |
-            ${{ runner.os }}-node-modules-
+            -node-modules-
