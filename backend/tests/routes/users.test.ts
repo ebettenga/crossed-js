@@ -1,6 +1,6 @@
-import { User } from "../../src/entities/User";
-import { fastify } from "../setup";
 import { describe, afterAll, beforeAll, it, expect, jest } from '@jest/globals';
+import { fastify } from "../setup";
+import { User } from "../../src/entities/User";
 
 describe("GET /users", () => {
   beforeAll(async () => {
@@ -18,7 +18,7 @@ describe("GET /users", () => {
     });
 
     expect(response.statusCode).toBe(200);
-    expect(Array.isArray(response.json())).toBe(true);
+    expect(Array.isArray(response.json())).toBeTruthy();
   });
 
   it("should return users with the correct structure", async () => {
@@ -29,7 +29,7 @@ describe("GET /users", () => {
 
     const users = response.json();
     expect(response.statusCode).toBe(200);
-    expect(Array.isArray(users)).toBe(true);
+    expect(Array.isArray(users)).toBeTruthy();
 
     users.forEach((user) => {
       expect(user).toHaveProperty("id");
