@@ -16,16 +16,16 @@ export class Room {
   id: number;
 
   @OneToOne(() => User)
+  @JoinColumn()
   player_1: User;
 
   @OneToOne(() => User)
+  @JoinColumn()
   player_2: User;
 
   @OneToOne(() => Crossword, crossword => crossword.room)
+  @JoinColumn()
   crossword: Crossword;
-
-  @Column('simple-array', { nullable: true })
-  found_letters: string[];
 
   @Column('int8', { default: 0 })
   player_1_score: number;
@@ -38,4 +38,7 @@ export class Room {
 
   @Column('text')
   difficulty: string;
+
+  @Column('char', { array: true, default: '{}' })
+  found_letters: string[];
 }

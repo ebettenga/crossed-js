@@ -4,4 +4,7 @@ export const commonConfig = {
     port: 3000,
     host: 'localhost',
   },
+  game: {
+    points: 3
+  }
 };

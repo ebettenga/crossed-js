@@ -1,4 +1,3 @@
-
 import { DataSource } from 'typeorm';
 import { Room } from '../../src/entities/Room';
 import { User } from '../../src/entities/User';
@@ -11,14 +10,27 @@ export const create = async (connection: DataSource) => {
 
   const user1 = await userRepository.findOne({ where: { username: 'testuser' } });
   const user2 = await userRepository.findOne({ where: { username: 'testadmin' } });
-  const crossword = await crosswordRepository.findOne({ where: { id: 1 } });
+  const crossword = await crosswordRepository.findOne({ where: { title: 'Test Crossword' } });
 
+  if (!user1 || !user2 || !crossword) {
+    console.error('Test data for rooms init script not found.');
+    return;
+  }
+
+  const existingRoom = await roomRepository.findOne({ where: { difficulty: 'easy' } });
+
+  if (existingRoom) {
+    console.log('Room with easy difficulty already exists.');
+    return;
+  }
   const room = roomRepository.create({
     player_1: user1,
     player_2: user2,
     crossword,
-    found_letters: [],
+    found_letters: ["*", "*", "*", "*", "*", "*", "*", "*", "*", "*", "*"],
     difficulty: 'easy',
+    player_1_score: 0,
+    player_2_score: 0,
   });
 
   await roomRepository.save(room);
