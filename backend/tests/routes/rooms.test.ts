@@ -12,6 +12,7 @@ describe('Rooms routes', () => {
   });
 
   afterAll(async () => {
+
     await fastify.close();
   });
 
