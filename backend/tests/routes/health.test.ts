@@ -3,12 +3,12 @@ import { fastify } from '../setup';
 
 describe('GET /health', () => {
   beforeAll(async () => {
+
     await fastify.ready();
   });
 
   afterAll(async () => {
-
-    await new Promise(resolve => setTimeout(resolve, 4000));
+    await new Promise((resolve) => setTimeout(resolve, 4000));
 
     await fastify.close();
   });
