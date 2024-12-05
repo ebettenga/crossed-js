@@ -17,12 +17,6 @@ export const create = async (connection: DataSource) => {
     return;
   }
 
-  const existingRoom = await roomRepository.findOne({ where: { difficulty: 'easy' } });
-
-  if (existingRoom) {
-    console.log('Room with easy difficulty already exists.');
-    return;
-  }
   const room = roomRepository.create({
     player_1: user1,
     player_2: user2,
