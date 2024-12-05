@@ -1,6 +1,7 @@
 # Crossed
 
-![Backend Build Status](https://https://github.com/ebettenga/crossed-js/actions/workflows/ci-backend.yml/badge.svg)
+![Backend Build Status](https://https://github.com/ebettenga/crossed-js/actions/workflows/ci-backend.yml/badge.svg?branch=main)
+
 
 A multiplayer crossword experience for friends and strangers alike!
 
