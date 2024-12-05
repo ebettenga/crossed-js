@@ -7,7 +7,6 @@ import { loggerConfig } from "./logger";
 import fs from "fs";
 import path, { join } from "path";
 import { fastify } from "./fastify";
-import { userPassport } from "./auth";
 
 // get the directory name of the current module
 import { fileURLToPath } from "url";
@@ -16,6 +15,8 @@ import winston from "winston";
 import { User } from "./entities/User";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+
 
 // DB Stuff
 registerDb(fastify);
@@ -27,8 +28,15 @@ fastify.decorate("logger", loggerConfig);
 fastify.register(fastifySecureSession, {
   key: fs.readFileSync(path.join(__dirname, config.secretKeyPath)),
 });
-fastify.register(userPassport.initialize());
-fastify.register(userPassport.secureSession());
+
+
+// import { userPassport } from "./auth";
+// import basicAuth from "@fastify/basic-auth";
+// const authenticate = { realm: "crossed" };
+// fastify.register(basicAuth, { validate, authenticate });
+
+// fastify.register(userPassport.initialize());
+// fastify.register(userPassport.secureSession());
 
 // Socket Stuff
 fastify.register(fastifyIO);
@@ -38,7 +46,6 @@ fastify.register(fastifyAutoload, {
   dirNameRoutePrefix: true,
   options: { prefix: config.api.prefix },
 });
-
 
 const start = async () => {
   try {

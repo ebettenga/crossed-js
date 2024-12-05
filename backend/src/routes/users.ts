@@ -1,5 +1,4 @@
 import { FastifyInstance } from "fastify";
-import { userPassport } from "../auth";
 import { User } from "../entities/User";
 
 export default function (
@@ -9,8 +8,11 @@ export default function (
 ): void {
   fastify.get(
     "/users",
-    { preValidation: userPassport.authenticate("github") },
+    {
+      // preValidation: [fastify.basicAuth],
+    },
     async () => {
+      fastify.logger.info("Getting all users");
       const users = await fastify.orm.getRepository(User).find();
       return users.map(user => {
         const { githubId, ...rest } = user;

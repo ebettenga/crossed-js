@@ -421,6 +421,14 @@
   resolved "https://registry.yarnpkg.com/@fastify/autoload/-/autoload-6.0.2.tgz#93343f955d6549bd44d0a4c439c6e3f4d8f52c97"
   integrity sha512-efRwk2KKTPERxHEnzabK+w2pGxBExCCYixPYUMqtLd++Xsoh4h5Rrq8D2xZDq2BQ8hTFI1rzGLkHWsz40wgoWA==
 
+"@fastify/basic-auth@^6.0.1":
+  version "6.0.1"
+  resolved "https://registry.yarnpkg.com/@fastify/basic-auth/-/basic-auth-6.0.1.tgz#3dfcbd8a896b29b0dcb20ebeabd76b46e4f43257"
+  integrity sha512-qEc2GvqqKg6LdkG4/a/95lmOfJVY1iImv+F8hyYtmnQjqihmB1s0GZJUgSUjGpJRZcl7bta09/nKIlRfGbhu1w==
+  dependencies:
+    "@fastify/error" "^4.0.0"
+    fastify-plugin "^5.0.0"
+
 "@fastify/cookie@^10.0.0":
   version "10.0.1"
   resolved "https://registry.yarnpkg.com/@fastify/cookie/-/cookie-10.0.1.tgz#ca08dd8a7161cdb2b4b83908e9e922195a9693e0"
