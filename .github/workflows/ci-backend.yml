@@ -60,5 +60,5 @@ jobs:
       - name: Run tests
         env:
           DATABASE_URL: postgres://test_user:test_password@localhost:5432/test_db
-        run: yarn test:ci
+        run: yarn test
         working-directory: backend

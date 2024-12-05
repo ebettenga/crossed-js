@@ -11,7 +11,6 @@
     "commands": "tsx --env-file=.env ./src/commands/cli.ts",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "prepare": "if [ \"$CI\" != \"true\" ]; then pre-commit install; fi",
-    "test:ci": "jest --ci",
     "ci:load-test-data": "tsx scripts/loadTestData.ts"
   },
   "dependencies": {
