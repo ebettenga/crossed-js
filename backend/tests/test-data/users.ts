@@ -19,5 +19,4 @@ export const create = async (connection: DataSource) => {
     }
     console.log('Test users created.');
   }
-
 };
