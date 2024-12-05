@@ -58,11 +58,12 @@ registerDb(fastify);
 fastify.decorate("logger", loggerConfig);
 
 // Auth Stuff
-fastify.register(userPassport.initialize());
-fastify.register(userPassport.secureSession());
 
-// Dummy Passport Middleware
-fastify.addHook('preValidation', (request, reply, done) => {
+// Mock the authenticate method to bypass actual authentication
+
+// this typescript will try to convince you that done is not the third argument of authenticate, but it is
+// @ts-ignore
+userPassport.authenticate = () => (request, reply, done) => {
   request.user = {
     id: 1,
     username: 'testuser',
@@ -71,7 +72,11 @@ fastify.addHook('preValidation', (request, reply, done) => {
     updated_at: new Date()
   } as User; // Dummy user
   done();
-});
+};
+
+fastify.register(userPassport.initialize());
+fastify.register(userPassport.secureSession());
+
 
 // Socket Stuff
 fastify.register(fastifyIO);
