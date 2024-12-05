@@ -6,8 +6,6 @@ import { Room } from '../../src/entities/Room';
 
 describe('Rooms routes', () => {
 
-
-
   beforeAll(async () => {
     await fastify.ready();
 
