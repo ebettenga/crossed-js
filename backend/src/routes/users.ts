@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { User } from '../entities/User';
 
+// wip
 export default function (
   fastify: FastifyInstance,
   _: object,
