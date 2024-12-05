@@ -11,35 +11,46 @@ import { userPassport } from "../src/auth";
 import fastifyAutoload from "@fastify/autoload";
 import { join } from "path";
 import { User } from "../src/entities/User";
+import { config as testConfig } from "./config";
 
-// get the directory name of the current module
-const dirname = path.resolve(__dirname, '../');
+const dirname = path.resolve(__dirname, "../");
 
-// Function to find the config directory
-const findConfigDir = (startPath: string, ignoreDirs: string[] = []): string | null => {
-    const directories = fs.readdirSync(startPath, { withFileTypes: true });
-    for (const dirent of directories) {
-        if (dirent.isDirectory() && !ignoreDirs.includes(dirent.name)) {
-            const configPath = path.join(startPath, dirent.name, 'config');
-            if (fs.existsSync(configPath) && fs.statSync(configPath).isDirectory()) {
-                return configPath;
-            }
-            const nestedConfigPath = findConfigDir(path.join(startPath, dirent.name), ignoreDirs);
-            if (nestedConfigPath) {
-                return nestedConfigPath;
-            }
-        }
+type FindConfigDirOptions = {
+  ignoreDirs: string[];
+}
+
+const findConfigDir = (
+  startPath: string,
+  options: FindConfigDirOptions
+): string | null => {
+  const { ignoreDirs } = options;
+  const directories = fs.readdirSync(startPath, { withFileTypes: true });
+  for (const dirent of directories) {
+    if (dirent.isDirectory() && !ignoreDirs.includes(dirent.name)) {
+      const configPath = path.join(startPath, dirent.name, "config");
+      if (fs.existsSync(configPath) && fs.statSync(configPath).isDirectory()) {
+        return configPath;
+      }
+      const nestedConfigPath = findConfigDir(
+        path.join(startPath, dirent.name),
+        options
+      );
+      if (nestedConfigPath) {
+        return nestedConfigPath;
+      }
     }
-    return null;
-}
+  }
+  return null;
+};
 
-let configDir = findConfigDir(dirname, ['node_modules', 'dist', 'build', 'coverage', 'tests']);
+let configDir = findConfigDir(dirname, {
+  ignoreDirs: testConfig.ignoreDirs,
+});
 if (!configDir) {
-  throw new Error('Config directory not found');
+  throw new Error("Config directory not found");
 }
 
-
-const secretKeyPath = path.join(configDir, 'secret-key');
+const secretKeyPath = path.join(configDir, "secret-key");
 if (fs.existsSync(secretKeyPath)) {
   fastify.register(fastifySecureSession, {
     key: fs.readFileSync(secretKeyPath),
@@ -51,36 +62,31 @@ if (fs.existsSync(secretKeyPath)) {
   });
 }
 
-// DB Stuff
-registerDb(fastify);
 
-// Logger Stuff
+// register all the plugins that our app uses
+
+registerDb(fastify);
 fastify.decorate("logger", loggerConfig);
 
-// Auth Stuff
 
 // Mock the authenticate method to bypass actual authentication
-
 // this typescript will try to convince you that done is not the third argument of authenticate, but it is
 // @ts-ignore
 userPassport.authenticate = () => (request, reply, done) => {
   request.user = {
     id: 1,
-    username: 'testuser',
-    role: 'USER',
+    username: "testuser",
+    role: "USER",
     created_at: new Date(),
-    updated_at: new Date()
+    updated_at: new Date(),
   } as User; // Dummy user
   done();
 };
 
+
 fastify.register(userPassport.initialize());
 fastify.register(userPassport.secureSession());
-
-
-// Socket Stuff
 fastify.register(fastifyIO);
-
 fastify.register(fastifyAutoload, {
   dir: join(dirname, "src/routes"), // Corrected path
   dirNameRoutePrefix: true,
