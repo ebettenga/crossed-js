@@ -1,3 +1,13 @@
+/*
+I'm thinking of heading this way now
+
+https://github.com/fastify/fastify-auth/blob/master/test/example.js
+
+no sso but fuck it
+
+*/
+
+
 import { Authenticator } from "@fastify/passport";
 import {fastify} from "./fastify";
 import { User } from "./entities/User";
