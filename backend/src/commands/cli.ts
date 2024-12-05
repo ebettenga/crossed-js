@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
 import { program } from 'commander';
-// import { loadCrosswords } from './crosswords';
 import { loadTestData } from '../scripts/loadTestData';
 
 program
