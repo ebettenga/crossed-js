@@ -40,6 +40,14 @@ jobs:
         with:
           node-version: 22
 
+      - name: Cache node_modules
+        uses: actions/cache@v3
+        with:
+          path: backend/node_modules
+          key: ${{ runner.os }}-node-modules-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-node-modules-
+
       - name: Install dependencies
         run: yarn install
         working-directory: backend
@@ -62,3 +70,13 @@ jobs:
           DATABASE_URL: postgres://test_user:test_password@localhost:5432/test_db
         run: yarn test
         working-directory: backend
+
+      - name: Cache node_modules after test success
+        if: success()
+        uses: actions/cache@v3
+        working-directory: backend
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-modules-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-node-modules-
