@@ -8,6 +8,7 @@ describe('Logs routes', () => {
     await fastify.ready();
   });
 
+
   afterAll(async () => {
     await fastify.close();
   });
