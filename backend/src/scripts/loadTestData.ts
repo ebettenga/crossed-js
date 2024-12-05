@@ -3,6 +3,7 @@ import { config } from '../config/config';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { findDir } from './findConfigDir';
 
 const AppDataSource = new DataSource(config.db);
 const connection = await AppDataSource.initialize();
@@ -13,8 +14,12 @@ const __dirname = path.dirname(__filename);
 export const loadTestData = async () => {
   await connection.synchronize();
 
-  const dirname = path.resolve(__dirname, '../');
-  const testDataDir = path.join(dirname, '/scripts/test-data');
+  const dirname = path.resolve(__dirname, '../../');
+  const testDataDir = findDir(dirname, 'test-data');
+  if (!testDataDir) {
+    throw new Error('Test data directory not found');
+  }
+
   const files = fs.readdirSync(testDataDir);
 
   for (const file of files) {

@@ -1,5 +1,5 @@
 import { DataSource } from 'typeorm';
-import { User } from '../../entities/User';
+import { User } from '../../src/entities/User';
 
 export const create = async (connection: DataSource) => {
   const userRepository = connection.getRepository(User);

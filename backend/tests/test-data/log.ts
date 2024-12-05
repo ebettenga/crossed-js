@@ -1,6 +1,6 @@
 
 import { DataSource } from 'typeorm';
-import { Log } from '../../entities/Log';
+import { Log } from '../../src/entities/Log';
 
 export const create = async (connection: DataSource) => {
   const logRepository = connection.getRepository(Log);

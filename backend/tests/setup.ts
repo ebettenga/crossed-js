@@ -12,38 +12,13 @@ import fastifyAutoload from '@fastify/autoload';
 import { join } from 'path';
 import { User } from '../src/entities/User';
 import { config as testConfig } from './config';
+import { findDir } from '../src/scripts/findConfigDir';
 
 const dirname = path.resolve(__dirname, '../');
 
-type FindConfigDirOptions = {
-  ignoreDirs: string[];
-};
+// Remove the findConfigDir function from here
 
-const findConfigDir = (
-  startPath: string,
-  options: FindConfigDirOptions,
-): string | null => {
-  const { ignoreDirs } = options;
-  const directories = fs.readdirSync(startPath, { withFileTypes: true });
-  for (const dirent of directories) {
-    if (dirent.isDirectory() && !ignoreDirs.includes(dirent.name)) {
-      const configPath = path.join(startPath, dirent.name, 'config');
-      if (fs.existsSync(configPath) && fs.statSync(configPath).isDirectory()) {
-        return configPath;
-      }
-      const nestedConfigPath = findConfigDir(
-        path.join(startPath, dirent.name),
-        options,
-      );
-      if (nestedConfigPath) {
-        return nestedConfigPath;
-      }
-    }
-  }
-  return null;
-};
-
-let configDir = findConfigDir(dirname, {
+let configDir = findDir(dirname, 'config', {
   ignoreDirs: testConfig.ignoreDirs,
 });
 if (!configDir) {
