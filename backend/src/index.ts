@@ -29,6 +29,7 @@ fastify.register(fastifySecureSession, {
 
 // import { userPassport } from "./auth";
 // import basicAuth from "@fastify/basic-auth";
+// import { validate } from './auth';
 // const authenticate = { realm: "crossed" };
 // fastify.register(basicAuth, { validate, authenticate });
 
