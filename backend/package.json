@@ -9,9 +9,11 @@
     "build": "pkgroll",
     "dev": "tsx --watch ./src/index.ts",
     "commands": "tsx ./src/commands/cli.ts",
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "prepare": "if [ \"$CI\" != \"true\" ]; then pre-commit install; fi",
-    "ci:load-test-data": "yarn commands load-test-data"
+    "ci:load-test-data": "yarn commands load-test-data",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "test:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage",
+    "serve:coverage": "npx serve coverage/lcov-report"
   },
   "dependencies": {
     "@fastify/autoload": "^6.0.2",

@@ -85,6 +85,12 @@ Contains the test files for unit and integration testing of the application.
 
 run tests with `yarn test`
 
+### Running tests with coverage
+
+To run tests with coverage, use the following command: `yarn test:coverage`
+
+to see a coverage report, run `yarn serve:coverage`
+
 ### `/docs`
 
 Documentation files related to the project, including API documentation and developer guides.

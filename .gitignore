@@ -3,3 +3,5 @@
 
 *.log
 backend/dist
+
+/backend/coverage
