@@ -18,6 +18,10 @@ describe('Rooms routes', () => {
   it('should get a room by ID', async () => {
     const room = await fastify.orm.getRepository(Room).findOneBy( { difficulty: 'easy' });
 
+    if (!room) {
+        throw new Error('Room not found');
+    }
+
     const response = await fastify.inject({
       method: 'GET',
       url: `/api/rooms/${room?.id}`,
