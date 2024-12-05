@@ -13,6 +13,11 @@ export const create = async (connection: DataSource) => {
   const crossword = await crosswordRepository.findOne({ where: { title: 'Test Crossword' } });
 
   if (!user1 || !user2 || !crossword) {
+    console.log({
+      user1,
+      user2,
+      crossword,
+    })
     console.error('Test data for rooms init script not found.');
     return;
   }
