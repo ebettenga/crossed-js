@@ -1,4 +1,4 @@
-import { describe, afterAll, beforeAll, it, expect, jest } from '@jest/globals';
+import { describe, afterAll, beforeAll, it, expect } from '@jest/globals';
 import { fastify } from './setup';
 
 describe('Server', () => {
@@ -6,7 +6,12 @@ describe('Server', () => {
     await fastify.ready();
   });
 
+  afterAll(async () => {
+    await fastify.close();
+  });
+
   it('should start the server without errors', async () => {
+    await fastify.ready();
     const response = await fastify.inject({
       method: 'GET',
       url: '/api/health',
