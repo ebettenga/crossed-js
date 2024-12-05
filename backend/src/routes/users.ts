@@ -9,7 +9,7 @@ export default function (
 ): void {
   fastify.get(
     "/users",
-    // { preValidation: userPassport.authenticate("github") },
+    { preValidation: userPassport.authenticate("github") },
     async () => {
       return await fastify.orm.getRepository(User).find();
     }
