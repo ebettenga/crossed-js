@@ -1,9 +1,11 @@
 # Crossed
 
+![Backend Build Status](https://https://github.com/ebettenga/crossed-js/actions/workflows/ci-backend.yml/badge.svg)
 
 A multiplayer crossword experience for friends and strangers alike!
 
 <!-- TODO: fancy cool readme stuff -->
+
 
 
 ## Gettings Started
@@ -13,7 +15,7 @@ A multiplayer crossword experience for friends and strangers alike!
 Start the application locally by running the following commands: *(assuems you're using some recent version of node)*
 
 1. run `yarn` to load in the node_modules
-2. to create a development server, 
+2. to create a development server,
     - `docker compose up db -d && yarn dev`
 
 
