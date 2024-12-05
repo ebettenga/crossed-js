@@ -1,5 +1,6 @@
 import { User } from "../../src/entities/User";
 import { fastify } from "../setup";
+import { describe, afterAll, beforeAll, it, expect, jest } from '@jest/globals';
 
 describe("GET /users", () => {
   beforeAll(async () => {

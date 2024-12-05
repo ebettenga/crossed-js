@@ -15,6 +15,7 @@ import { Strategy as GitHubStrategy } from "passport-github";
 import { config } from "./config/config";
 
 
+
 // `this` inside validate is `fastify`
 export const validate = (username, password, req, reply, done) => {
   if (username === 'Tyrion' && password === 'wine') {

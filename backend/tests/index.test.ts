@@ -1,3 +1,4 @@
+import { describe, afterAll, beforeAll, it, expect, jest } from '@jest/globals';
 import { fastify } from './setup';
 
 describe('Server', () => {
