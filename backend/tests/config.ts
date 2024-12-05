@@ -1,3 +1,3 @@
 export const config = {
-  ignoreDirs: ["node_modules", "dist", "build", "coverage", "tests"]
+  ignoreDirs: ['node_modules', 'dist', 'build', 'coverage', 'tests'],
 };

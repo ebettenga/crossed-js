@@ -1,5 +1,5 @@
-import winston from "winston";
-import { config } from "./config/config";
+import winston from 'winston';
+import { config } from './config/config';
 
 // Create custom logger
 export const loggerConfig = winston.createLogger({
@@ -18,7 +18,7 @@ export const loggerConfig = winston.createLogger({
   ),
   transports: [
     new winston.transports.Console(),
-    new winston.transports.File({ filename: "error.log", level: "error" }),
-    new winston.transports.File({ filename: "combined.log" }),
+    new winston.transports.File({ filename: 'error.log', level: 'error' }),
+    new winston.transports.File({ filename: 'combined.log' }),
   ],
 });

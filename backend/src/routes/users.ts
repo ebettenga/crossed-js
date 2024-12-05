@@ -1,24 +1,24 @@
-import { FastifyInstance } from "fastify";
-import { User } from "../entities/User";
+import { FastifyInstance } from 'fastify';
+import { User } from '../entities/User';
 
 export default function (
   fastify: FastifyInstance,
   _: object,
-  next: (err?: Error) => void
+  next: (err?: Error) => void,
 ): void {
   fastify.get(
-    "/users",
+    '/users',
     {
       // preValidation: [fastify.basicAuth],
     },
     async () => {
-      fastify.logger.info("Getting all users");
+      fastify.logger.info('Getting all users');
       const users = await fastify.orm.getRepository(User).find();
-      return users.map(user => {
+      return users.map((user) => {
         const { githubId, ...rest } = user;
         return rest;
       });
-    }
+    },
   );
 
   next();

@@ -7,14 +7,11 @@ no sso but fuck it
 
 */
 
-
-import { Authenticator } from "@fastify/passport";
-import {fastify} from "./fastify";
-import { User } from "./entities/User";
-import { Strategy as GitHubStrategy } from "passport-github";
-import { config } from "./config/config";
-
-
+import { Authenticator } from '@fastify/passport';
+import { fastify } from './fastify';
+import { User } from './entities/User';
+import { Strategy as GitHubStrategy } from 'passport-github';
+import { config } from './config/config';
 
 // `this` inside validate is `fastify`
 export const validate = (username, password, req, reply, done) => {
@@ -25,12 +22,11 @@ export const validate = (username, password, req, reply, done) => {
   }
 };
 
-
 const userPassport: Authenticator = new Authenticator();
 
 // Auth Stuff
 userPassport.use(
-  "github",
+  'github',
   new GitHubStrategy(
     {
       clientID: config.github.clientId,
@@ -59,23 +55,21 @@ userPassport.use(
         .catch((error) => {
           return cb(error, null);
         });
-    }
-  )
+    },
+  ),
 );
 
-
-
 userPassport.registerUserSerializer(async (user: User, request) => {
-  console.log("Got here");
+  console.log('Got here');
   return {
-  id: user.id,
-  username: user.username,
-  }
+    id: user.id,
+    username: user.username,
+  };
 });
 
 // ... and then a deserializer that will fetch that user from the database when a request with an id in the session arrives
 userPassport.registerUserDeserializer(async (id: number, request) => {
-  return await fastify.orm.getRepository(User).findBy({ id: id })
+  return await fastify.orm.getRepository(User).findBy({ id: id });
 });
 
 export { userPassport };
