@@ -10,7 +10,7 @@
     "dev": "tsx --env-file=.env --watch ./src/index.ts",
     "commands": "tsx --env-file=.env ./src/commands/cli.ts",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
-    "prepare": "pre-commit install",
+    "prepare": "if [ \"$CI\" != \"true\" ]; then pre-commit install; fi",
     "test:ci": "jest --ci"
   },
   "dependencies": {
