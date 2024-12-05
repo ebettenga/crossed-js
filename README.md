@@ -8,10 +8,6 @@ A multiplayer crossword experience for friends and strangers alike!
 
 ## Gettings Started
 
-To get started, navigate to the backend and run `docker compose up`
-
-
-
 ### Settings up the app
 
 Start the application locally by running the following commands: *(assuems you're using some recent version of node)*
@@ -21,7 +17,17 @@ Start the application locally by running the following commands: *(assuems you'r
     - `docker compose up db -d && yarn dev`
 
 
+### Setting up server
+
+run a full server by running `docker compose up`
+
+### Adding crosswords
+
+you'll need to add crosswords with `yarn commands load-crosswords`
+
+
 ### Running commands
+
 
 you can see commands to run by running `yarn commands`
 
@@ -32,6 +38,10 @@ you can see commands to run by running `yarn commands`
 
 ### Major Packages
 
+### NodeJS
+
+Node.js is a JavaScript runtime built on Chrome's V8 JavaScript engine. It allows developers to run JavaScript on the server side, enabling the creation of scalable and high-performance applications. Node.js uses an event-driven, non-blocking I/O model, making it efficient and suitable for real-time applications.
+
 - **fastify**: A web framework highly focused on providing the best developer experience with the least overhead and a powerful plugin architecture.
 - **typeorm**: An ORM for TypeScript and JavaScript (ES7, ES6, ES5) that supports various databases like PostgreSQL, MySQL, and SQLite.
 - **@fastify/passport**: A Fastify plugin for integrating Passport.js for authentication.
@@ -39,9 +49,13 @@ you can see commands to run by running `yarn commands`
 - **socket.io**: A library for real-time web applications, enabling real-time, bidirectional communication between web clients and servers.
 - **winston**: A versatile logging library for Node.js, supporting multiple transports.
 
-<!-- TODO: add tools -->
+### PostgreSQL
 
-<!-- TODO: add tools -->
+PostgreSQL is a powerful, open-source object-relational database system. It has a strong reputation for reliability, feature robustness, and performance. In this project, PostgreSQL is used as the primary database to store and manage crossword data and user information.
+
+### Docker
+
+Docker is a platform designed to help developers build, share, and run applications in containers. Containers are lightweight, portable, and ensure consistency across different environments. In this project, Docker is used to containerize the application and its dependencies, making it easier to set up, deploy, and manage the application across various environments.
 
 
 ## Project Layout
@@ -66,21 +80,7 @@ Contains the database migration files managed by TypeORM.
 
 Contains the test files for unit and integration testing of the application.
 
-### `/scripts`
-
-Utility scripts for various development tasks, such as database seeding or maintenance.
-
-### `/public`
-
-Static files served by the application, such as images, CSS, and JavaScript files.
-
-### `/docker`
-
-Docker-related files, including Dockerfile and Docker Compose configuration.
-
-### `/logs`
-
-Directory where application logs are stored.
+run tests with `yarn test`
 
 ### `/docs`
 
