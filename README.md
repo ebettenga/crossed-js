@@ -92,7 +92,25 @@ Documentation files related to the project, including API documentation and deve
 
 ## Contributing
 
+When creating a new model, the following files need to be made:
 
-just use the fork and pull method if you would like to conribute. message me at ebettenga@gmail.com if you have any questions. Enjoy!
+### Entities
+
+Create a new file in the `/src/entities` directory to define the database entity for the model. This file should include the necessary TypeORM decorators to specify the table name, columns, and relationships with other entities.
+
+### Routes
+
+Add a new file in the `/src/routes` directory to define the API endpoints related to the new model. This file should include the necessary Fastify route definitions and handlers to perform CRUD operations on the model.
+
+### Tests
+
+Create a new file in the `/tests` directory to write unit and integration tests for the new model. This file should include test cases to verify the functionality of the model's routes, services, and any other related logic.
+
+### Test Data
+
+Add a new file in the `/tests/test-data` directory to provide sample data for testing the new model. use the other files as an example.
+
+
+Use the fork and pull request method if you would like to conribute. message me at ebettenga@gmail.com if you have any questions. Enjoy!
 
 <!-- TODO: add contributing guide -->

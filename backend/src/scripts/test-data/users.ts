@@ -1,7 +1,7 @@
 import { DataSource } from 'typeorm';
 import { User } from '../../entities/User';
 
-export const create = (connection: DataSource) => async (req, res) => {
+export const create = async (connection: DataSource) => {
   const userRepository = connection.getRepository(User);
 
   const testUsers = [
@@ -10,9 +10,14 @@ export const create = (connection: DataSource) => async (req, res) => {
   ];
 
   for (const userData of testUsers) {
-    const user = userRepository.create(userData);
-    await userRepository.upsert(user, []);
+    const existingUser = await userRepository.findOneBy({
+      username: userData.username,
+    });
+    if (!existingUser) {
+      const user = userRepository.create(userData);
+      await userRepository.save(user);
+    }
+    console.log('Test users created.');
   }
 
-  console.log('Test users created.');
 };

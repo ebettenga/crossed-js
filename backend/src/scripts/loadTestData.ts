@@ -19,7 +19,7 @@ export const loadTestData = async () => {
 
   for (const file of files) {
     const { create } = await import(path.join(testDataDir, file));
-    await create(connection)();
+    await create(connection);
   }
 
   await connection.close();

@@ -1,7 +1,8 @@
 
+import { DataSource } from 'typeorm';
 import { Log } from '../../entities/Log';
 
-export const create = (connection) => async () => {
+export const create = async (connection: DataSource) => {
   const logRepository = connection.getRepository(Log);
 
   const log1 = new Log();
@@ -12,6 +13,6 @@ export const create = (connection) => async () => {
   log2.log = { message: 'Test log 2' };
   log2.severity = 'error';
 
-  console.log("Test Logs created successfully")
   await logRepository.save([log1, log2]);
+  console.log("Test Logs created successfully")
 };
