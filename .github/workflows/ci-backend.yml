@@ -74,9 +74,8 @@ jobs:
       - name: Cache node_modules after test success
         if: success()
         uses: actions/cache@v3
-        working-directory: backend
         with:
-          path: node_modules
-          key: ${{ runner.os }}-node-modules-${{ hashFiles('**/yarn.lock') }}
+          path: backend/node_modules
+          key: ${{ hashFiles('**/yarn.lock') }}
           restore-keys: |
             ${{ runner.os }}-node-modules-

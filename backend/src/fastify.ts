@@ -1,3 +1,3 @@
-import Fastify, { FastifyInstance } from 'fastify';
+import Fastify from 'fastify';
 
 export const fastify = Fastify();
