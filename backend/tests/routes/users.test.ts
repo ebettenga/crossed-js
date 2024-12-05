@@ -16,7 +16,7 @@ describe('GET /users', () => {
       method: 'GET',
       url: '/api/users',
     });
-
+    console.log(response.json());
     expect(response.statusCode).toBe(200);
     expect(Array.isArray(response.json())).toBeTruthy();
   });

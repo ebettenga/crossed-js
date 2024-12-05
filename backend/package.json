@@ -11,8 +11,7 @@
     "commands": "tsx ./src/commands/cli.ts",
     "prepare": "if [ \"$CI\" != \"true\" ]; then pre-commit install; fi",
     "ci:load-test-data": "yarn commands load-test-data",
-    "test": "tsx --experimental-vm-modules node_modules/jest/bin/jest.js",
-    "test:coverage": "tsx --experimental-vm-modules node_modules/jest/bin/jest.js --coverage",
+    "test": "tsx --experimental-vm-modules node_modules/jest/bin/jest.js --verbose --coverage",
     "serve:coverage": "npx serve coverage/lcov-report"
   },
   "dependencies": {
