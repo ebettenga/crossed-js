@@ -16,6 +16,6 @@ describe('GET /health', () => {
     });
 
     expect(response.statusCode).toBe(200);
-    expect(response.json()).toEqual({ hello: 'world' });
+    expect(response.json()).toEqual({ status: 'ok' });
   });
 });
