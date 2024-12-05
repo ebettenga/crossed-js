@@ -7,8 +7,8 @@
   "scripts": {
     "start": "yarn build && node ./dist/index.mjs",
     "build": "pkgroll",
-    "dev": "tsx --env-file=.env --watch ./src/index.ts",
-    "commands": "tsx --env-file=.env ./src/commands/cli.ts",
+    "dev": "tsx --watch ./src/index.ts",
+    "commands": "tsx ./src/commands/cli.ts",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "prepare": "if [ \"$CI\" != \"true\" ]; then pre-commit install; fi",
     "ci:load-test-data": "yarn commands load-test-data"
