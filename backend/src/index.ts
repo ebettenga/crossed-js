@@ -11,6 +11,7 @@ import { fastify } from './fastify';
 import { fileURLToPath } from 'url';
 import fastifyAutoload from '@fastify/autoload';
 import { User } from './entities/User';
+import { Server } from 'socket.io';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -32,7 +33,12 @@ fastify.register(fastifySecureSession, {
 // fastify.register(userPassport.secureSession());
 
 // Socket Stuff
-fastify.register(fastifyIO);
+fastify.register(fastifyIO, {
+  cors: {
+    origin: '*',
+    methods: ['GET', 'POST'],
+  },
+});
 
 fastify.register(fastifyAutoload, {
   dir: join(__dirname, './routes'),
@@ -46,6 +52,7 @@ const start = async () => {
       port: config.api.port,
       host: config.api.host,
     });
+
     fastify.log.info(
       'Running server on http://%s:%d',
       config.api.host,
@@ -60,6 +67,9 @@ const start = async () => {
 
 declare module 'fastify' {
   interface PassportUser extends User {}
+  interface FastifyInstance {
+    io: Server<any>;
+  }
 }
 
 start();

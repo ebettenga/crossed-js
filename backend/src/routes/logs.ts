@@ -1,4 +1,3 @@
-
 import { FastifyInstance } from 'fastify';
 import { Log } from '../entities/Log';
 
@@ -9,6 +8,7 @@ export default function (
 ): void {
   fastify.get('/logs', async () => {
     fastify.log.info('Getting all logs');
+    fastify.io.emit('message', { message: 'Getting all logs' });
     const logs = await fastify.orm.getRepository(Log).find();
     return logs;
   });
