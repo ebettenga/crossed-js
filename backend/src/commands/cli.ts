@@ -2,15 +2,18 @@
 
 import { program } from 'commander';
 import { loadTestData } from '../scripts/loadTestData';
+import { CrosswordService } from '../services/CrosswordService';
+import { AppDataSource } from '../db';
+
+
 
 program
   .command('load-crosswords')
-  .argument('<dir>', 'Directory containing the crosswords')
   .description('Load crosswords into the database')
   .action(async (dir) => {
-    console.log(`Directory: ${dir}`);
     try {
-      // await loadCrosswords(dir);
+      const dataSource = await AppDataSource.initialize()
+      await new CrosswordService(dataSource).loadCrosswords();
       console.log('Crosswords loaded successfully');
     } catch (error) {
       console.error('Error loading crosswords:', error);

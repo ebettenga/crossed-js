@@ -2,6 +2,9 @@ import { DataSource } from 'typeorm';
 import { Crossword } from '../entities/Crossword';
 import { Room } from '../entities/Room';
 import { NotFoundError } from '../errors/api';
+import * as fs from 'fs';
+import * as path from 'path';
+import { findDir } from '../scripts/findConfigDir';
 
 export class CrosswordService {
   private ormConnection: DataSource;
@@ -45,12 +48,46 @@ export class CrosswordService {
     const repository = this.ormConnection.getRepository(Crossword);
     const count = await repository.count();
 
-    if (count > 0) {
+    if (count > 10) {
       console.log('Crosswords already loaded');
       return;
     }
 
-    // Load crosswords from files (implement file reading and parsing logic here)
+    const crosswordsDir = findDir("../../", "crosswords");
+    const crosswords = [];
+
+    const loadFiles = (dir: string) => {
+      const files = fs.readdirSync(dir);
+      for (const file of files) {
+        const filePath = path.join(dir, file);
+        const stat = fs.statSync(filePath);
+        if (stat.isDirectory()) {
+          loadFiles(filePath);
+        } else if (filePath.endsWith('.json')) {
+          const data = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+          data["col_size"] = data["size"]["cols"];
+          data["row_size"] = data["size"]["rows"];
+
+          if (data["shadecircles"]) {
+            data["shadecircles"] = true;
+          } else {
+            data["shadecircles"] = false;
+          }
+
+          const crossword = { ...data };
+          crosswords.push(crossword);
+        }
+      }
+    };
+
+    loadFiles(crosswordsDir);
+
+    for (const crossword of crosswords) {
+      const crosswordEntity = repository.create(crossword);
+      await repository.save(crosswordEntity);
+    }
+
+    console.log('Crosswords loaded successfully');
   }
 
   async createFoundLettersTemplate(crosswordId: number): Promise<string[]> {
