@@ -105,9 +105,9 @@ export class CrosswordService {
     coordinates: { x: number; y: number },
     guess: string,
   ): boolean {
-    fastify.logger.info(room);
+
     const crossword = room.crossword;
     const board = this.createAnswerBoard(crossword);
-    return board[coordinates.x][coordinates.y] === guess.toUpperCase();
+    return board[coordinates.x][coordinates.y].toUpperCase() === guess.toUpperCase();
   }
 }
