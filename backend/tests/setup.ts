@@ -3,7 +3,6 @@ import fastifySecureSession from '@fastify/secure-session';
 import fastifyIO from 'fastify-socket.io';
 import { registerDb } from '../src/db';
 import { config } from '../src/config/config';
-import { loggerConfig } from '../src/logger';
 import fs from 'fs';
 import path from 'path';
 import { fastify } from '../src/fastify';
@@ -40,7 +39,6 @@ if (fs.existsSync(secretKeyPath)) {
 // register all the plugins that our app uses
 
 registerDb(fastify);
-fastify.decorate('logger', loggerConfig);
 
 // Mock the authenticate method to bypass actual authentication
 // this typescript will try to convince you that done is not the third argument of authenticate, but it is

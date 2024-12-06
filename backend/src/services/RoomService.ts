@@ -24,7 +24,7 @@ export class RoomService {
     let room = await this.findEmptyRoomByDifficulty(difficulty);
 
     if (room) {
-      fastify.logger.info(`Found room with id: ${room.id}`);
+      fastify.log.info(`Found room with id: ${room.id}`);
       await this.joinExistingRoom(room, userId);
     } else {
       await this.createRoom(userId, difficulty);
@@ -34,11 +34,11 @@ export class RoomService {
   }
 
   async joinExistingRoom(room: Room, userId: number): Promise<void> {
-    fastify.logger.info(`Joining room with id: ${userId}`);
+    fastify.log.info(`Joining room with id: ${userId}`);
     const player = await this.ormConnection
       .getRepository(User)
       .findOneBy({ id: userId });
-    fastify.logger.info(player);
+    fastify.log.info(player);
     room.player_2 = player;
     await this.ormConnection.getRepository(Room).save(room);
   }
@@ -58,18 +58,16 @@ export class RoomService {
       crossword.id,
     );
 
-    fastify.logger.info(room.found_letters);
+    fastify.log.info(room.found_letters);
 
     await this.ormConnection.getRepository(Room).save(room);
   }
 
   private async findEmptyRoomByDifficulty(difficulty: string): Promise<Room> {
-    return this.ormConnection
-      .getRepository(Room)
-      .findOne({
-        where: { player_2: null, difficulty },
-        order: { created_at: 'ASC' },
-      });
+    return this.ormConnection.getRepository(Room).findOne({
+      where: { player_2: null, difficulty },
+      order: { created_at: 'ASC' },
+    });
   }
 
   async guess(
@@ -88,10 +86,10 @@ export class RoomService {
     );
 
     if (isCorrect) {
-      room = this.addPoints(room, userId);
-      room = this.updateFoundBoard(room, coordinates, guess);
+      this.modifyPoints(room, userId, config.game.points.correct);
+      this.updateFoundBoard(room, coordinates, guess);
     } else {
-      room = this.removePoints(room, userId);
+      this.modifyPoints(room, userId, config.game.points.incorrect);
     }
 
     await this.ormConnection.getRepository(Room).save(room);
@@ -102,26 +100,14 @@ export class RoomService {
     room: Room,
     coordinates: { x: number; y: number },
     guess: string,
-  ): Room {
-    const xNumber =
-      coordinates.x === 0 ? 0 : coordinates.x * room.crossword.row_size;
-    const space = xNumber + coordinates.y;
+  ): void {
+    const space = coordinates.x * room.crossword.row_size + coordinates.y;
     room.found_letters[space] = guess;
-
-    return room;
   }
 
-  private addPoints(room: Room, userId: number): Room {
+  private modifyPoints(room: Room, userId: number, points: number): void {
     room.player_1.id === userId
-      ? (room.player_1_score += config.game.points)
-      : (room.player_2_score += config.game.points);
-    return room;
-  }
-
-  private removePoints(room: Room, userId: number): Room {
-    room.player_1.id === userId
-      ? (room.player_1_score -= 1)
-      : (room.player_2_score -= 1);
-    return room;
+      ? room.player_1_score += points
+      : room.player_2_score += points;
   }
 }

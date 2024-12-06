@@ -5,6 +5,9 @@ export const commonConfig = {
     host: 'localhost',
   },
   game: {
-    points: 3
+    points: {
+      correct: 3,
+      incorrect: -1,
+    }
   }
 };

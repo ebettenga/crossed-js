@@ -51,14 +51,10 @@ describe('Rooms routes', () => {
 
   it('should add points after a correct guess', async () => {
     const testRoom = await fastify.orm.getRepository(Room).findOneBy({ difficulty: 'easy' });
-   
-
-
-   
 
     const payload = {
       roomId: testRoom?.id,
-      coordinates: { x: 1, y: 1 },
+      coordinates: { x: 0, y: 0 },
       guess: 'x',
       userId: testRoom?.player_1.id,
     };

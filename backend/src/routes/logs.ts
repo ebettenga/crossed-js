@@ -8,7 +8,7 @@ export default function (
   next: (err?: Error) => void,
 ): void {
   fastify.get('/logs', async () => {
-    fastify.logger.info('Getting all logs');
+    fastify.log.info('Getting all logs');
     const logs = await fastify.orm.getRepository(Log).find();
     return logs;
   });

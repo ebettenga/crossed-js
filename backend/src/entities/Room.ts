@@ -27,10 +27,10 @@ export class Room {
   @JoinColumn()
   crossword: Crossword;
 
-  @Column('int8', { default: 0 })
+  @Column('int', { default: 0 })
   player_1_score: number;
 
-  @Column('int8', { default: 0 })
+  @Column('int', { default: 0 })
   player_2_score: number;
 
   @CreateDateColumn()

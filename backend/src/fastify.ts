@@ -1,3 +1,6 @@
 import Fastify from 'fastify';
+import { config } from './config/config';
 
-export const fastify = Fastify();
+export const fastify = Fastify({
+  logger: config.logger
+});

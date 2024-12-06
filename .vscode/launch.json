@@ -1,0 +1,10 @@
+{
+    "configurations": [
+    {
+        "command": "cd backend && yarn dev",
+        "name": "Run server",
+        "request": "launch",
+        "type": "node-terminal"
+    }
+    ]
+}

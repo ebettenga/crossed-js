@@ -2,15 +2,14 @@ import { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConne
 
 export const config = {
   logger: {
-    levels: {
-      fatal: 0,
-      error: 1,
-      warn: 2,
-      info: 3,
-      trace: 4,
-      debug: 5,
+    transport: {
+      target: 'pino-pretty',
+      options: {
+        translateTime: 'HH:MM:ss Z',
+        ignore: 'pid,hostname',
+      },
     },
-    level: 'info',
+    test: true
   },
   db: {
     type: 'postgres',

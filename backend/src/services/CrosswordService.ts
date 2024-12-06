@@ -2,6 +2,7 @@ import { DataSource } from 'typeorm';
 import { Crossword } from '../entities/Crossword';
 import { Room } from '../entities/Room';
 import { fastify } from '../fastify';
+import { NotFoundError } from '../errors/api';
 
 export class CrosswordService {
   private ormConnection: DataSource;
@@ -89,25 +90,19 @@ export class CrosswordService {
     }
   }
 
-  createAnswerBoard(crossword: Crossword): string[][] {
-    const answerBoard = [];
-    for (let r = 0; r < crossword.col_size; r++) {
-      const rowStart = r * crossword.row_size;
-      answerBoard.push(
-        crossword.grid.slice(rowStart, rowStart + crossword.row_size),
-      );
-    }
-    return answerBoard;
-  }
-
   checkGuess(
     room: Room,
     coordinates: { x: number; y: number },
     guess: string,
   ): boolean {
-
     const crossword = room.crossword;
-    const board = this.createAnswerBoard(crossword);
-    return board[coordinates.x][coordinates.y].toUpperCase() === guess.toUpperCase();
+    const guessPosition = coordinates.x * crossword.col_size + coordinates.y;
+    try {
+      return (
+        crossword.grid[guessPosition].toUpperCase() === guess.toUpperCase()
+      );
+    } catch (e) {
+      throw new NotFoundError('Invalid coordinates');
+    }
   }
 }
