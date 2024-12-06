@@ -49,19 +49,18 @@ describe('Rooms routes', () => {
     expect(response.statusCode).toBe(200);
   });
 
-  xit('should make a guess in a room', async () => {
+  it('should add points after a correct guess', async () => {
     const testRoom = await fastify.orm.getRepository(Room).findOneBy({ difficulty: 'easy' });
-    const testUser = await fastify.orm
-    .getRepository(User)
-    .findOne({ where: { username: 'testuser' } });
+   
 
 
-    const mockRoom = { id: 1, name: 'Test Room' };
+   
+
     const payload = {
       roomId: testRoom?.id,
       coordinates: { x: 1, y: 1 },
       guess: 'x',
-      userId: testUser?.id,
+      userId: testRoom?.player_1.id,
     };
 
     const response = await fastify.inject({
@@ -71,7 +70,7 @@ describe('Rooms routes', () => {
     });
 
     expect(response.statusCode).toBe(200);
-    expect(response.json()).toEqual(mockRoom);
+    expect(testRoom?.player_1_score).toBeLessThan(response.json().player_1_score)
   });
 
   it('should handle errors gracefully', async () => {
