@@ -34,9 +34,8 @@ export default function (
     reply.send(results);
   });
 
-  fastify.get('/load_crosswords', async (request, reply) => {
+  fastify.get('/crosswords/load_crosswords', async (request, reply) => {
     await crosswordService.loadCrosswords();
-    reply.send({ status: 'success' });
   });
 
   next();

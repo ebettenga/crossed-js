@@ -58,16 +58,7 @@ export class RoomService {
       crossword.id,
     );
 
-    fastify.log.info(room.found_letters);
-
     await this.ormConnection.getRepository(Room).save(room);
-  }
-
-  private async findEmptyRoomByDifficulty(difficulty: string): Promise<Room> {
-    return this.ormConnection.getRepository(Room).findOne({
-      where: { player_2: null, difficulty },
-      order: { created_at: 'ASC' },
-    });
   }
 
   async guess(
@@ -107,7 +98,14 @@ export class RoomService {
 
   private modifyPoints(room: Room, userId: number, points: number): void {
     room.player_1.id === userId
-      ? room.player_1_score += points
-      : room.player_2_score += points;
+      ? (room.player_1_score += points)
+      : (room.player_2_score += points);
+  }
+
+  private async findEmptyRoomByDifficulty(difficulty: string): Promise<Room> {
+    return this.ormConnection.getRepository(Room).findOne({
+      where: { player_2: null, difficulty },
+      order: { created_at: 'ASC' },
+    });
   }
 }

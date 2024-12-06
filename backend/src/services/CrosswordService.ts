@@ -1,7 +1,6 @@
 import { DataSource } from 'typeorm';
 import { Crossword } from '../entities/Crossword';
 import { Room } from '../entities/Room';
-import { fastify } from '../fastify';
 import { NotFoundError } from '../errors/api';
 
 export class CrosswordService {
@@ -59,7 +58,7 @@ export class CrosswordService {
     const crossword = await repository.findOneBy({ id: crosswordId });
 
     if (!crossword) {
-      throw new Error('Crossword not found');
+      throw new NotFoundError('Crossword not found');
     }
 
     return crossword.grid.map((value) => value.replace(/[A-Za-z]/g, '*'));
@@ -86,7 +85,7 @@ export class CrosswordService {
       case 'hard':
         return ['Friday', 'Saturday'];
       default:
-        throw new Error('Invalid difficulty');
+        throw new NotFoundError('Invalid difficulty');
     }
   }
 
