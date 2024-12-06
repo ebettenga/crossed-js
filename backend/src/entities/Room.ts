@@ -15,15 +15,15 @@ export class Room {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @OneToOne(() => User)
+  @OneToOne(() => User, {eager: true})
   @JoinColumn()
   player_1: User;
 
-  @OneToOne(() => User)
+  @OneToOne(() => User, {eager: true})
   @JoinColumn()
   player_2: User;
 
-  @OneToOne(() => Crossword, crossword => crossword.room)
+  @OneToOne(() => Crossword, {eager: true})
   @JoinColumn()
   crossword: Crossword;
 

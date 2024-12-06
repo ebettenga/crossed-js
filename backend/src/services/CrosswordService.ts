@@ -1,6 +1,7 @@
 import { DataSource } from 'typeorm';
 import { Crossword } from '../entities/Crossword';
 import { Room } from '../entities/Room';
+import { fastify } from '../fastify';
 
 export class CrosswordService {
   private ormConnection: DataSource;
@@ -104,6 +105,7 @@ export class CrosswordService {
     coordinates: { x: number; y: number },
     guess: string,
   ): boolean {
+    fastify.logger.info(room);
     const crossword = room.crossword;
     const board = this.createAnswerBoard(crossword);
     return board[coordinates.x][coordinates.y] === guess.toUpperCase();
