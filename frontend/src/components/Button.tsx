@@ -212,7 +212,7 @@ const $viewPresets: Record<Presets, ThemedStyleArray<ViewStyle>> = {
     ({ colors }) => ({
       borderWidth: 1,
       borderColor: colors.palette.neutral400,
-      backgroundColor: colors.palette.neutral100,
+      backgroundColor: colors.palette.neutral900,
     }),
   ],
   filled: [

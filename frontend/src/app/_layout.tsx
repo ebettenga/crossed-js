@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import { Slot, SplashScreen } from "expo-router"
 import { KeyboardProvider } from "react-native-keyboard-controller"
 
+import { useInitialRootStore } from "@/models"
 import { useFonts } from "@expo-google-fonts/space-grotesk"
 import { customFontsToLoad } from "@/theme"
 import { initI18n } from "@/i18n"
@@ -20,6 +21,10 @@ if (__DEV__) {
 export { ErrorBoundary } from "@/components/ErrorBoundary/ErrorBoundary"
 
 export default function Root() {
+  // Wait for stores to load and render our layout inside of it so we have access
+  // to auth info etc
+  const { rehydrated } = useInitialRootStore()
+
   const [fontsLoaded, fontError] = useFonts(customFontsToLoad)
   const [isI18nInitialized, setIsI18nInitialized] = useState(false)
   const { themeScheme, setThemeContextOverride, ThemeProvider } = useThemeProvider()
@@ -30,7 +35,7 @@ export default function Root() {
       .then(() => loadDateFnsLocale())
   }, [])
 
-  const loaded = fontsLoaded && isI18nInitialized
+  const loaded = fontsLoaded && isI18nInitialized && rehydrated
 
   useEffect(() => {
     if (fontError) throw fontError

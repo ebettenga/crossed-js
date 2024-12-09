@@ -11,4 +11,6 @@ export const spacing = {
   xl: 32 * SPACING_MULTIPLIER,
   xxl: 48 * SPACING_MULTIPLIER,
   xxxl: 64 * SPACING_MULTIPLIER,
+  xxxxl: 80 * SPACING_MULTIPLIER,
+  xxxxxl: 96 * SPACING_MULTIPLIER,
 } as const

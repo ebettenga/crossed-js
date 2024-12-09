@@ -4,14 +4,14 @@ import { ViewStyle } from "react-native"
 import { Screen, Text } from "src/components"
 
 
-export default function <%= props.pascalCaseName %>Screen() {
+export default observer(function <%= props.pascalCaseName %>Screen() {
   return (
     <Screen style={$root} preset="scroll">
       <Text text="<%= props.camelCaseName %>" />
     </Screen>
   )
 
-}
+})
 
 const $root: ViewStyle = {
   flex: 1,

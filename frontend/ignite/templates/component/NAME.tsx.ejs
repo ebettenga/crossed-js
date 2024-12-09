@@ -6,6 +6,7 @@ patch:
   skip: <%= props.skipIndexFile %>
 ---
 import { StyleProp, TextStyle, View, ViewStyle } from "react-native"
+import { observer } from "mobx-react-lite"
 import { useAppTheme } from "@/utils/useAppTheme"
 import type { ThemedStyle } from "@/theme"
 import { Text } from "@/components/Text"
@@ -21,7 +22,7 @@ export interface <%= props.pascalCaseName %>Props {
  * Describe your component here
  */
 
-export const <%= props.pascalCaseName %> = (props: <%= props.pascalCaseName %>Props) => {
+export const <%= props.pascalCaseName %> = observer(function <%= props.pascalCaseName %>(props: <%= props.pascalCaseName %>Props) {
   const { style } = props
   const $styles = [$container, style]
   const { themed } = useAppTheme();
@@ -32,7 +33,7 @@ export const <%= props.pascalCaseName %> = (props: <%= props.pascalCaseName %>Pr
     </View>
   )
 
-}
+})
 
 const $container: ViewStyle = {
   justifyContent: "center",

@@ -12,7 +12,7 @@ import { Crossword } from './Crossword';
 
 @Entity()
 export class Room {
-  @PrimaryGeneratedColumn()
+  @PrimaryGeneratedColumn({})
   id: number;
 
   @OneToOne(() => User, {eager: true})
