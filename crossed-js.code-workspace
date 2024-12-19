@@ -1,0 +1,33 @@
+{
+	"folders": [
+		{
+			"path": "./backend",
+			"name": "backend"
+		},
+		{
+			"path": "./frontend",
+			"name": "frontend"
+		},
+		{
+			"path": ".",
+			"name": "crossed-js"
+		}
+	],
+	"settings": {
+		"editor.tabSize": 2,
+		"editor.insertSpaces": true,
+		"files.exclude": {
+			"**/.git": true,
+			"**/.DS_Store": true,
+			"**/node_modules": true
+		},
+		"files.autoSave": "onFocusChange",
+		"prettier.requireConfig": true,
+		"typescript.tsdk": "node_modules/typescript/lib",
+		"javascript.updateImportsOnFileMove.enabled": "always",
+		"editor.formatOnSave": true,
+		"editor.codeActionsOnSave": {
+			"source.fixAll.eslint": "always"
+		}
+	}
+}
