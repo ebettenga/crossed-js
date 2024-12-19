@@ -2,7 +2,7 @@
     "configurations": [
     {
         "command": "cd backend && yarn dev",
-        "name": "Run server",
+        "name": "Run backend",
         "request": "launch",
         "type": "node-terminal"
     }
