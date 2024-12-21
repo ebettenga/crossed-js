@@ -1,10 +1,18 @@
 {
     "configurations": [
-    {
-        "command": "cd backend && yarn dev",
-        "name": "Run backend",
-        "request": "launch",
-        "type": "node-terminal"
-    }
+        {
+            "name": "Debug Android",
+            "request": "launch",
+            "type": "reactnativedirect",
+            "cwd": "${workspaceFolder}/frontend",
+            "platform": "android"
+        },
+        {
+            "command": "yarn dev",
+            "cwd": "${workspaceFolder}/backend",
+            "name": "Run backend",
+            "request": "launch",
+            "type": "node-terminal"
+        },
     ]
 }

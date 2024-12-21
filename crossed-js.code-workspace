@@ -11,7 +11,7 @@
 		{
 			"path": ".",
 			"name": "crossed-js"
-		}
+		},
 	],
 	"settings": {
 		"editor.tabSize": 2,

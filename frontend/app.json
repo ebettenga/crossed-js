@@ -1,57 +1,54 @@
 {
-  "name": "frontend",
-  "displayName": "frontend",
   "expo": {
-    "name": "frontend",
-    "slug": "frontend",
-    "scheme": "frontend",
+    "name": "react_native_restate",
+    "slug": "react_native_restate",
     "version": "1.0.0",
     "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "restate",
     "userInterfaceStyle": "automatic",
-    "icon": "./assets/images/app-icon-all.png",
-    "updates": {
-      "fallbackToCacheTimeout": 0
-    },
     "newArchEnabled": true,
-    "jsEngine": "hermes",
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "ios": {
+      "supportsTablet": true
+    },
     "android": {
-      "icon": "./assets/images/app-icon-android-legacy.png",
-      "package": "com.frontend",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/app-icon-android-adaptive-foreground.png",
-        "backgroundImage": "./assets/images/app-icon-android-adaptive-background.png"
+        "foregroundImage": "./assets/images/icon.png",
+        "backgroundColor": "#ffffff"
       }
     },
-    "ios": {
-      "icon": "./assets/images/app-icon-ios.png",
-      "supportsTablet": true,
-      "bundleIdentifier": "com.frontend"
-    },
     "web": {
-      "favicon": "./assets/images/app-icon-web-favicon.png",
-      "bundler": "metro"
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
-      "expo-localization",
-      "expo-font",
+      "expo-router",
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/app-icon-android-adaptive-foreground.png",
-          "imageWidth": 300,
-          "resizeMode": "contain",
-          "backgroundColor": "#191015"
+          "image": "./assets/images/splash-icon.png",
+          "resizeMode": "cover",
+          "backgroundColor": "#ffffff",
+          "enableFullScreenImage_legacy": true
         }
-      ]
+      ],
+    [
+      "expo-font",
+      {
+        "fonts": [
+          "./assets/fonts/Rubik-Bold.ttf",
+          "./assets/fonts/Rubik-ExtraBold.ttf",
+          "./assets/fonts/Rubik-Medium.ttf",
+          "./assets/fonts/Rubik-Light.ttf",
+          "./assets/fonts/Rubik-Regular.ttf",
+          "./assets/fonts/Rubik-SemiBold.ttf"
+        ]
+      }
+    ]
     ],
     "experiments": {
-      "tsconfigPaths": true
+      "typedRoutes": true
     }
-  },
-  "ignite": {
-    "version": "10.1.0"
   }
 }

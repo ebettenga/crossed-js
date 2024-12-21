@@ -1,7 +1,9 @@
-/** @type {import('@babel/core').TransformOptions} */
-module.exports = function(api) {
-  api.cache(true)
+module.exports = function (api) {
+  api.cache(true);
   return {
-    presets: ["babel-preset-expo"],
-  }
-}
+    presets: [
+      ["babel-preset-expo", { jsxImportSource: "nativewind" }],
+      "nativewind/babel",
+    ],
+  };
+};
