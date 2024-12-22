@@ -9,6 +9,8 @@ export default function AppLayout() {
     const { loading, isLoggedIn } = useGlobalContext();
     const { data: crosswords, isLoading: crosswordsLoading } = useCrosswords();
 
+    console.log(crosswords);
+
     if (loading || crosswordsLoading) {
         return (
             <SafeAreaView className="bg-white h-full flex justify-center items-center">

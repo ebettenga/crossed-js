@@ -7,10 +7,6 @@ export const useCrosswords = () => useQuery({
     try {
       console.log(`${config.api.baseURL}/crosswords`);
       const response = await fetch(`${config.api.baseURL}/crosswords`);
-      console.log(response);
-      console.log(response.status);
-      console.log(response.body);
-      console.log(response.json());
 
       return await response.json()
     } catch (error) {
