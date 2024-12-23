@@ -1,9 +1,9 @@
-import { DataSource } from 'typeorm';
-import { Room } from '../entities/Room';
-import { User } from '../entities/User';
-import { CrosswordService } from './CrosswordService';
-import { config } from '../config/config';
-import { fastify } from '../fastify';
+import { DataSource } from "typeorm";
+import { Room } from "../entities/Room";
+import { User } from "../entities/User";
+import { CrosswordService } from "./CrosswordService";
+import { config } from "../config/config";
+import { fastify } from "../fastify";
 
 export class RoomService {
   private crosswordService: CrosswordService;
@@ -44,8 +44,9 @@ export class RoomService {
   }
 
   async createRoom(userId: number, difficulty: string): Promise<void> {
-    const crossword =
-      await this.crosswordService.getCrosswordByDifficulty(difficulty);
+    const crossword = await this.crosswordService.getCrosswordByDifficulty(
+      difficulty,
+    );
 
     const room = new Room();
     room.player_1 = await this.ormConnection
@@ -70,6 +71,11 @@ export class RoomService {
     let room = await this.ormConnection
       .getRepository(Room)
       .findOneBy({ id: roomId });
+
+    if (![room.player_1.id, room.player_2.id].includes(userId)) {
+      throw new Error("User is not a participant in this room");
+    }
+
     const isCorrect = await this.crosswordService.checkGuess(
       room,
       coordinates,
@@ -105,7 +111,7 @@ export class RoomService {
   private async findEmptyRoomByDifficulty(difficulty: string): Promise<Room> {
     return this.ormConnection.getRepository(Room).findOne({
       where: { player_2: null, difficulty },
-      order: { created_at: 'ASC' },
+      order: { created_at: "ASC" },
     });
   }
 }

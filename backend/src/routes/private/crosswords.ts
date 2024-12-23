@@ -1,5 +1,5 @@
-import { FastifyInstance } from 'fastify';
-import { CrosswordService } from '../services/CrosswordService';
+import { FastifyInstance } from "fastify";
+import { CrosswordService } from "../../services/CrosswordService";
 
 type CrosswordQueryParams = {
   page?: number;
@@ -16,7 +16,7 @@ export default function (
 ): void {
   const crosswordService = new CrosswordService(fastify.orm);
 
-  fastify.get('/crosswords', async (request, reply) => {
+  fastify.get("/crosswords", async (request, reply) => {
     const {
       page = 1,
       limit = 100,
@@ -34,8 +34,12 @@ export default function (
     reply.send(results);
   });
 
-  fastify.get('/crosswords/load_crosswords', async (request, reply) => {
-    await crosswordService.loadCrosswords();
+  fastify.post("/crosswords/load_crosswords", async (request, reply) => {
+    if (!request.user?.roles.includes("admin")) {
+      reply.send({ error: "Unauthorized" });
+    } else {
+      await crosswordService.loadCrosswords();
+    }
   });
 
   next();

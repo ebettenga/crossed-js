@@ -1,33 +1,41 @@
-import { DataSource } from 'typeorm';
-import { Room } from '../../src/entities/Room';
-import { User } from '../../src/entities/User';
-import { Crossword } from '../../src/entities/Crossword';
-
+import { DataSource } from "typeorm";
+import { Room } from "../../src/entities/Room";
+import { User } from "../../src/entities/User";
+import { Crossword } from "../../src/entities/Crossword";
 
 const testUsers = [
-  { username: 'testplayer1', githubId: "john123", role: 'USER' },
-  { username: 'testplayer2', githubId: "jane456", role: 'USER' },
-]
-
+  {
+    username: "testplayer1",
+    roles: ["user"],
+    email: "crosswordtester1@test.com",
+    password: "testpassword",
+  },
+  {
+    username: "testplayer2",
+    roles: ["user"],
+    email: "crosswordtester2@test.com",
+    password: "testpassword",
+  },
+];
 
 const testCrosswords = [
   {
     clues: { across: [], down: [] },
     answers: { across: [], down: [] },
-    author: 'Test Author',
+    author: "Test Author",
     circles: [],
     date: new Date(),
-    dow: 'Monday',
+    dow: "Monday",
     grid: ["x", "x", "x", "x", "x"],
     gridnums: [],
     shadecircles: false,
     col_size: 4,
     row_size: 4,
-    jnote: 'The quick brown fox jumps over the lazy dog',
-    notepad: 'Test notepad',
-    title: 'Test Crossword',
+    jnote: "The quick brown fox jumps over the lazy dog",
+    notepad: "Test notepad",
+    title: "Test Crossword",
   },
-]
+];
 
 export const create = async (connection: DataSource) => {
   const roomRepository = connection.getRepository(Room);
@@ -43,9 +51,9 @@ export const create = async (connection: DataSource) => {
     player_2: user2,
     crossword,
     found_letters: ["*", "*", "*", "*", "*", "*", "*", "*", "*", "*", "*"],
-    difficulty: 'easy',
+    difficulty: "easy",
     player_1_score: 0,
     player_2_score: 0,
   });
-  console.log('Test room created.');
+  console.log("Test room created.");
 };
