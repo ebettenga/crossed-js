@@ -3,6 +3,7 @@ import { RoomService } from "../../services/RoomService"; // Assuming room_servi
 import { AuthService } from "../../services/AuthService";
 import { User } from "../../entities/User";
 import { UserNotFoundError } from "../../errors/api";
+import { Socket } from "socket.io";
 
 export type Guess = {
   roomId: number;
@@ -10,7 +11,6 @@ export type Guess = {
   y: number;
   guess: string;
 };
-type GuessSocketRequest = Guess & SocketRequest;
 
 export type JoinRoom = {
   difficulty: string;
@@ -19,29 +19,22 @@ export type JoinRoom = {
 export type Message = {
   message: string;
 };
-type MessageSocketRequest = Message & SocketRequest;
 
 export type RoomMessage = {
   roomId: number;
-} & MessageSocketRequest;
+} & Message;
 
 export type LoadRoom = {
   roomId: number;
 };
-type LoadRoomSocketRequest = LoadRoom & SocketRequest;
-
-export type SocketRequest = {
-  authToken: string;
-};
-type JoinSocketRequest = SocketRequest & JoinRoom;
 
 async function verifyUser(
   authService: AuthService,
   fastify: FastifyInstance,
-  data: SocketRequest,
+  socket: Socket,
 ) {
   const userToken = authService.verify(fastify, {
-    token: data.authToken,
+    token: socket.handshake.auth.authToken,
   });
   const user = await fastify.orm.getRepository(User).findOne({
     where: {
@@ -88,7 +81,7 @@ export default function (
 
     socket.on("join_room_bus", async (data: RoomMessage) => {
       try {
-        const user = await verifyUser(authService, fastify, data);
+        const user = await verifyUser(authService, fastify, socket);
         const room = await roomService.getRoomById(data.roomId);
         socket.emit("room", room);
         socket.join(room.id.toString());
@@ -102,9 +95,9 @@ export default function (
     });
 
     // game stuff
-    socket.on("join", async (data: JoinSocketRequest) => {
+    socket.on("join", async (data: JoinRoom) => {
       try {
-        const user = await verifyUser(authService, fastify, data);
+        const user = await verifyUser(authService, fastify, socket);
         const room = await roomService.joinRoom(user.id, data.difficulty);
         socket.emit("room", room);
         socket.join(room.id.toString());
@@ -117,12 +110,17 @@ export default function (
       }
     });
 
-    socket.on("loadRoom", async (data: LoadRoomSocketRequest) => {
+    socket.on("loadRoom", async (data: LoadRoom) => {
       try {
-        const user = await verifyUser(authService, fastify, data);
+        const user = await verifyUser(authService, fastify, socket);
         const room = await roomService.getRoomById(data.roomId);
-        socket.join(room.id.toString());
-        socket.emit("room", room);
+
+        if (!room) {
+          socket.emit("error", "Couldn't find room.");
+        } else {
+          socket.join(room.id.toString());
+          socket.emit("room", room);
+        }
       } catch (e) {
         if (e instanceof UserNotFoundError) {
           socket.emit("error", "Authentication failed");
@@ -132,9 +130,9 @@ export default function (
       }
     });
 
-    socket.on("guess", async (data: GuessSocketRequest) => {
+    socket.on("guess", async (data: Guess) => {
       try {
-        const user = await verifyUser(authService, fastify, data);
+        const user = await verifyUser(authService, fastify, socket);
         const coordinates = { x: data.x, y: data.y };
         const room = await roomService.guess(
           data.roomId,
@@ -156,26 +154,29 @@ export default function (
     });
 
     // chat stuff
-    socket.on("message", async (data: MessageSocketRequest) => {
-      try {
-        const user = await verifyUser(authService, fastify, data);
-        socket.broadcast.emit("message", data);
-        fastify.log.info(data);
-      } catch (e) {
-        if (e instanceof UserNotFoundError) {
-          socket.emit("error", "Authentication failed");
-        } else {
-          socket.emit("error", e.message);
+    socket.on(
+      "message",
+      async ({ message }: Message) => {
+        try {
+          const user = await verifyUser(authService, fastify, socket);
+          socket.send(message);
+          fastify.log.info(message);
+        } catch (e) {
+          if (e instanceof UserNotFoundError) {
+            socket.emit("error", "Authentication failed");
+          } else {
+            socket.emit("error", e.message);
+          }
         }
-      }
-    });
+      },
+    );
 
     socket.on("message_room", async (data: RoomMessage) => {
       try {
-        const user = await verifyUser(authService, fastify, data);
+        const user = await verifyUser(authService, fastify, socket);
         socket.broadcast
           .to(data.roomId.toString())
-          .emit("message", data.message);
+          .emit("message", data.roomId);
         fastify.log.info(data);
       } catch (e) {
         if (e instanceof UserNotFoundError) {

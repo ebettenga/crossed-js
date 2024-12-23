@@ -2,36 +2,71 @@ import { SplashScreen, Stack } from "expo-router";
 import { useReactQueryDevTools } from '@dev-plugins/react-query';
 
 import "./globals.css";
-import { useFonts } from "expo-font";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import GlobalProvider from "@/lib/global-provider";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useColorScheme } from "@/lib/useColorScheme";
+import { NAV_THEME } from "@/lib/constants";
+import { Theme, ThemeProvider } from "@react-navigation/native";
+import { Platform, StatusBar } from "react-native";
+import { storage } from "@/hooks/api";
+import { PortalHost } from '@rn-primitives/portal';
+import { SocketProvider } from "~/hooks/socket";
+
+// @ts-ignore
+const LIGHT_THEME: Theme = {
+  dark: false,
+  colors: NAV_THEME.light,
+};
+// @ts-ignore
+const DARK_THEME: Theme = {
+  dark: true,
+  colors: NAV_THEME.dark,
+};
+
+
+// Prevent the splash screen from auto-hiding before getting the color scheme.
+SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
 
 export default function RootLayout() {
   useReactQueryDevTools(queryClient);
-  const [fontsLoaded] = useFonts({
-    "Rubik-Bold": require('../assets/fonts/Rubik-Bold.ttf'),
-    "Rubik-ExtraBold": require('../assets/fonts/Rubik-ExtraBold.ttf'),
-    "Rubik-Light": require('../assets/fonts/Rubik-Light.ttf'),
-    "Rubik-Medium": require('../assets/fonts/Rubik-Medium.ttf'),
-    "Rubik-Regular": require('../assets/fonts/Rubik-Regular.ttf'),
-    "Rubik-SemiBold": require('../assets/fonts/Rubik-SemiBold.ttf'),
-  })
+  const { colorScheme, setColorScheme, isDarkColorScheme } = useColorScheme();
+  const [isColorSchemeLoaded, setIsColorSchemeLoaded] = useState(false);
 
   useEffect(() => {
-    if (fontsLoaded) {
-      SplashScreen.hideAsync();
-    }
-  }, [fontsLoaded]);
+    (async () => {
+      const theme = await storage.getString('theme') as 'light' | 'dark' | 'system';
+      if (Platform.OS === 'web') {
+        // Adds the background color to the html element to prevent white background on overscroll.
+        document.documentElement.classList.add('bg-background');
+      }
+      if (!theme) {
+        storage.set('theme', colorScheme);
+        setIsColorSchemeLoaded(true);
+        return;
+      }
+      const colorTheme = theme || "light";
+      if (colorTheme !== colorScheme) {
+        setColorScheme(colorTheme);
 
-  if (!fontsLoaded) return null;
+        setIsColorSchemeLoaded(true);
+        return;
+      }
+      setIsColorSchemeLoaded(true);
+    })().finally(() => {
+      SplashScreen.hideAsync();
+    });
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
       <GlobalProvider>
-        <Stack screenOptions={{ headerShown: false }} />
+        <SocketProvider>
+          <Stack screenOptions={{ headerShown: false }} />
+          <PortalHost />
+        </SocketProvider>
       </GlobalProvider>
     </QueryClientProvider>
   );

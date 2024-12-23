@@ -1,19 +1,19 @@
 import { createContext, ReactNode, useContext } from "react";
-import { useAppwrite } from "@/lib/useAppwrite";
-import { getCurrentUser } from "./appwrite";
+import { QueryObserverResult, RefetchOptions, useQuery } from "@tanstack/react-query";
+import { get } from "@/hooks/api";
 
 interface User {
     $id: string;
     name: string;
     email: string;
     avatar: string;
+    refetch: (options?: RefetchOptions) => Promise<QueryObserverResult<any, Error>>;
 }
 
 interface GlobalContextType {
     isLoggedIn: boolean;
     user: User | null;
     loading: boolean;
-    refetch: (newParams?: Record<string, string | number>) => Promise<void>;
 }
 
 const GlobalContext = createContext<GlobalContextType | undefined>(undefined);
@@ -21,10 +21,14 @@ const GlobalContext = createContext<GlobalContextType | undefined>(undefined);
 export const GlobalProvider = ({ children }: { children: ReactNode }) => {
     const {
         data: user,
-        loading,
+        isLoading: loading,
         refetch
-    } = useAppwrite({
-        fn: getCurrentUser,
+    } = useQuery({
+        queryKey: ["me"],
+        queryFn: async () => {
+            const data = await get("/me");
+            return data;
+        }
     });
 
     const isLoggedIn = !!user;
@@ -34,6 +38,7 @@ export const GlobalProvider = ({ children }: { children: ReactNode }) => {
             isLoggedIn,
             user,
             loading,
+            // @ts-ignore
             refetch,
         }}>
             {children}
