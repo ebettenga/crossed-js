@@ -3,9 +3,8 @@ import { MMKV } from "react-native-mmkv";
 
 export const storage = new MMKV();
 
-
-
 const token = storage.getString("token");
+
 const headers = {
   "authorization": `Bearer ${token}`,
   "Content-Type": "application/json"
@@ -19,8 +18,7 @@ export const get = async (url: string) => {
     });
     return await response.json();
   } catch (error) {
-    console.error('GET request failed');
-    console.error(error);
+    await log({ message: 'GET request failed', error, time: new Date().toISOString() }, 'error');
     throw error;
   }
 };
@@ -34,7 +32,7 @@ export const post = async (url: string, body: any) => {
     });
     return await response.json();
   } catch (error) {
-    console.error('POST request failed', error);
+    await log({ message: 'POST request failed', error, time: new Date().toISOString() }, 'error');
     throw error;
   }
 };
@@ -48,7 +46,7 @@ export const put = async (url: string, body: any) => {
     });
     return await response.json();
   } catch (error) {
-    console.error('PUT request failed', error);
+    await log({ message: 'PUT request failed', error, time: new Date().toISOString() }, 'error');
     throw error;
   }
 };
@@ -61,7 +59,7 @@ export const del = async (url: string) => {
     });
     return await response.json();
   } catch (error) {
-    console.error('DELETE request failed', error);
+    await log({ message: 'DELETE request failed', error, time: new Date().toISOString() }, 'error');
     throw error;
   }
 };
