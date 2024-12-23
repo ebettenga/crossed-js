@@ -1,12 +1,22 @@
-import { DataSource } from 'typeorm';
-import { User } from '../../src/entities/User';
+import { DataSource } from "typeorm";
+import { User } from "../../src/entities/User";
 
 export const create = async (connection: DataSource) => {
   const userRepository = connection.getRepository(User);
 
   const testUsers = [
-    { username: 'testuser', githubId: 'john123', role: 'USER' },
-    { username: 'testadmin', githubId: 'jane456', role: 'ADMIN' },
+    {
+      username: "testuser",
+      roles: ["user"],
+      email: "test1@test.com",
+      password: "testpassword",
+    },
+    {
+      username: "testadmin",
+      roles: ["admin"],
+      email: "test2@test.com",
+      password: "testpassword",
+    },
   ];
 
   for (const userData of testUsers) {
@@ -17,6 +27,6 @@ export const create = async (connection: DataSource) => {
       const user = userRepository.create(userData);
       await userRepository.save(user);
     }
-    console.log('Test users created.');
+    console.log("Test users created.");
   }
 };

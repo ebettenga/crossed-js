@@ -1,17 +1,18 @@
-import 'reflect-metadata';
-import fastifySecureSession from '@fastify/secure-session';
-import fastifyIO from 'fastify-socket.io';
-import { registerDb } from './db';
-import { config } from './config/config';
-import fs from 'fs';
-import path, { join } from 'path';
-import { fastify } from './fastify';
+import "reflect-metadata";
+import fastifySecureSession from "@fastify/secure-session";
+import fastifyIO from "fastify-socket.io";
+import { registerDb } from "./db";
+import { config } from "./config/config";
+import fs from "fs";
+import path, { join } from "path";
+import { fastify } from "./fastify";
 
 // get the directory name of the current module
-import { fileURLToPath } from 'url';
-import fastifyAutoload from '@fastify/autoload';
-import { User } from './entities/User';
-import { Server } from 'socket.io';
+import { fileURLToPath } from "url";
+import fastifyAutoload from "@fastify/autoload";
+import { User } from "./entities/User";
+import { Server } from "socket.io";
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -23,26 +24,26 @@ fastify.register(fastifySecureSession, {
   key: fs.readFileSync(path.join(__dirname, config.secretKeyPath)),
 });
 
-// import { userPassport } from "./auth";
-// import basicAuth from "@fastify/basic-auth";
-// import { validate } from './auth';
-// const authenticate = { realm: "crossed" };
-// fastify.register(basicAuth, { validate, authenticate });
-
-// fastify.register(userPassport.initialize());
-// fastify.register(userPassport.secureSession());
-
 // Socket Stuff
 fastify.register(fastifyIO, {
   cors: {
-    origin: '*',
-    methods: ['GET', 'POST'],
+    origin: "*",
+    methods: ["GET", "POST"],
   },
 });
 
 fastify.register(fastifyAutoload, {
-  dir: join(__dirname, './routes'),
+  dir: join(__dirname, "./routes/private"),
   dirNameRoutePrefix: true,
+  autoHooks: true,
+  cascadeHooks: true,
+  options: { prefix: config.api.prefix },
+});
+
+fastify.register(fastifyAutoload, {
+  dir: join(__dirname, "./routes/public"),
+  dirNameRoutePrefix: true,
+  autoHooks: true,
   options: { prefix: config.api.prefix },
 });
 
@@ -54,7 +55,7 @@ const start = async () => {
     });
 
     fastify.log.info(
-      'Running server on http://%s:%d',
+      "Running server on http://%s:%d",
       config.api.host,
       config.api.port,
     );
@@ -65,10 +66,13 @@ const start = async () => {
   }
 };
 
-declare module 'fastify' {
-  interface PassportUser extends User {}
+declare module "fastify" {
   interface FastifyInstance {
     io: Server<any>;
+  }
+
+  interface FastifyRequest {
+    user?: User;
   }
 }
 
