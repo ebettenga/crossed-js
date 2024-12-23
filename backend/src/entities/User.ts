@@ -13,6 +13,7 @@ export class User {
 
   @Column({
     type: "timestamp",
+    select: false,
     default: () => "CURRENT_TIMESTAMP",
     onUpdate: "CURRENT_TIMESTAMP",
   })
@@ -21,10 +22,10 @@ export class User {
   @Column("text")
   email: string;
 
-  @Column("text")
+  @Column("text", { select: false })
   password: string;
 
-  @Column("boolean", { default: false })
+  @Column("boolean", { default: false, select: false })
   confirmed_mail: boolean;
 
   @Column("simple-array", { default: "" })
@@ -33,6 +34,6 @@ export class User {
   @Column("text", { nullable: true })
   description?: string;
 
-  @Column("simple-json", { nullable: true })
+  @Column("simple-json", { nullable: true, select: false })
   attributes?: { key: string; value: string }[];
 }

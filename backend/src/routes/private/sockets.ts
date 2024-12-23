@@ -2,6 +2,7 @@ import { FastifyInstance } from "fastify";
 import { RoomService } from "../../services/RoomService"; // Assuming room_service is exported from RoomService
 import { AuthService } from "../../services/AuthService";
 import { User } from "../../entities/User";
+import { UserNotFoundError } from "../../errors/api";
 
 export type Guess = {
   roomId: number;
@@ -34,13 +35,6 @@ export type SocketRequest = {
 };
 type JoinSocketRequest = SocketRequest & JoinRoom;
 
-class UserNotFoundError extends Error {
-  constructor(userId: string) {
-    super(`User with ID ${userId} not found`);
-    this.name = "UserNotFoundError";
-  }
-}
-
 async function verifyUser(
   authService: AuthService,
   fastify: FastifyInstance,
@@ -58,7 +52,7 @@ async function verifyUser(
 
   if (!user) {
     fastify.log.info(`User with ID ${userToken.sub} not found`);
-    throw new UserNotFoundError("User not found");
+    throw new UserNotFoundError(userToken.sub as string);
   }
 
   return user;

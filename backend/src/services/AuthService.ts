@@ -67,8 +67,17 @@ export class AuthService {
   async signin(app, body) {
     const { email, password } = body;
 
-    const user = await this.ormConnection.getRepository(User).findOneBy({
-      email,
+    const user = await this.ormConnection.getRepository(User).findOne({
+      where: { email },
+      select: [
+        "id",
+        "email",
+        "password",
+        "confirmed_mail",
+        "roles",
+        "username",
+        "attributes",
+      ],
     });
 
     if (!user) {

@@ -16,11 +16,7 @@ export default function (
   fastify.get(
     "/users",
     async (request, reply) => {
-      const users = await fastify.orm.getRepository(User).find();
-      return users.map((user) => {
-        const { password, ...rest } = user;
-        return rest;
-      });
+      return await fastify.orm.getRepository(User).find();
     },
   );
 
