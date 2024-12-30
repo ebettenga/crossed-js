@@ -5,6 +5,7 @@ import { Users, Swords, Group } from 'lucide-react-native';
 import { HomeSquareButton } from '~/components/home/HomeSquareButton';
 import { HomeHeader } from '~/components/home/HomeHeader';
 import { SocialSquare } from '~/components/home/SocialSquare';
+import { GameBanner } from '~/components/home/GameBanner';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const PADDING = 6;
@@ -16,6 +17,7 @@ const BUTTON_SIZE = (SCREEN_WIDTH - (PADDING * 2) - (GAP * (SQUARES_PER_ROW - 1)
 
 export default function Home() {
     const router = useRouter();
+    const hasActiveGame = true; // This should come from your game state management
 
     return (
         <View style={styles.container}>
@@ -27,6 +29,12 @@ export default function Home() {
                 avatarUrl="https://i.pravatar.cc/300"
                 coins={100}
             />
+            {hasActiveGame && (
+                <GameBanner 
+                    gameId="123"
+                    opponent="Jane Smith"
+                />
+            )}
             <View style={styles.grid}>
                 <HomeSquareButton
                     name="1 v 1"
@@ -65,5 +73,6 @@ const styles = StyleSheet.create({
         gap: GAP,
         justifyContent: 'flex-start',
         alignItems: 'flex-start',
+        marginTop: 16, // Add some space after the banner
     },
 });

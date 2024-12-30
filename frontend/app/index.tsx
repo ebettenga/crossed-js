@@ -22,9 +22,8 @@ export default function Index() {
     return (
         <SafeAreaView>
             <Button onPress={() => { router.push('/game') }}><Text>Game</Text></Button>
-            <Button onPress={() => { router.push('./home') }}><Text>Game</Text></Button>
             {/* <GameScreen />   */}
-
+            
         </SafeAreaView>
     )
 }

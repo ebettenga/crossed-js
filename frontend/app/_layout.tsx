@@ -1,4 +1,4 @@
-import { SplashScreen, Stack } from "expo-router";
+import { Slot, SplashScreen, Stack } from "expo-router";
 import { useReactQueryDevTools } from '@dev-plugins/react-query';
 
 import "./globals.css";
@@ -66,7 +66,7 @@ export default function RootLayout() {
       <GlobalProvider>
         <SocketProvider>
           <GestureHandlerRootView style={{ flex: 1 }}>
-            <Stack screenOptions={{ headerShown: false }} />
+            <Slot screenOptions={{ headerShown: false }} />
             <PortalHost />
           </GestureHandlerRootView>
         </SocketProvider>

@@ -49,12 +49,22 @@ const TabsLayout = () => {
                 }}
             />
             <Tabs.Screen
-                name="explore"
+                name="stats"
                 options={{
-                    title: 'Explore',
+                    title: 'Stats',
                     headerShown: false,
                     tabBarIcon: ({ focused }) => (
-                        <TabIcon icon={icons.search} focused={focused} title="Explore" />
+                        <TabIcon icon={icons.star} focused={focused} title="Stats" />
+                    )
+                }}
+            />
+            <Tabs.Screen
+                name="friends"
+                options={{
+                    title: 'Friends',
+                    headerShown: false,
+                    tabBarIcon: ({ focused }) => (
+                        <TabIcon icon={icons.people} focused={focused} title="Friends" />
                     )
                 }}
             />
@@ -69,12 +79,12 @@ const TabsLayout = () => {
                 }}
             />
             <Tabs.Screen
-                name="settings"
+                name="profile"
                 options={{
-                    title: 'Settings',
+                    title: 'Profile',
                     headerShown: false,
                     tabBarIcon: ({ focused }) => (
-                        <TabIcon icon={icons.edit} focused={focused} title="Settings" />
+                        <TabIcon icon={icons.person} focused={focused} title="Profile" />
                     )
                 }}
             />

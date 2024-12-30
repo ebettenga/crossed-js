@@ -67,7 +67,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
                     </View>
                     <Link href="/store">
                         <View style={styles.coinsButton}>
-                            <Coins size={14} color="#666666" />
+                            <Coins size={18} color="#E6C200" />
                             <Text style={styles.coinsText}>{coins}</Text>
                         </View>
                     </Link>

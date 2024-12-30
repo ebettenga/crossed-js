@@ -84,7 +84,7 @@ export const GameScreen: React.FC = () => {
         {
             label: 'Quit Game',
             onPress: () => {
-                router.push('/settings');
+                router.push('/(root)/(tabs)');
             },
         },
         {
