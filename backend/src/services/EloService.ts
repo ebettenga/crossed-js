@@ -1,11 +1,12 @@
 import { User } from "../entities/User";
 import { Repository } from "typeorm";
+import { config } from "../config/config";
 
 export class EloService {
-    private readonly K_FACTOR_BASE = 32;
-    private readonly WIN_STREAK_MULTIPLIER = 0.1; // 10% increase per win streak
-    private readonly MAX_WIN_STREAK_BONUS = 0.5; // Maximum 50% increase from win streak
-    private readonly GAMES_PLAYED_DAMPENING = 30; // Number of games before dampening starts
+    private readonly K_FACTOR_BASE = config.game.elo.kFactorBase;
+    private readonly WIN_STREAK_MULTIPLIER = config.game.elo.winStreakMultiplier;
+    private readonly MAX_WIN_STREAK_BONUS = config.game.elo.maxWinStreakBonus;
+    private readonly GAMES_PLAYED_DAMPENING = config.game.elo.gamesPlayedDampening;
 
     constructor(private userRepository: Repository<User>) {}
 
@@ -60,12 +61,12 @@ export class EloService {
         const expectedLoserScore = this.calculateExpectedScore(loser.eloRating, winner.eloRating);
 
         // Get games played and win streak from gameStats
-        const winnerStats = winner.gameStats || { gamesPlayed: 0, winStreak: 0 };
-        const loserStats = loser.gameStats || { gamesPlayed: 0, winStreak: 0 };
+        const winnerStats = winner.gameStats;
+        const loserStats = loser.gameStats;
 
         // Calculate K-factors
-        const winnerK = this.calculateKFactor(winnerStats.gamesPlayed, winnerStats.winStreak);
-        const loserK = this.calculateKFactor(loserStats.gamesPlayed, loserStats.winStreak);
+        const winnerK = this.calculateKFactor(winnerStats.games_played, winnerStats.win_streak);
+        const loserK = this.calculateKFactor(loserStats.games_played, loserStats.win_streak);
 
         // Calculate new ratings
         const winnerNewRating = Math.round(

@@ -2,16 +2,19 @@ import { DataSource } from "typeorm";
 import { Room } from "../entities/Room";
 import { User } from "../entities/User";
 import { CrosswordService } from "./CrosswordService";
+import { EloService } from "./EloService";
 import { config } from "../config/config";
 import { fastify } from "../fastify";
 
 export class RoomService {
   private crosswordService: CrosswordService;
+  private eloService: EloService;
   private ormConnection: DataSource;
 
   constructor(ormConnection: DataSource) {
     this.ormConnection = ormConnection;
     this.crosswordService = new CrosswordService(ormConnection);
+    this.eloService = new EloService(ormConnection.getRepository(User));
   }
 
   async getRoomById(roomId: number): Promise<Room> {
@@ -90,6 +93,20 @@ export class RoomService {
     }
 
     await this.ormConnection.getRepository(Room).save(room);
+
+    // Check if this was the last letter to be found
+    const remainingBlanks = room.found_letters.filter(letter => letter === '').length;
+    if (remainingBlanks === 0) {
+      // Game is over, determine winner and update ELO
+      const winner = room.player_1_score > room.player_2_score ? room.player_1 : room.player_2;
+      const loser = room.player_1_score > room.player_2_score ? room.player_2 : room.player_1;
+      
+      // In case of a tie, don't update ELO
+      if (room.player_1_score !== room.player_2_score) {
+        await this.eloService.updateEloRatings(winner.id, loser.id);
+      }
+    }
+
     return room;
   }
 
