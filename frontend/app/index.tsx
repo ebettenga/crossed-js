@@ -1,29 +1,32 @@
 import 'react-native-reanimated';
 import React, { useState } from 'react'
-import { SafeAreaView } from "react-native-safe-area-context";
-import { useMessages } from '~/hooks/socket';
+import { SafeAreaView } from "react-native";
+import { useRouter } from 'expo-router';
 import { Button } from '~/components/ui/button';
 import { Text } from '~/components/ui/text';
-import { Input } from '~/components/ui/input';
-import { useSignIn } from '~/hooks/users';
-import { GameScreen } from '~/screens/GameScreen';
-import { useRouter } from 'expo-router';
+import { FindingGameModal } from '~/components/FindingGameModal';
 
 export default function Index() {
     const router = useRouter();
-    const signInMutation = useSignIn();
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [text, setText] = useState('');
-    const handleSubmit = () => {
-        signInMutation.mutate({ email, password });
+    const [isSearching, setIsSearching] = useState(false);
+
+    const handleFindGame = () => {
+        setIsSearching(true);
+        // Add your game finding logic here
+        // For demo purposes, let's simulate finding a game after 3 seconds
+        setTimeout(() => {
+            setIsSearching(false);
+            router.push('/game');
+        }, 1000);
     };
-    // const { messages, send } = useMessages();
+
     return (
-        <SafeAreaView>
-            <Button onPress={() => { router.push('/game') }}><Text>Game</Text></Button>
-            {/* <GameScreen />   */}
-            
+        <SafeAreaView className="flex-1">
+            <Button onPress={handleFindGame}>
+                <Text>Find Game</Text>
+            </Button>
+
+            <FindingGameModal visible={isSearching} />
         </SafeAreaView>
     )
 }

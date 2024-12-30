@@ -90,10 +90,10 @@ const styles = StyleSheet.create({
     paddingBottom: 4,
   },
   titleText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 20,
+    fontWeight: '800',
     color: '#333',
-    textAlign: 'center',
+    textAlign: 'left',
   },
   scrollContent: {
     paddingHorizontal: 8,

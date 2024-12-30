@@ -80,6 +80,30 @@ export const GameScreen: React.FC = () => {
         }
     };
 
+    const [showSummary, setShowSummary] = useState(false);
+
+    // Mock game data - in a real app this would come from your game state
+    const mockGameResults = {
+        players: [
+            {
+                username: "John Doe",
+                lettersCaptured: 12,
+                wrongGuesses: 3,
+                correctGuessPercent: 80,
+                totalPoints: 240,
+                winner: true
+            },
+            {
+                username: "Jane Smith",
+                lettersCaptured: 8,
+                wrongGuesses: 5,
+                correctGuessPercent: 61.5,
+                totalPoints: 160,
+                winner: false
+            }
+        ]
+    };
+
     const menuOptions = [
         {
             label: 'Quit Game',
@@ -91,6 +115,13 @@ export const GameScreen: React.FC = () => {
             label: 'Settings',
             onPress: () => {
                 console.log('Open settings');
+            },
+        },
+        {
+            label: 'Show Summary',
+            onPress: () => {
+                console.log('Opening summary...');  // Debug log
+                setShowSummary(true);
             },
         },
     ];
@@ -144,6 +175,7 @@ export const GameScreen: React.FC = () => {
                 />
             </View>
             <GameMenu options={menuOptions} />
+
         </View>
     );
 };
