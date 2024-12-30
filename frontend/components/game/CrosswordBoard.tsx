@@ -66,7 +66,7 @@ export const CrosswordBoard: React.FC<CrosswordBoardProps> = ({
         horizontal 
         contentContainerStyle={[
           styles.scrollContainer,
-          { paddingTop: insets.top + 20 }
+          { paddingTop: 2 }
         ]}
         showsHorizontalScrollIndicator={false}
         showsVerticalScrollIndicator={false}

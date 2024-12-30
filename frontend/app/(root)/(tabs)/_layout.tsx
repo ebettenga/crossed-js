@@ -1,20 +1,29 @@
-import {View, Text, Image} from 'react-native'
+import { View, Text, Image } from 'react-native'
 import React from 'react'
-import {Tabs} from "expo-router";
+import { Tabs } from "expo-router";
+import { usePathname } from 'expo-router';
 
 import icons from '@/constants/icons'
 
 const TabIcon = ({ focused, icon, title }: { focused: boolean; icon: any; title: string }) => (
     <View className="flex-1 mt-3 flex flex-col items-center">
-        <Image source={icon} tintColor={focused ? '#0061ff' : '#666876'} resizeMode="contain" className="size-6" />
+        <Image 
+            source={icon} 
+            tintColor={focused ? '#8B0000' : '#666876'} 
+            resizeMode="contain" 
+            className="size-6" 
+        />
         <Text className={`${focused ? 
-        'text-primary-300 font-rubik-medium' : 'text-black-200 font-rubik'} text-xs w-full text-center mt-1`}>
+            'text-[#666666] font-rubik-medium' : 'text-black-200 font-rubik'} text-xs w-full text-center mt-1`}>
             {title}
         </Text>
     </View>
 )
 
 const TabsLayout = () => {
+    const pathname = usePathname();
+    const hideTabBar = pathname === '/game';
+
     return (
         <Tabs
             screenOptions={{
@@ -25,6 +34,7 @@ const TabsLayout = () => {
                     borderTopColor: '#0061FF1A',
                     borderTopWidth: 1,
                     minHeight: 70,
+                    display: hideTabBar ? 'none' : 'flex',
                 }
             }}
         >
@@ -39,16 +49,6 @@ const TabsLayout = () => {
                 }}
             />
             <Tabs.Screen
-                name="game"
-                options={{
-                    title: 'Game',
-                    headerShown: false,
-                    tabBarIcon: ({ focused }) => (
-                        <TabIcon icon={icons.star} focused={focused} title="Game" />
-                    )
-                }}
-            />
-            <Tabs.Screen
                 name="explore"
                 options={{
                     title: 'Explore',
@@ -59,12 +59,22 @@ const TabsLayout = () => {
                 }}
             />
             <Tabs.Screen
-                name="profile"
+                name="store"
                 options={{
-                    title: 'Profile',
+                    title: 'Store',
                     headerShown: false,
                     tabBarIcon: ({ focused }) => (
-                        <TabIcon icon={icons.person} focused={focused} title="Profile" />
+                        <TabIcon icon={icons.wallet} focused={focused} title="Store" />
+                    )
+                }}
+            />
+            <Tabs.Screen
+                name="settings"
+                options={{
+                    title: 'Settings',
+                    headerShown: false,
+                    tabBarIcon: ({ focused }) => (
+                        <TabIcon icon={icons.edit} focused={focused} title="Settings" />
                     )
                 }}
             />

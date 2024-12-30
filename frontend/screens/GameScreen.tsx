@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { CrosswordBoard } from '../components/game/CrosswordBoard';
 import { Keyboard } from '../components/game/Keyboard';
+import { PlayerInfo } from '../components/game/PlayerInfo';
 import Animated, {
     FadeIn,
     useAnimatedStyle,
@@ -10,8 +11,12 @@ import Animated, {
 } from 'react-native-reanimated';
 import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { GameMenu } from '../components/game/GameMenu';
+import { useRouter } from 'expo-router';
+import { ClueDisplay } from '../components/game/ClueDisplay';
 
 export const GameScreen: React.FC = () => {
+    const router = useRouter();
     const insets = useSafeAreaInsets();
 
     const [letters] = useState([
@@ -75,8 +80,44 @@ export const GameScreen: React.FC = () => {
         }
     };
 
+    const menuOptions = [
+        {
+            label: 'Quit Game',
+            onPress: () => {
+                router.push('/settings');
+            },
+        },
+        {
+            label: 'Settings',
+            onPress: () => {
+                console.log('Open settings');
+            },
+        },
+    ];
+
     return (
         <View style={[styles.container, { paddingBottom: insets.bottom + 70 }]}>
+            <PlayerInfo
+                gameTitle="1v1 Classic"
+                players={[
+                    {
+                        name: "John Doe",
+                        elo: 1200,
+                        score: 15,
+                        isCurrentPlayer: true,
+                    },
+                    {
+                        name: "Jane Smith",
+                        elo: 1250,
+                        score: 12,
+                    },
+                    {
+                        name: "Jane Smith",
+                        elo: 1250,
+                        score: 12,
+                    },
+                ]}
+            />
             <View style={styles.boardContainer}>
                 <GestureDetector gesture={composed}>
                     <Animated.View
@@ -92,13 +133,17 @@ export const GameScreen: React.FC = () => {
                         />
                     </Animated.View>
                 </GestureDetector>
-                <View style={styles.keyboardContainer}>
-                    <Keyboard
-                        onKeyPress={handleKeyPress}
-                        disabledKeys={[]}
-                    />
-                </View>
             </View>
+            <View style={styles.bottomSection}>
+                <ClueDisplay 
+                    text="4. Something Here that is a Crossword clue."
+                />
+                <Keyboard
+                    onKeyPress={handleKeyPress}
+                    disabledKeys={[]}
+                />
+            </View>
+            <GameMenu options={menuOptions} />
         </View>
     );
 };
@@ -106,7 +151,7 @@ export const GameScreen: React.FC = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: 'white',
+        backgroundColor: '#F5F5EB',
     },
     boardContainer: {
         flex: 1,
@@ -115,11 +160,15 @@ const styles = StyleSheet.create({
     board: {
         width: '100%',
     },
-    keyboardContainer: {
+    bottomSection: {
+        width: '100%',
         position: 'absolute',
         bottom: 0,
         left: 0,
         right: 0,
-        backgroundColor: 'white',
+        backgroundColor: '#F5F5EB',
+    },
+    keyboardContainer: {
+        width: '100%',
     },
 }); 
