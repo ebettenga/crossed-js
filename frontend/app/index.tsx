@@ -1,13 +1,16 @@
+import 'react-native-reanimated';
 import React, { useState } from 'react'
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useMessages } from '~/hooks/socket';
 import { Button } from '~/components/ui/button';
 import { Text } from '~/components/ui/text';
-import { storage } from '~/hooks/api';
 import { Input } from '~/components/ui/input';
 import { useSignIn } from '~/hooks/users';
+import { GameScreen } from '~/screens/GameScreen';
+import { useRouter } from 'expo-router';
 
-export default () => {
+export default function Index() {
+    const router = useRouter();
     const signInMutation = useSignIn();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -15,34 +18,12 @@ export default () => {
     const handleSubmit = () => {
         signInMutation.mutate({ email, password });
     };
-    const { messages, send } = useMessages();
+    // const { messages, send } = useMessages();
     return (
         <SafeAreaView>
-
-            <Input
-                placeholder="Email Address"
-                value={email}
-                onChangeText={setEmail}
-            />
-            <Input
-                placeholder="Password"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-            />
-            <Button onPress={handleSubmit}>
-                <Text>Sign In</Text>
-            </Button>
-            <Input
-                placeholder="Type a message"
-                value={text}
-                onChangeText={setText}
-            />
-            <Text>Messages:</Text>
-            <Button onPress={() => { send(text); setText(""); }}><Text>Submit</Text></Button>
-            {messages.map((message, index) => (
-                <Text className='px-4 py-2' key={index}>{message}</Text>
-            ))}
+            <Button onPress={() => { router.push('/game') }}><Text>Game</Text></Button>
+            {/* <GameScreen />   */}
+            
         </SafeAreaView>
     )
-};
+}

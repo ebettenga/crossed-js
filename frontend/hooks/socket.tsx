@@ -53,7 +53,7 @@ type Room = {
 
 
 const socketInstance = io(config.api.socketURL);
-socketInstance.auth = { authToken: storage.getString("token") }
+socketInstance.auth = { authToken: "token" } //storage.getString("token") }
 export const SocketContext = createContext(socketInstance);
 
 

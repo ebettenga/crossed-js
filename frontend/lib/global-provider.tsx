@@ -1,6 +1,7 @@
-import { createContext, ReactNode, useContext } from "react";
+import { createContext, ReactNode, useContext, useEffect } from "react";
 import { QueryObserverResult, RefetchOptions, useQuery } from "@tanstack/react-query";
 import { get } from "@/hooks/api";
+import * as DevClient from 'expo-dev-client';
 
 interface User {
     $id: string;
@@ -32,6 +33,20 @@ export const GlobalProvider = ({ children }: { children: ReactNode }) => {
     });
 
     const isLoggedIn = !!user;
+
+    useEffect(() => {
+        if (__DEV__) {
+            DevClient.registerDevMenuItems([
+                {
+                    name: "Debug User Session",
+                    callback: () => {
+                        console.log("Current user:", user);
+                    },
+                    shouldCollapse: false,
+                }
+            ]);
+        }
+    }, [user]);
 
     return (
         <GlobalContext.Provider value={{

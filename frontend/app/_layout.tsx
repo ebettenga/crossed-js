@@ -9,9 +9,10 @@ import { useColorScheme } from "@/lib/useColorScheme";
 import { NAV_THEME } from "@/lib/constants";
 import { Theme, ThemeProvider } from "@react-navigation/native";
 import { Platform, StatusBar } from "react-native";
-import { storage } from "@/hooks/api";
+import { storage } from "@/hooks/storageApi";
 import { PortalHost } from '@rn-primitives/portal';
 import { SocketProvider } from "~/hooks/socket";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 // @ts-ignore
 const LIGHT_THEME: Theme = {
@@ -64,8 +65,10 @@ export default function RootLayout() {
     <QueryClientProvider client={queryClient}>
       <GlobalProvider>
         <SocketProvider>
-          <Stack screenOptions={{ headerShown: false }} />
-          <PortalHost />
+          <GestureHandlerRootView style={{ flex: 1 }}>
+            <Stack screenOptions={{ headerShown: false }} />
+            <PortalHost />
+          </GestureHandlerRootView>
         </SocketProvider>
       </GlobalProvider>
     </QueryClientProvider>

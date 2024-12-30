@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "plugins": [
+      [
+        "expo-dev-launcher",
+        {
+          "launchMode": "most-recent"
+        }
+      ]
+    ]
+  }
+} 

@@ -1,12 +1,12 @@
 import { config } from "@/config/config";
 import { MMKV } from "react-native-mmkv";
 
-export const storage = new MMKV();
+// export const storage = new MMKV();
 
-const token = storage.getString("token");
+// const token = storage.getString("token");
 
 const headers = {
-  "authorization": `Bearer ${token}`,
+  "authorization": `Bearer ${"token"}`,
   "Content-Type": "application/json"
 };
 
@@ -81,6 +81,5 @@ export const log = async (data: Record<string, any> | string, severity: 'info' |
     return await response.json();
   } catch (error) {
     console.error('LOG request failed', error);
-    throw error;
   }
 };

@@ -1,29 +1,26 @@
+import React from 'react';
+import { Slot } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useGlobalContext } from "@/lib/global-provider";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { ActivityIndicator } from "react-native";
-import { Redirect, Slot } from "expo-router";
-import { useCrosswords } from "@/hooks/crosswords";
+import { Redirect } from "expo-router";
 
+export default function RootLayout() {
+  const { loading, isLoggedIn } = useGlobalContext();
 
-export default function AppLayout() {
-    const { loading, isLoggedIn } = useGlobalContext();
-    const { data: crosswords, isLoading: crosswordsLoading } = useCrosswords();
-
-    console.log(crosswords);
-
-    if (loading || crosswordsLoading) {
-        return (
-            <SafeAreaView className="bg-white h-full flex justify-center items-center">
-                <ActivityIndicator className="text-primary-300" size="large" />
-            </SafeAreaView>
-        )
-    }
-
-    if (!isLoggedIn) return <Redirect href='./index' />
-
+  if (loading) {
     return (
-        <SafeAreaView className="bg-white h-full">
-            <Slot />
-        </SafeAreaView>
+      <SafeAreaView className="bg-white h-full flex justify-center items-center">
+        <ActivityIndicator className="text-primary-300" size="large" />
+      </SafeAreaView>
     );
+  }
+
+  if (!isLoggedIn) return <Redirect href="./index" />;
+
+  return (
+    <SafeAreaView className="bg-white h-full">
+      <Slot />
+    </SafeAreaView>
+  );
 }
