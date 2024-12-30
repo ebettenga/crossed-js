@@ -10,7 +10,12 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "emitDecoratorMetadata": true,
-    "experimentalDecorators": true
+    "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "allowJs": true,
+    "allowUnreachableCode": true,
+    "allowUnusedLabels": true,
   },
   "include": [
     "src/**/*.ts",

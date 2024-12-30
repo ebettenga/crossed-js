@@ -1,4 +1,5 @@
-import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, PrimaryGeneratedColumn, OneToOne } from "typeorm";
+import { GameStats } from "./GameStats";
 
 @Entity()
 export class User {
@@ -36,4 +37,10 @@ export class User {
 
   @Column("simple-json", { nullable: true, select: false })
   attributes?: { key: string; value: string }[];
+
+  @Column({ type: 'integer', default: 1200 })
+  eloRating: number;
+
+  @OneToOne(() => GameStats, gameStats => gameStats.user)
+  gameStats: GameStats;
 }

@@ -12,18 +12,24 @@ import { Crossword } from './Crossword';
 
 @Entity()
 export class Room {
-  @PrimaryGeneratedColumn({})
+  @PrimaryGeneratedColumn()
   id: number;
 
-  @OneToOne(() => User, {eager: true})
-  @JoinColumn()
+  @ManyToOne(() => User, {eager: true})
+  @JoinColumn({ name: "player_1_id" })
   player_1: User;
 
-  @OneToOne(() => User, {eager: true})
-  @JoinColumn()
+  @Column("int")
+  player_1_id: number;
+
+  @ManyToOne(() => User, {eager: true})
+  @JoinColumn({ name: "player_2_id" })
   player_2: User;
 
-  @OneToOne(() => Crossword, {eager: true})
+  @Column("int")
+  player_2_id: number;
+
+  @OneToOne(() => Crossword)
   @JoinColumn()
   crossword: Crossword;
 
