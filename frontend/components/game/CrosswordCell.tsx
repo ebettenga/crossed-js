@@ -1,99 +1,74 @@
 import React from 'react';
-import { StyleSheet, Text } from 'react-native';
-import Animated, { 
-  useAnimatedStyle, 
-  withSpring,
-  withTiming,
-  interpolateColor,
-  useSharedValue,
-  withSequence,
-  FadeIn,
-} from 'react-native-reanimated';
-import { TouchableOpacity } from 'react-native-gesture-handler';
+import { StyleSheet, Dimensions, TouchableOpacity, View, Text } from 'react-native';
+
+// Calculate cell size based on screen width
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const GRID_SIZE = 15;
+const BORDER_WIDTH = 1;
+const CELL_SIZE = Math.floor((SCREEN_WIDTH) / GRID_SIZE);
 
 interface CrosswordCellProps {
   letter: string;
   isFound: boolean;
   onPress: () => void;
   coordinates: { x: number; y: number };
+  isSelected?: boolean;
 }
 
 export const CrosswordCell: React.FC<CrosswordCellProps> = ({
   letter,
   isFound,
   onPress,
-  coordinates
+  coordinates,
+  isSelected = false
 }) => {
-  const scale = useSharedValue(1);
-  const backgroundColor = useSharedValue(0);
-  const opacity = useSharedValue(isFound ? 1 : 0);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-    backgroundColor: interpolateColor(
-      backgroundColor.value,
-      [0, 1],
-      ['#f0f0f0', '#90EE90']
-    ),
-  }));
-
-  const textStyle = useAnimatedStyle(() => ({
-    opacity: opacity.value,
-  }));
-
-  const handlePress = () => {
-    scale.value = withSequence(
-      withSpring(0.9, { damping: 12 }),
-      withSpring(1, { damping: 12 })
-    );
-
-    if (isFound) {
-      backgroundColor.value = withTiming(1, {
-        duration: 300
-      });
-      opacity.value = withSpring(1);
-    }
-
-    onPress();
-  };
-  console.log(letter)
   return (
-    <TouchableOpacity onPress={handlePress}>
-      <Animated.View 
-        entering={FadeIn}
-        style={[styles.cell, animatedStyle]}
+    <TouchableOpacity  onPress={onPress}>
+      <View 
+        style={[
+          styles.cell,
+          {
+            borderRightWidth: coordinates.y === GRID_SIZE - 1 ? BORDER_WIDTH : 0,
+            borderBottomWidth: coordinates.x === GRID_SIZE - 1 ? BORDER_WIDTH : 0,
+            backgroundColor: isSelected ? '#E0E0E0' : '#ffffff',
+          },
+          isSelected && styles.selectedCell,
+        ]}
       >
-        <Animated.Text 
+        <Text 
           style={[
             styles.letter,
-            textStyle
+            isFound ? styles.foundText : styles.hiddenText
           ]}
         >
           {letter}
-        </Animated.Text>
-      </Animated.View>
+        </Text>
+      </View>
     </TouchableOpacity>
   );
 };
 
 const styles = StyleSheet.create({
   cell: {
-    width: 45,
-    height: 45,
+    width: CELL_SIZE,
+    height: CELL_SIZE,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#ccc',
-    margin: 2,
-    borderRadius: 8,
+    borderTopWidth: BORDER_WIDTH,
+    borderLeftWidth: BORDER_WIDTH,
+    borderColor: '#000000',
+  },
+  selectedCell: {
+    borderColor: '#000000',
+    borderWidth: BORDER_WIDTH,
   },
   letter: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: '#333333',
+    fontSize: CELL_SIZE * 0.5,
+    fontWeight: '600',
+    color: '#000000',
   },
   foundText: {
-    color: '#000',
+    color: '#000000',
   },
   hiddenText: {
     color: 'transparent',

@@ -1,69 +1,105 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { StyleSheet, View, Dimensions } from 'react-native';
 import { CrosswordCell } from './CrosswordCell';
 import Animated, { 
-  FadeInDown,
+  FadeIn,
   Layout,
   LinearTransition,
 } from 'react-native-reanimated';
 import { ScrollView } from 'react-native-gesture-handler';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+const SCREEN_WIDTH = Dimensions.get('window').width;
 
 interface CrosswordBoardProps {
-  board: string[][];
+  letters: string[];
+  columnCount: number;
   foundLetters: string[];
   onCellPress: (coordinates: { x: number; y: number }) => void;
+  selectedCell?: { x: number; y: number } | null;
 }
 
 export const CrosswordBoard: React.FC<CrosswordBoardProps> = ({
-  board,
+  letters,
+  columnCount,
   foundLetters,
   onCellPress,
+  selectedCell
 }) => {
-  const renderBoard = () => {
-    return board.map((row, x) => (
-      <Animated.View 
-        key={x} 
-        style={styles.row}
-        entering={FadeInDown.delay(x * 100)}
-        layout={Layout.springify()}
-      >
-        {row.map((letter, y) => {
-          const index = x * row.length + y;
-          return (
-            <CrosswordCell
-              key={`${x}-${y}`}
-              letter={letter}
-              isFound={foundLetters[index] !== ''}
-              onPress={() => onCellPress({ x, y })}
-              coordinates={{ x, y }}
-            />
-          );
-        })}
-      </Animated.View>
-    ));
-  };
+  const insets = useSafeAreaInsets();
+
+  // Memoize the board rendering to prevent unnecessary re-renders
+  const board = useMemo(() => {
+    const rows = [];
+    for (let x = 0; x < letters.length / columnCount; x++) {
+      const rowLetters = letters.slice(x * columnCount, (x + 1) * columnCount);
+      rows.push(
+        <Animated.View 
+          key={x} 
+          style={styles.row}
+          entering={FadeIn.delay(x * 25).springify()} // Reduced delay and combined with spring
+          layout={LinearTransition.springify()}
+        >
+          {rowLetters.map((letter, y) => {
+            const index = x * columnCount + y;
+            const isSelected = selectedCell?.x === x && selectedCell?.y === y;
+            return (
+              <CrosswordCell
+                key={`${x}-${y}`}
+                letter={letter}
+                isFound={foundLetters[index] !== ''}
+                onPress={() => onCellPress({ x, y })}
+                coordinates={{ x, y }}
+                isSelected={isSelected}
+              />
+            );
+          })}
+        </Animated.View>
+      );
+    }
+    return rows;
+  }, [letters, columnCount, foundLetters, selectedCell, onCellPress]);
 
   return (
-    <ScrollView 
-      horizontal 
-      contentContainerStyle={styles.scrollContainer}
-    >
-      <ScrollView contentContainerStyle={styles.boardContainer}>
-        <Animated.View layout={LinearTransition.springify()}>
-          {renderBoard()}
-        </Animated.View>
+    <View style={styles.container}>
+      <ScrollView 
+        horizontal 
+        contentContainerStyle={[
+          styles.scrollContainer,
+          { paddingTop: insets.top + 20 }
+        ]}
+        showsHorizontalScrollIndicator={false}
+        showsVerticalScrollIndicator={false}
+        removeClippedSubviews={true} // Optimize scrolling performance
+      >
+        <ScrollView 
+          contentContainerStyle={styles.boardContainer}
+          showsHorizontalScrollIndicator={false}
+          showsVerticalScrollIndicator={false}
+          removeClippedSubviews={true}
+        >
+          <Animated.View layout={LinearTransition.springify()}>
+            {board}
+          </Animated.View>
+        </ScrollView>
       </ScrollView>
-    </ScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  container: {
+    width: '100%',
+    alignItems: 'center',
+  },
   scrollContainer: {
     flexGrow: 1,
-    justifyContent: 'center',
+    minWidth: SCREEN_WIDTH,
+    justifyContent: 'flex-start',
+    alignItems: 'center',
   },
   boardContainer: {
-    padding: 10,
+    padding: 5,
     alignItems: 'center',
   },
   row: {
