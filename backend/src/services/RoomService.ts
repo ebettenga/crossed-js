@@ -1,20 +1,17 @@
-import { DataSource } from "typeorm";
-import { Room } from "../entities/Room";
+import { DataSource, FindOperator, LessThan } from "typeorm";
+import { PLAYER_COUNT_MAP, Room } from "../entities/Room";
 import { User } from "../entities/User";
 import { CrosswordService } from "./CrosswordService";
-import { EloService } from "./EloService";
 import { config } from "../config/config";
 import { fastify } from "../fastify";
 
 export class RoomService {
   private crosswordService: CrosswordService;
-  private eloService: EloService;
   private ormConnection: DataSource;
 
   constructor(ormConnection: DataSource) {
     this.ormConnection = ormConnection;
     this.crosswordService = new CrosswordService(ormConnection);
-    this.eloService = new EloService(ormConnection.getRepository(User));
   }
 
   async getRoomById(roomId: number): Promise<Room> {
@@ -29,40 +26,56 @@ export class RoomService {
     if (room) {
       fastify.log.info(`Found room with id: ${room.id}`);
       await this.joinExistingRoom(room, userId);
+      return room;
     } else {
-      await this.createRoom(userId, difficulty);
+      return await this.createRoom(userId, difficulty);
     }
-
-    return room;
   }
 
   async joinExistingRoom(room: Room, userId: number): Promise<void> {
-    fastify.log.info(`Joining room with id: ${userId}`);
+    fastify.log.info(`Joining room with id: ${room.id} by user: ${userId}`);
     const player = await this.ormConnection
       .getRepository(User)
       .findOneBy({ id: userId });
-    fastify.log.info(player);
-    room.player_2 = player;
+    
+    if (!player) throw new Error("User not found");
+    
+    room.players.push(player);
+    room.player_count = room.players.length;
+    
+    // If room is full based on game type, change status to playing
+    const maxPlayers = room.type === '1v1' ? 2 : room.type === '2v2' ? 4 : 4;
+    if (room.player_count === maxPlayers) {
+      room.status = 'playing';
+    }
+
     await this.ormConnection.getRepository(Room).save(room);
   }
 
-  async createRoom(userId: number, difficulty: string): Promise<void> {
+  async createRoom(userId: number, difficulty: string): Promise<Room> {
     const crossword = await this.crosswordService.getCrosswordByDifficulty(
       difficulty,
     );
 
-    const room = new Room();
-    room.player_1 = await this.ormConnection
+    const player = await this.ormConnection
       .getRepository(User)
       .findOneBy({ id: userId });
+
+    if (!player) throw new Error("User not found");
+
+    const room = new Room();
+    room.players = [player];
+    room.player_count = 1;
     room.crossword = crossword;
     room.difficulty = difficulty;
+    room.type = '1v1'; // Default to 1v1 for now
+    room.scores = { [player.id]: 0 };
 
     room.found_letters = await this.crosswordService.createFoundLettersTemplate(
       crossword.id,
     );
 
-    await this.ormConnection.getRepository(Room).save(room);
+    return await this.ormConnection.getRepository(Room).save(room);
   }
 
   async guess(
@@ -75,7 +88,7 @@ export class RoomService {
       .getRepository(Room)
       .findOneBy({ id: roomId });
 
-    if (![room.player_1.id, room.player_2.id].includes(userId)) {
+    if (!room.players.some(player => player.id === userId)) {
       throw new Error("User is not a participant in this room");
     }
 
@@ -97,17 +110,26 @@ export class RoomService {
     // Check if this was the last letter to be found
     const remainingBlanks = room.found_letters.filter(letter => letter === '').length;
     if (remainingBlanks === 0) {
-      // Game is over, determine winner and update ELO
-      const winner = room.player_1_score > room.player_2_score ? room.player_1 : room.player_2;
-      const loser = room.player_1_score > room.player_2_score ? room.player_2 : room.player_1;
-      
-      // In case of a tie, don't update ELO
-      if (room.player_1_score !== room.player_2_score) {
-        await this.eloService.updateEloRatings(winner.id, loser.id);
-      }
+      room.status = 'finished';
+      await this.handleGameEnd(room);
     }
 
     return room;
+  }
+
+  private async handleGameEnd(room: Room): Promise<void> {
+    // Get scores array sorted by score (highest first)
+    const playerScores = Object.entries(room.scores)
+      .map(([playerId, score]) => ({ 
+        playerId: parseInt(playerId), 
+        score 
+      }))
+      .sort((a, b) => b.score - a.score);
+
+    // TODO: Update ELO calculations for multiple players
+
+
+    await this.ormConnection.getRepository(Room).save(room);
   }
 
   private updateFoundBoard(
@@ -120,14 +142,20 @@ export class RoomService {
   }
 
   private modifyPoints(room: Room, userId: number, points: number): void {
-    room.player_1.id === userId
-      ? (room.player_1_score += points)
-      : (room.player_2_score += points);
+    if (!room.scores[userId]) {
+      room.scores[userId] = 0;
+    }
+    room.scores[userId] += points;
   }
 
   private async findEmptyRoomByDifficulty(difficulty: string): Promise<Room> {
     return this.ormConnection.getRepository(Room).findOne({
-      where: { player_2: null, difficulty },
+      where: { 
+        difficulty,
+        status: 'pending',
+        type: '1v1', // For now, only match 1v1 games
+        player_count: LessThan(PLAYER_COUNT_MAP['1v1'])
+      },
       order: { created_at: "ASC" },
     });
   }

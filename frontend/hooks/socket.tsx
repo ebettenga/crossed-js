@@ -1,7 +1,16 @@
 import { createContext, JSXElementConstructor, ReactElement, ReactNode, ReactPortal, useContext, useEffect, useState } from 'react';
 import io from 'socket.io-client';
 import { config } from "../config/config";
-import { log, storage } from './api';
+
+type Player = {
+  created_at: string;
+  description: string | null;
+  email: string;
+  id: number;
+  roles: string[];
+  score: number;
+  username: string;
+}
 
 type Room = {
   created_at: string;
@@ -31,24 +40,7 @@ type Room = {
   difficulty: string;
   found_letters: string[];
   id: number;
-  player_1: {
-    created_at: string;
-    description: string | null;
-    email: string;
-    id: number;
-    roles: string[];
-    username: string;
-  };
-  player_1_score: number;
-  player_2: {
-    created_at: string;
-    description: string;
-    email: string;
-    id: number;
-    roles: string[];
-    username: string;
-  };
-  player_2_score: number;
+  players: Player[];
 };
 
 

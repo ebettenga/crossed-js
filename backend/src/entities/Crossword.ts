@@ -49,5 +49,4 @@ export class Crossword {
   @Column('text', { nullable: true })
   title: string;
 
-  room: Room
 }

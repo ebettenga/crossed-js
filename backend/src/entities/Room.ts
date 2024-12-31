@@ -2,42 +2,62 @@ import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
-  ManyToOne,
   JoinColumn,
   CreateDateColumn,
   OneToOne,
+  ManyToMany,
+  JoinTable,
 } from 'typeorm';
 import { User } from './User';
 import { Crossword } from './Crossword';
+
+// Define game type enum
+export type GameType = '1v1' | '2v2' | 'free4all';
+export type GameStatus = 'playing' | 'pending' | 'finished' | 'cancelled';
+
+
+export const PLAYER_COUNT_MAP: Record<GameType, number> = {
+  '1v1': 2,
+  '2v2': 4,
+  'free4all': 5
+};
 
 @Entity()
 export class Room {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @ManyToOne(() => User, {eager: true})
-  @JoinColumn({ name: "player_1_id" })
-  player_1: User;
+  @Column({
+    type: 'enum',
+    enum: ['1v1', '2v2', 'free4all'],
+    default: '1v1'
+  })
+  type: GameType;
 
-  @Column("int")
-  player_1_id: number;
+  @Column({
+    type: 'enum',
+    enum: ['playing', 'pending', 'finished', 'cancelled'],
+    default: 'pending'
+  })
+  status: GameStatus;
 
-  @ManyToOne(() => User, {eager: true})
-  @JoinColumn({ name: "player_2_id" })
-  player_2: User;
-
-  @Column("int")
-  player_2_id: number;
+  @Column('int', { default: 0 })
+  player_count: number;
+  @ManyToMany(() => User, { eager: true })
+  @JoinTable({
+    name: "room_players",
+    joinColumn: { name: "room_id", referencedColumnName: "id" },
+    inverseJoinColumn: { name: "user_id", referencedColumnName: "id" }
+  })
+  players: User[];
 
   @OneToOne(() => Crossword)
   @JoinColumn()
   crossword: Crossword;
 
-  @Column('int', { default: 0 })
-  player_1_score: number;
-
-  @Column('int', { default: 0 })
-  player_2_score: number;
+  // Store scores as a JSON object with user IDs as keys
+  @Column('simple-json', { default: {} })
+  scores: { [key: number]: number };
 
   @CreateDateColumn()
   created_at: Date;
