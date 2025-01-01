@@ -1,20 +1,20 @@
 import { config } from "@/config/config";
-import { MMKV } from "react-native-mmkv";
+import { secureStorage } from "./storageApi";
 
-// export const storage = new MMKV();
-
-// const token = storage.getString("token");
-
-const headers = {
-  "authorization": `Bearer ${"token"}`,
-  "Content-Type": "application/json"
+const headers = (token: string) => {
+  return {
+    "authorization": `Bearer ${token}`,
+    "Content-Type": "application/json"
+  };
 };
 
 export const get = async (url: string) => {
   try {
+    const token = await secureStorage.get("token");
+    console.log(token);
     const response = await fetch(`${config.api.baseURL}${url}`, {
       method: 'GET',
-      headers
+      headers: headers(token)
     });
     return await response.json();
   } catch (error) {
@@ -25,9 +25,10 @@ export const get = async (url: string) => {
 
 export const post = async (url: string, body: any) => {
   try {
+    const token = await secureStorage.get("token");
     const response = await fetch(`${config.api.baseURL}${url}`, {
       method: 'POST',
-      headers,
+      headers: headers(token),
       body: JSON.stringify(body)
     });
     return await response.json();
@@ -39,9 +40,10 @@ export const post = async (url: string, body: any) => {
 
 export const put = async (url: string, body: any) => {
   try {
+    const token = await secureStorage.get("token");
     const response = await fetch(`${config.api.baseURL}${url}`, {
       method: 'PUT',
-      headers,
+      headers: headers(token),
       body: JSON.stringify(body)
     });
     return await response.json();
@@ -53,9 +55,10 @@ export const put = async (url: string, body: any) => {
 
 export const del = async (url: string) => {
   try {
+    const token = await secureStorage.get("token");
     const response = await fetch(`${config.api.baseURL}${url}`, {
       method: 'DELETE',
-      headers
+      headers: headers(token)
     });
     return await response.json();
   } catch (error) {
@@ -73,9 +76,10 @@ export const log = async (data: Record<string, any> | string, severity: 'info' |
   };
 
   try {
+    const token = await secureStorage.get("token");
     const response = await fetch(`${config.api.baseURL}/logs`, {
       method: 'POST',
-      headers,
+      headers: headers(token),
       body: JSON.stringify(payload)
     });
     return await response.json();
