@@ -4,12 +4,9 @@ import { useRouter } from 'expo-router';
 import { Text } from '~/components/ui/text';
 import { useSignIn } from '~/hooks/users';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useCrosswords } from '~/hooks/crosswords';
 
 export default function SignIn() {
     const router = useRouter();
-
-    const {data} = useCrosswords();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');

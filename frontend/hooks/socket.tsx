@@ -1,6 +1,7 @@
 import { createContext, JSXElementConstructor, ReactElement, ReactNode, ReactPortal, useContext, useEffect, useState } from 'react';
 import io from 'socket.io-client';
 import { config } from "../config/config";
+import { secureStorage } from './storageApi';
 
 type Player = {
   created_at: string;
@@ -45,7 +46,8 @@ type Room = {
 
 
 const socketInstance = io(config.api.socketURL);
-socketInstance.auth = { authToken: "token" } //storage.getString("token") }
+const token = secureStorage.get("token");
+socketInstance.auth = { authToken: token } 
 export const SocketContext = createContext(socketInstance);
 
 
@@ -58,6 +60,7 @@ export const useSocket = () => {
   const socket = useContext(SocketContext);
 
   if (!socket.connected) {
+    console.log("Connecting socket")
     socket.connect();
   }
 
@@ -81,7 +84,7 @@ export const useErrors = () => {
     })
   }, [socket])
 
-  return errors;
+  return {errors};
 }
 
 
@@ -91,13 +94,14 @@ export const useMessages = () => {
 
   useEffect(() => {
     socket.on("message", (data) => {
+      console.log("Received message", data);
       setMessages((prev) => [...prev, data])
     })
   }, [socket])
 
 
   const send = (message: string) => {
-    socket.send(JSON.stringify({ message }))
+    socket.emit("message", JSON.stringify({ message }))
   }
 
   return { messages, send };

@@ -1,6 +1,5 @@
 import React from 'react';
 import { View, StyleSheet, Dimensions } from 'react-native';
-import { useRouter } from 'expo-router';
 import { Users, Swords, Group } from 'lucide-react-native';
 import { HomeSquareButton } from '~/components/home/HomeSquareButton';
 import { HomeHeader } from '~/components/home/HomeHeader';
@@ -9,7 +8,6 @@ import { GameBanner } from '~/components/home/GameBanner';
 import { DifficultyBottomSheet } from '~/components/game/DifficultyBottomSheet';
 import { useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { storage } from '~/hooks/storageApi';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const PADDING = 6;
@@ -20,7 +18,6 @@ const BUTTON_SIZE = (SCREEN_WIDTH - (PADDING * 2) - (GAP * (SQUARES_PER_ROW - 1)
 type GameMode = '1v1' | '2v2' | 'free4all';
 
 export default function Home() {
-    const router = useRouter();
     const insets = useSafeAreaInsets();
     const hasActiveGame = true;
     const isBottomSheetOpen = useSharedValue(false);
@@ -33,15 +30,6 @@ export default function Home() {
 
     const handleDifficultySelect = (difficulty: 'easy' | 'medium' | 'hard') => {
         isBottomSheetOpen.value = false;
-        // if (selectedGameMode) {
-        //     router.push({
-        //         pathname: '/game',
-        //         params: { 
-        //             difficulty,
-        //             mode: selectedGameMode
-        //         }
-        //     });
-        // }
     };
 
     const handleBottomSheetClose = () => {

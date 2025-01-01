@@ -33,6 +33,7 @@ async function verifyUser(
   fastify: FastifyInstance,
   socket: Socket,
 ) {
+  console.log(socket.handshake.auth.authToken);
   const userToken = authService.verify(fastify, {
     token: socket.handshake.auth.authToken,
   });
@@ -159,7 +160,7 @@ export default function (
       async ({ message }: Message) => {
         try {
           const user = await verifyUser(authService, fastify, socket);
-          socket.send(message);
+          socket.emit("message", message);
           fastify.log.info(message);
         } catch (e) {
           if (e instanceof UserNotFoundError) {

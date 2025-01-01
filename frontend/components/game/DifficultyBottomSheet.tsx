@@ -56,9 +56,9 @@ export const DifficultyBottomSheet: React.FC<DifficultyBottomSheetProps> = ({
         ]}>
         <View style={styles.buttonContainer}>
             <View style={styles.titleContainer}>
-                <Swords size={24} color="#2B2B2B" style={styles.titleIcon} />
+                <Swords size={24} color="#9B2C2C" style={styles.titleIcon} />
                 <Text style={styles.title}>Select Difficulty</Text>
-                <Swords size={24} color="#2B2B2B" style={styles.titleIcon} />
+                <Swords size={24} color="#9B2C2C" style={styles.titleIcon} />
             </View>
           <Pressable 
             style={[styles.difficultyButton, styles.easyButton]} 
@@ -142,30 +142,36 @@ const styles = StyleSheet.create({
       width: 0,
       height: 2,
     },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderColor: 'rgba(0, 0, 0, 0.05)',
   },
   buttonText: {
     color: 'white',
     fontSize: 18,
     fontWeight: '700',
+    textShadowColor: 'rgba(0, 0, 0, 0.2)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   easyButton: {
-    backgroundColor: '#059669',
-    borderBottomColor: '#047857',
+    backgroundColor: '#2B2B2B',
+    borderBottomColor: '#1A1A1A',
     borderBottomWidth: 3,
+    opacity: 0.7,
   },
   mediumButton: {
-    backgroundColor: '#D97706',
-    borderBottomColor: '#B45309',
+    backgroundColor: '#2B2B2B',
+    borderBottomColor: '#1A1A1A',
     borderBottomWidth: 3,
+    opacity: 0.85,
   },
   hardButton: {
-    backgroundColor: '#DC2626',
-    borderBottomColor: '#B91C1C',
+    backgroundColor: '#2B2B2B',
+    borderBottomColor: '#1A1A1A',
     borderBottomWidth: 3,
+    opacity: 1,
   },
 }); 

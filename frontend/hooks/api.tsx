@@ -11,7 +11,9 @@ const headers = (token: string) => {
 export const get = async (url: string) => {
   try {
     const token = await secureStorage.get("token");
-    console.log(token);
+    if (!token) {
+      throw new Error("No token found");
+    }
     const response = await fetch(`${config.api.baseURL}${url}`, {
       method: 'GET',
       headers: headers(token)

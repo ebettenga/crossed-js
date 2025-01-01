@@ -29,7 +29,7 @@ export const GlobalProvider = ({ children }: { children: ReactNode }) => {
         queryFn: async () => {
             const data = await get("/me");
             return data;
-        }
+        },
     });
 
     const isLoggedIn = !!user;
