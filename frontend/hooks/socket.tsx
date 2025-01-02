@@ -238,6 +238,8 @@ export const useRoom = (roomId?: number) => {
 
   useEffect(() => {
     socket.on("room", (data: Room) => {
+      console.log('received room: ');
+      console.log(data);
       if (!data) return;
       const boardData = createBoard(data);
       setRoom({ ...data, board: boardData });

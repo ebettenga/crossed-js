@@ -126,7 +126,7 @@ export default function (
         );
 
         socket.join(room.id.toString());
-        socket.to(room.id.toString()).emit("room", room );
+        fastify.io.to(room.id.toString()).emit("room", room);
       } catch (e) {
         if (e instanceof UserNotFoundError) {
           socket.emit("error", "Authentication failed");

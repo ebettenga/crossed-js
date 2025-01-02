@@ -23,9 +23,11 @@ import { Text } from 'react-native';
 
 export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
     const { room, guess } = useRoom(roomId);
+    console.log('room', room);
 
     const router = useRouter();
     const insets = useSafeAreaInsets();
+    const [showSummary, setShowSummary] = useState(false);
     const [selectedCell, setSelectedCell] = useState<Square | null>(null);
     const [isAcrossMode, setIsAcrossMode] = useState(true);
 
@@ -70,29 +72,6 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
         }
     };
 
-    const [showSummary, setShowSummary] = useState(false);
-
-    // Mock game data - in a real app this would come from your game state
-    const mockGameResults = {
-        players: [
-            {
-                username: "John Doe",
-                lettersCaptured: 12,
-                wrongGuesses: 3,
-                correctGuessPercent: 80,
-                totalPoints: 240,
-                winner: true
-            },
-            {
-                username: "Jane Smith",
-                lettersCaptured: 8,
-                wrongGuesses: 5,
-                correctGuessPercent: 61.5,
-                totalPoints: 160,
-                winner: false
-            }
-        ]
-    };
 
     const menuOptions = [
         {
