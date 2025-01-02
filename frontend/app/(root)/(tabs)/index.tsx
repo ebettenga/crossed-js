@@ -11,7 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useJoinRoom } from '~/hooks/useRoom';
 import { useRoom } from '~/hooks/socket';
 import { Link, Redirect } from 'expo-router';
-import { useActiveRooms } from '~/hooks/useActiveRooms';
+import { useActiveRooms, usePendingRooms } from '~/hooks/useActiveRooms';
 import { useUser } from '~/hooks/useUser';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -27,6 +27,7 @@ export default function Home() {
     const { room } = useRoom();
     const { mutate: join } = useJoinRoom();
     const { data: activeRooms, isLoading: isLoadingRooms, error: activeRoomsError } = useActiveRooms();
+    const { data: pendingRooms, isLoading: isLoadingPendingRooms, error: pendingRoomsError } = usePendingRooms();
     console.log(activeRooms);
     const { data: user, isLoading: isLoadingUser } = useUser();
 
@@ -40,7 +41,12 @@ export default function Home() {
 
     const handleDifficultySelect = async (difficulty: 'easy' | 'medium' | 'hard') => {
         isBottomSheetOpen.value = false;
-        join({ difficulty });
+        if (!selectedGameMode) return;
+
+        join({
+            difficulty,
+            type: selectedGameMode
+        });
     };
 
     const handleBottomSheetClose = () => {
@@ -83,7 +89,7 @@ export default function Home() {
                                                 gameId={activeRoom.id.toString()}
                                                 gameType={activeRoom.type}
                                                 createdAt={activeRoom.created_at}
-
+                                                status="playing"
                                             />
                                         </View>
                                     </Link>
@@ -91,6 +97,27 @@ export default function Home() {
                             </ScrollView>
                         </View>
                     )}
+
+                {pendingRooms?.length && pendingRooms?.length > 0 && (
+                    <View style={styles.gameBannersScroll}>
+                        <ScrollView
+                            horizontal
+                            pagingEnabled
+                            showsHorizontalScrollIndicator={Boolean(pendingRooms.length > 10)}
+                        >
+                            {pendingRooms.map((pendingRoom) => (
+                                <View style={styles.bannerContainer}>
+                                    <GameBanner
+                                        gameId={pendingRoom.id.toString()}
+                                        gameType={pendingRoom.type}
+                                        createdAt={pendingRoom.created_at}
+                                        status="pending"
+                                    />
+                                </View>
+                            ))}
+                        </ScrollView>
+                    </View>
+                )}
 
                 <View style={styles.grid}>
                     <HomeSquareButton

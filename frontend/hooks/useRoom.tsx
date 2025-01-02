@@ -1,4 +1,4 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { post } from "./api";
 
 
@@ -6,7 +6,6 @@ export type Room = {
     id: number;
     type: '1v1' | '2v2' | 'free4all';
     status: 'playing' | 'pending' | 'finished' | 'cancelled';
-    player_count: number;
     players: {
         id: number;
         username: string;
@@ -46,10 +45,21 @@ export type Room = {
 }
 
 type JoinRoomParams = {
-    difficulty: 'easy' | 'medium' | 'hard';
+    difficulty: string;
+    type: '1v1' | '2v2' | 'free4all';
 };
 
-export const useJoinRoom = () => useMutation<Room, Error, JoinRoomParams>({
-    mutationFn: async (params) => { return await post("/rooms/join", params)}
-});
+export const useJoinRoom = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (params: JoinRoomParams) => {
+            const { data } = await post('/rooms/join', params);
+            return data;
+        },
+        onSuccess: (data) => {
+            queryClient.invalidateQueries({ queryKey: ['rooms', 'playing'] });
+            queryClient.invalidateQueries({ queryKey: ['rooms', 'pending'] });
+        },
+    });
+};
 

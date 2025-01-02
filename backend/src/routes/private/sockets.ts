@@ -14,6 +14,7 @@ export type Guess = {
 
 export type JoinRoom = {
   difficulty: string;
+  type: '1v1' | '2v2' | 'free4all';
 };
 
 export type Message = {
