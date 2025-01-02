@@ -8,43 +8,57 @@ const headers = (token: string) => {
   };
 };
 
+
+const getToken = async () => {
+  const token = await secureStorage.get("token");
+  if (!token) {
+    throw new Error("No token found");
+  }
+  return token;
+};
+
 export const get = async (url: string) => {
   try {
-    const token = await secureStorage.get("token");
-    if (!token) {
-      throw new Error("No token found");
-    }
+    const token = await getToken();
     const response = await fetch(`${config.api.baseURL}${url}`, {
       method: 'GET',
       headers: headers(token)
     });
     return await response.json();
   } catch (error) {
-    console.error("GET request failed");
-    console.error(error);
-    await log({ message: 'GET request failed', error, time: new Date().toISOString() }, 'error');
     throw error;
   }
 };
 
-export const post = async (url: string, body: any) => {
+type RequestOptions = {
+  auth?: boolean;
+}
+
+export const post = async (url: string, body: any, options: RequestOptions = { auth: true }) => {
   try {
-    const token = await secureStorage.get("token");
+    const headers: HeadersInit = {
+      "Content-Type": "application/json"
+    };
+
+    if (options.auth) {
+      const token = await getToken();
+      headers["authorization"] = `Bearer ${token}`;
+    }
+
     const response = await fetch(`${config.api.baseURL}${url}`, {
       method: 'POST',
-      headers: headers(token),
+      headers,
       body: JSON.stringify(body)
     });
     return await response.json();
   } catch (error) {
-    await log({ message: 'POST request failed', error, time: new Date().toISOString() }, 'error');
     throw error;
   }
 };
 
 export const put = async (url: string, body: any) => {
   try {
-    const token = await secureStorage.get("token");
+    const token = await getToken();
     const response = await fetch(`${config.api.baseURL}${url}`, {
       method: 'PUT',
       headers: headers(token),
@@ -52,25 +66,37 @@ export const put = async (url: string, body: any) => {
     });
     return await response.json();
   } catch (error) {
-    await log({ message: 'PUT request failed', error, time: new Date().toISOString() }, 'error');
     throw error;
   }
 };
 
 export const del = async (url: string) => {
   try {
-    const token = await secureStorage.get("token");
+    const token = await getToken();
     const response = await fetch(`${config.api.baseURL}${url}`, {
       method: 'DELETE',
       headers: headers(token)
     });
     return await response.json();
   } catch (error) {
-    await log({ message: 'DELETE request failed', error, time: new Date().toISOString() }, 'error');
     throw error;
   }
 };
 
+export const postWithoutAuth = async (url: string, body: any) => {
+  try {
+    const response = await fetch(`${config.api.baseURL}${url}`, {
+      method: 'POST',
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(body)
+    });
+    return await response.json();
+  } catch (error) {
+    throw error;
+  }
+};
 
 export const log = async (data: Record<string, any> | string, severity: 'info' | 'warning' | 'error' | 'debug' | 'trace') => {
 
@@ -78,16 +104,17 @@ export const log = async (data: Record<string, any> | string, severity: 'info' |
     log: data,
     severity
   };
+  const token = await getToken();
 
-  try {
-    const token = await secureStorage.get("token");
-    const response = await fetch(`${config.api.baseURL}/logs`, {
-      method: 'POST',
-      headers: headers(token),
-      body: JSON.stringify(payload)
-    });
-    return await response.json();
-  } catch (error) {
-    console.error('LOG request failed', error);
+  if (!token) {
+    console.error("No token found");
+    return;
   }
+
+  const response = await fetch(`${config.api.baseURL}/logs`, {
+    method: 'POST',
+    headers: headers(token),
+    body: JSON.stringify(payload)
+  });
+  return await response.json();
 };

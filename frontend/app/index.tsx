@@ -4,6 +4,8 @@ import { useRouter } from 'expo-router';
 import { Text } from '~/components/ui/text';
 import { useSignIn } from '~/hooks/users';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useUser } from '~/hooks/users';
+import { Redirect } from 'expo-router';
 
 export default function SignIn() {
     const router = useRouter();
@@ -12,6 +14,12 @@ export default function SignIn() {
     const [error, setError] = useState('');
     
     const signInMutation = useSignIn();
+    const { data: user } = useUser();
+
+    // If user is already signed in, redirect to home
+    if (user) {
+        return <Redirect href="/(root)/(tabs)" />;
+    }
 
     const handleSignIn = async () => {
         try {

@@ -10,9 +10,9 @@ import { useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useJoinRoom } from '~/hooks/useRoom';
 import { useRoom } from '~/hooks/socket';
-import { Link, Redirect } from 'expo-router';
+import { Link } from 'expo-router';
 import { useActiveRooms, usePendingRooms } from '~/hooks/useActiveRooms';
-import { useUser } from '~/hooks/useUser';
+import { useUser } from '~/hooks/users';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const PADDING = 6;
