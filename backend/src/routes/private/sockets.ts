@@ -33,7 +33,6 @@ async function verifyUser(
   fastify: FastifyInstance,
   socket: Socket,
 ) {
-  console.log(socket.handshake.auth.authToken);
   const userToken = authService.verify(fastify, {
     token: socket.handshake.auth.authToken,
   });
@@ -95,22 +94,6 @@ export default function (
       }
     });
 
-    // game stuff
-    socket.on("join", async (data: JoinRoom) => {
-      try {
-        const user = await verifyUser(authService, fastify, socket);
-        const room = await roomService.joinRoom(user.id, data.difficulty);
-        socket.emit("room", room);
-        socket.join(room.id.toString());
-      } catch (e) {
-        if (e instanceof UserNotFoundError) {
-          socket.emit("error", "Authentication failed");
-        } else {
-          socket.emit("error", e.message);
-        }
-      }
-    });
-
     socket.on("loadRoom", async (data: LoadRoom) => {
       try {
         const user = await verifyUser(authService, fastify, socket);
@@ -143,8 +126,7 @@ export default function (
         );
 
         socket.join(room.id.toString());
-        socket.to(room.id.toString()).emit("guess", { message: room });
-        socket.to(room.id.toString()).emit("room", { message: room });
+        socket.to(room.id.toString()).emit("room", room );
       } catch (e) {
         if (e instanceof UserNotFoundError) {
           socket.emit("error", "Authentication failed");

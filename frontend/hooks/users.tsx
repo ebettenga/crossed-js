@@ -1,6 +1,8 @@
 import { useMutation } from "@tanstack/react-query";
 import { log, post } from "./api";
 import { secureStorage } from "./storageApi";
+import { useRouter } from 'expo-router';
+
 export type SignInRequest = {
   email: string;
   password: string;
@@ -26,8 +28,12 @@ export const useSignIn = () => useMutation<SignInResponse, Error, SignInRequest>
   }
 });
 
+export const useLogout = () => {
+  const router = useRouter();
 
-export const logout = () => {
-  secureStorage.remove("token");
-  secureStorage.remove("refresh_token");
-}
+  return () => {
+    secureStorage.remove("token");
+    secureStorage.remove("refresh_token");
+    router.replace('/');  
+  };
+};

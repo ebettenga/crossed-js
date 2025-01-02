@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { CrosswordBoard } from '../components/game/CrosswordBoard';
 import { Keyboard } from '../components/game/Keyboard';
@@ -14,31 +14,20 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GameMenu } from '../components/game/GameMenu';
 import { useRouter } from 'expo-router';
 import { ClueDisplay } from '../components/game/ClueDisplay';
+import { Square, useRoom } from '~/hooks/socket';
+import { Text } from 'react-native';
 
-export const GameScreen: React.FC = () => {
+
+
+
+
+export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
+    const { room, guess } = useRoom(roomId);
+
     const router = useRouter();
     const insets = useSafeAreaInsets();
-
-    const [letters] = useState([
-        'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O',
-        'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'A', 'B', 'C', 'D',
-        'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
-        'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H',
-        'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W',
-        'X', 'Y', 'Z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L',
-        'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'A',
-        'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P',
-        'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'A', 'B', 'C', 'D', 'E',
-        'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T',
-        'U', 'V', 'W', 'X', 'Y', 'Z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I',
-        'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X',
-        'Y', 'Z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
-        'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'A', 'B',
-        'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q'
-    ]);
-
-    const [foundLetters] = useState(Array(225).fill('')); // 15x15 = 225
-    const [selectedCell, setSelectedCell] = useState<{ x: number; y: number } | null>(null);
+    const [selectedCell, setSelectedCell] = useState<Square | null>(null);
+    const [isAcrossMode, setIsAcrossMode] = useState(true);
 
     const scale = useSharedValue(1);
     const savedScale = useSharedValue(1);
@@ -69,14 +58,15 @@ export const GameScreen: React.FC = () => {
         ],
     }));
 
-    const handleCellPress = (coordinates: { x: number; y: number }) => {
+    const handleCellPress = (coordinates: Square) => {
+        console.log('handleCellPress GameScreen', coordinates);
         setSelectedCell(coordinates);
     };
 
     const handleKeyPress = (key: string) => {
         if (selectedCell) {
             console.log(`Pressed ${key} for cell:`, selectedCell);
-            // Add your guess logic here
+            guess(roomId, { x: selectedCell.x, y: selectedCell.y }, key);
         }
     };
 
@@ -126,28 +116,17 @@ export const GameScreen: React.FC = () => {
         },
     ];
 
+
+    if (!room) {
+        console.log('Room not found');
+        return <Text>Room not found</Text>;
+    }
+
     return (
         <View style={[styles.container, { paddingBottom: insets.bottom + 70 }]}>
-            <PlayerInfo
-                gameTitle="1v1 Classic"
-                players={[
-                    {
-                        name: "John Doe",
-                        elo: 1200,
-                        score: 15,
-                        isCurrentPlayer: true,
-                    },
-                    {
-                        name: "Jane Smith",
-                        elo: 1250,
-                        score: 12,
-                    },
-                    {
-                        name: "Jane Smith",
-                        elo: 1250,
-                        score: 12,
-                    },
-                ]}
+            <PlayerInfo 
+                players={room.players}
+                scores={room.scores}
             />
             <View style={styles.boardContainer}>
                 <GestureDetector gesture={composed}>
@@ -156,18 +135,19 @@ export const GameScreen: React.FC = () => {
                         entering={FadeIn}
                     >
                         <CrosswordBoard
-                            letters={letters}
-                            columnCount={15}
-                            foundLetters={foundLetters}
+                            board={room?.board}
                             onCellPress={handleCellPress}
-                            selectedCell={selectedCell}
+                            selectedCell={selectedCell || null}
+                            isAcrossMode={isAcrossMode}
+                            setIsAcrossMode={setIsAcrossMode}
                         />
                     </Animated.View>
                 </GestureDetector>
             </View>
             <View style={styles.bottomSection}>
-                <ClueDisplay 
-                    text="4. Something Here that is a Crossword clue."
+                <ClueDisplay
+                    selectedSquare={selectedCell || null}
+                    isAcrossMode={isAcrossMode}
                 />
                 <Keyboard
                     onKeyPress={handleKeyPress}

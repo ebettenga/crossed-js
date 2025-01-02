@@ -11,7 +11,7 @@ import { Theme, ThemeProvider } from "@react-navigation/native";
 import { Platform, StatusBar } from "react-native";
 import { storage } from "@/hooks/storageApi";
 import { PortalHost } from '@rn-primitives/portal';
-import { SocketProvider } from "~/hooks/socket";
+import { RoomProvider } from '~/hooks/socket';
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 // @ts-ignore
@@ -64,12 +64,12 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <GlobalProvider>
-        <SocketProvider>
+        <RoomProvider>
           <GestureHandlerRootView style={{ flex: 1 }}>
             <Slot screenOptions={{ headerShown: false }} />
             <PortalHost />
           </GestureHandlerRootView>
-        </SocketProvider>
+        </RoomProvider>
       </GlobalProvider>
     </QueryClientProvider>
   );

@@ -8,6 +8,9 @@ import { GameBanner } from '~/components/home/GameBanner';
 import { DifficultyBottomSheet } from '~/components/game/DifficultyBottomSheet';
 import { useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useJoinRoom } from '~/hooks/useRoom';
+import { useRoom } from '~/hooks/socket';
+import { Redirect } from 'expo-router';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const PADDING = 6;
@@ -19,6 +22,9 @@ type GameMode = '1v1' | '2v2' | 'free4all';
 
 export default function Home() {
     const insets = useSafeAreaInsets();
+    const { room } = useRoom();
+    const { mutate: join } = useJoinRoom();
+
     const hasActiveGame = true;
     const isBottomSheetOpen = useSharedValue(false);
     const [selectedGameMode, setSelectedGameMode] = React.useState<GameMode | null>(null);
@@ -28,14 +34,21 @@ export default function Home() {
         isBottomSheetOpen.value = true;
     };
 
-    const handleDifficultySelect = (difficulty: 'easy' | 'medium' | 'hard') => {
+    const handleDifficultySelect = async (difficulty: 'easy' | 'medium' | 'hard') => {
         isBottomSheetOpen.value = false;
+        join({ difficulty });
     };
 
     const handleBottomSheetClose = () => {
         isBottomSheetOpen.value = false;
         setSelectedGameMode(null);
     };
+
+
+    // if the room is playing, redirect to the game screen
+    if (room?.status === 'playing') {
+        return <Redirect href={`/game?roomId=${room.id}`} />
+    }
 
     return (
         <View style={[
@@ -49,7 +62,7 @@ export default function Home() {
             }
         ]}>
             <View style={styles.content}>
-                <HomeHeader 
+                <HomeHeader
                     username="John Doe"
                     elo={1250}
                     eloChange={25}
@@ -58,7 +71,7 @@ export default function Home() {
                     coins={100}
                 />
                 {hasActiveGame && (
-                    <GameBanner 
+                    <GameBanner
                         gameId="123"
                         opponent="Jane Smith"
                     />

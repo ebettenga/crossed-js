@@ -44,7 +44,7 @@ export class RoomService {
     room.player_count = room.players.length;
     
     // If room is full based on game type, change status to playing
-    const maxPlayers = room.type === '1v1' ? 2 : room.type === '2v2' ? 4 : 4;
+    const maxPlayers = config.game.maxPlayers[room.type];
     if (room.player_count === maxPlayers) {
       room.status = 'playing';
     }
@@ -108,7 +108,7 @@ export class RoomService {
     await this.ormConnection.getRepository(Room).save(room);
 
     // Check if this was the last letter to be found
-    const remainingBlanks = room.found_letters.filter(letter => letter === '').length;
+    const remainingBlanks = room.found_letters.filter(letter => letter === '*').length;
     if (remainingBlanks === 0) {
       room.status = 'finished';
       await this.handleGameEnd(room);
@@ -139,6 +139,7 @@ export class RoomService {
   ): void {
     const space = coordinates.x * room.crossword.row_size + coordinates.y;
     room.found_letters[space] = guess;
+
   }
 
   private modifyPoints(room: Room, userId: number, points: number): void {

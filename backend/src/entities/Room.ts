@@ -51,7 +51,7 @@ export class Room {
   })
   players: User[];
 
-  @OneToOne(() => Crossword)
+  @OneToOne(() => Crossword, { eager: true })
   @JoinColumn()
   crossword: Crossword;
 
