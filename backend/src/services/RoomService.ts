@@ -176,4 +176,22 @@ export class RoomService {
       .andWhere('room.status = :status', { status: 'playing' })
       .getMany();
   }
+
+  async forfeitGame(roomId: number, userId: number): Promise<Room> {
+    const room = await this.getRoomById(roomId);
+    
+    if (!room) {
+        throw new Error("Room not found");
+    }
+
+    if (!room.players.some(player => player.id === userId)) {
+        throw new Error("User is not a participant in this room");
+    }
+
+    // Set the game as finished
+    room.status = 'finished';
+
+    await this.ormConnection.getRepository(Room).save(room);
+    return room;
+  }
 }

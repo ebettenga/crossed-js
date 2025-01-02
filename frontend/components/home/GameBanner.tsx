@@ -27,7 +27,8 @@ export const GameBanner: React.FC<GameBannerProps> = ({
                 <View style={styles.textContainer}>
                     <Text style={styles.title}>{gameType || 'Active Game'}</Text>
                     <Text style={styles.details}>Started {(() => {
-                        const minutes = Math.floor((Date.now() - new Date(createdAt).getTime()) / 60000);
+                        const localDate = new Date(createdAt);
+                        const minutes = Math.floor((Date.now() - localDate.getTime()) / 60000);
                         if (minutes >= 60) {
                             const hours = Math.floor(minutes / 60);
                             return `${hours} ${hours === 1 ? 'hour' : 'hours'}`;

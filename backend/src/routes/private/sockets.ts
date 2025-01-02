@@ -169,6 +169,23 @@ export default function (
         }
       }
     });
+
+    socket.on("forfeit", async ({ roomId }: LoadRoom) => {
+      try {
+        const user = await verifyUser(authService, fastify, socket);
+
+        const room = await roomService.forfeitGame(roomId, user.id);
+
+        // Emit the updated room state to all players
+        fastify.io.to(room.id.toString()).emit("room", room);
+      } catch (e) {
+        if (e instanceof UserNotFoundError) {
+          socket.emit("error", "Authentication failed");
+        } else {
+          socket.emit("error", e.message);
+        }
+      }
+    });
   });
 
   next();

@@ -3,6 +3,7 @@ import io from 'socket.io-client';
 import { config } from "../config/config";
 import { secureStorage } from './storageApi';
 import { useRouter } from 'expo-router';
+import { useQueryClient } from '@tanstack/react-query';
 
 export type Player = {
   created_at: string;
@@ -159,6 +160,7 @@ export const RoomProvider = ({ children }: { children: ReactNode }) => {
 
 // Update useRoom to use the context
 export const useRoom = (roomId?: number) => {
+  const queryClient = useQueryClient();
   const socket = useSocket();
   const router = useRouter();
   const { room, setRoom } = useContext(RoomContext);
@@ -270,5 +272,11 @@ export const useRoom = (roomId?: number) => {
     socket.emit("loadRoom", JSON.stringify({ roomId }));
   };
 
-  return { room, guess, refresh };
+  const forfeit = (roomId: number) => {
+    socket.emit("forfeit", JSON.stringify({ roomId }));
+    queryClient.invalidateQueries({ queryKey: ['activeRooms'] });
+    queryClient.invalidateQueries({ queryKey: ['room'] });
+  };
+
+  return { room, guess, refresh, forfeit };
 };

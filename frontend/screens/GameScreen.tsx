@@ -19,7 +19,7 @@ import { Text } from 'react-native';
 
 
 export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
-    const { room, guess,refresh } = useRoom(roomId);
+    const { room, guess, refresh, forfeit } = useRoom(roomId);
 
     const router = useRouter();
     const insets = useSafeAreaInsets();
@@ -30,6 +30,10 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
     const scale = useSharedValue(1);
     const savedScale = useSharedValue(1);
     const rotation = useSharedValue(0);
+
+    useEffect(() => {
+        refresh(roomId);
+    }, []);
 
     const pinchGesture = Gesture.Pinch()
         .onUpdate((e) => {
@@ -100,9 +104,14 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
         return null;
     };
 
+    const handleForfeit = () => {
+        forfeit(roomId);
+        router.push('/(root)/(tabs)');
+    };
+
     const menuOptions = [
         {
-            label: 'Quit Game',
+            label: 'Home',
             onPress: () => {
                 router.push('/(root)/(tabs)');
             },
@@ -116,9 +125,13 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
         {
             label: 'Show Summary',
             onPress: () => {
-                console.log('Opening summary...');  // Debug log
                 setShowSummary(true);
             },
+        },
+        {
+            label: 'Forfeit Game',
+            onPress: handleForfeit,
+            style: { color: '#8B0000' }
         },
     ];
 
@@ -129,9 +142,7 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
     }
 
 
-    useEffect(() => {
-        refresh(roomId);
-    }, []);
+
 
     return (
         <View style={[styles.container, { paddingBottom: insets.bottom + 70 }]}>

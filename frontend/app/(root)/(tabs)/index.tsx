@@ -27,6 +27,7 @@ export default function Home() {
     const { room } = useRoom();
     const { mutate: join } = useJoinRoom();
     const { data: activeRooms, isLoading: isLoadingRooms, error: activeRoomsError } = useActiveRooms();
+    console.log(activeRooms);
     const { data: user, isLoading: isLoadingUser } = useUser();
 
     const isBottomSheetOpen = useSharedValue(false);
@@ -67,27 +68,29 @@ export default function Home() {
                     avatarUrl="https://i.pravatar.cc/300"
                     coins={100}
                 />
-                <View style={styles.gameBannersScroll}>
+                {
+                    activeRooms?.length && activeRooms?.length > 0 && (
+                        <View style={styles.gameBannersScroll}>
+                            <ScrollView
+                                horizontal
+                                pagingEnabled
+                                showsHorizontalScrollIndicator={Boolean(activeRooms?.length && activeRooms?.length > 10)}
+                            >
+                                {activeRooms?.map((activeRoom) => (
+                                    <Link key={activeRoom.id} href={`/game?roomId=${activeRoom.id}`}>
+                                        <View style={styles.bannerContainer}>
+                                            <GameBanner
+                                                gameId={activeRoom.id.toString()}
+                                                gameType={activeRoom.type}
+                                                createdAt={activeRoom.created_at}
 
-                    <ScrollView
-                        horizontal
-                        pagingEnabled
-                        showsHorizontalScrollIndicator={Boolean(activeRooms?.length && activeRooms?.length > 10)}
-                    >
-                        {activeRooms?.map((activeRoom) => (
-                            <Link key={activeRoom.id} href={`/game?id=${activeRoom.id}`}>
-                                <View style={styles.bannerContainer}>
-                                    <GameBanner
-                                        gameId={activeRoom.id.toString()}
-                                        gameType={activeRoom.type}
-                                        createdAt={activeRoom.created_at}
-    
-                                    />
-                                </View>
-                            </Link>
-                        ))}
-                    </ScrollView>
-                </View>
+                                            />
+                                        </View>
+                                    </Link>
+                                ))}
+                            </ScrollView>
+                        </View>
+                    )}
 
                 <View style={styles.grid}>
                     <HomeSquareButton
