@@ -20,6 +20,8 @@ export const get = async (url: string) => {
     });
     return await response.json();
   } catch (error) {
+    console.error("GET request failed");
+    console.error(error);
     await log({ message: 'GET request failed', error, time: new Date().toISOString() }, 'error');
     throw error;
   }

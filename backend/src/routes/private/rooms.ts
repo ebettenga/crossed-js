@@ -46,5 +46,10 @@ export default function (
     reply.send(room);
   });
 
+  fastify.get("/rooms/active", async (request, reply) => {
+    const activeRooms = await roomService.getActiveRoomsForUser(request.user.id);
+    reply.send(activeRooms);
+  });
+
   next();
 }

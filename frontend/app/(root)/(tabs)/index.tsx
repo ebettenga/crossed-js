@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, Dimensions } from 'react-native';
+import { View, StyleSheet, Dimensions, ScrollView } from 'react-native';
 import { Users, Swords, Group } from 'lucide-react-native';
 import { HomeSquareButton } from '~/components/home/HomeSquareButton';
 import { HomeHeader } from '~/components/home/HomeHeader';
@@ -10,7 +10,9 @@ import { useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useJoinRoom } from '~/hooks/useRoom';
 import { useRoom } from '~/hooks/socket';
-import { Redirect } from 'expo-router';
+import { Link, Redirect } from 'expo-router';
+import { useActiveRooms } from '~/hooks/useActiveRooms';
+import { useUser } from '~/hooks/useUser';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const PADDING = 6;
@@ -24,8 +26,9 @@ export default function Home() {
     const insets = useSafeAreaInsets();
     const { room } = useRoom();
     const { mutate: join } = useJoinRoom();
+    const { data: activeRooms, isLoading: isLoadingRooms, error: activeRoomsError } = useActiveRooms();
+    const { data: user, isLoading: isLoadingUser } = useUser();
 
-    const hasActiveGame = true;
     const isBottomSheetOpen = useSharedValue(false);
     const [selectedGameMode, setSelectedGameMode] = React.useState<GameMode | null>(null);
 
@@ -44,12 +47,6 @@ export default function Home() {
         setSelectedGameMode(null);
     };
 
-
-    // if the room is playing, redirect to the game screen
-    if (room?.status === 'playing') {
-        return <Redirect href={`/game?roomId=${room.id}`} />
-    }
-
     return (
         <View style={[
             styles.container,
@@ -63,19 +60,35 @@ export default function Home() {
         ]}>
             <View style={styles.content}>
                 <HomeHeader
-                    username="John Doe"
-                    elo={1250}
+                    username={user?.username || "Loading..."}
+                    elo={user?.eloRating || 0}
                     eloChange={25}
                     gamesPlayed={42}
                     avatarUrl="https://i.pravatar.cc/300"
                     coins={100}
                 />
-                {hasActiveGame && (
-                    <GameBanner
-                        gameId="123"
-                        opponent="Jane Smith"
-                    />
-                )}
+                <View style={styles.gameBannersScroll}>
+
+                    <ScrollView
+                        horizontal
+                        pagingEnabled
+                        showsHorizontalScrollIndicator={Boolean(activeRooms?.length && activeRooms?.length > 10)}
+                    >
+                        {activeRooms?.map((activeRoom) => (
+                            <Link key={activeRoom.id} href={`/game?id=${activeRoom.id}`}>
+                                <View style={styles.bannerContainer}>
+                                    <GameBanner
+                                        gameId={activeRoom.id.toString()}
+                                        gameType={activeRoom.type}
+                                        createdAt={activeRoom.created_at}
+    
+                                    />
+                                </View>
+                            </Link>
+                        ))}
+                    </ScrollView>
+                </View>
+
                 <View style={styles.grid}>
                     <HomeSquareButton
                         name="1 v 1"
@@ -109,6 +122,8 @@ export default function Home() {
     );
 }
 
+const BANNER_HEIGHT = 100;
+
 const styles = StyleSheet.create({
     container: {
         flex: 1,
@@ -125,5 +140,14 @@ const styles = StyleSheet.create({
         justifyContent: 'flex-start',
         alignItems: 'flex-start',
         marginTop: 16,
+    },
+    gameBannersScroll: {
+        width: SCREEN_WIDTH,
+        height: BANNER_HEIGHT,
+    },
+    bannerContainer: {
+        width: SCREEN_WIDTH,
+        height: BANNER_HEIGHT,
+        paddingHorizontal: PADDING,
     },
 });

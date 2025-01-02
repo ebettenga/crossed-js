@@ -5,33 +5,39 @@ import { useRouter } from 'expo-router';
 
 interface GameBannerProps {
     gameId: string;
-    opponent?: string;
-    timeLeft?: string;
+    gameType: string;
+    createdAt: string;
 }
 
 export const GameBanner: React.FC<GameBannerProps> = ({
     gameId,
-    opponent = "Opponent",
-    timeLeft
+    gameType,
+    createdAt,
 }) => {
     const router = useRouter();
 
     return (
-        <TouchableOpacity
+        <View
             style={styles.container}
-            onPress={() => router.push(`/game`)}
         >
             <View style={styles.content}>
                 <View style={styles.iconContainer}>
                     <Gamepad2 size={20} color="#8B0000" />
                 </View>
                 <View style={styles.textContainer}>
-                    <Text style={styles.title}>Active Game</Text>
-                    <Text style={styles.details}>vs {opponent}</Text>
+                    <Text style={styles.title}>{gameType || 'Active Game'}</Text>
+                    <Text style={styles.details}>Started {(() => {
+                        const minutes = Math.floor((Date.now() - new Date(createdAt).getTime()) / 60000);
+                        if (minutes >= 60) {
+                            const hours = Math.floor(minutes / 60);
+                            return `${hours} ${hours === 1 ? 'hour' : 'hours'}`;
+                        }
+                        return `${minutes} ${minutes === 1 ? 'min' : 'mins'}`;
+                    })()} ago</Text>
                 </View>
             </View>
             <ChevronRight size={20} color="#666666" />
-        </TouchableOpacity>
+        </View>
     );
 };
 

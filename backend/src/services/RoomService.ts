@@ -47,6 +47,11 @@ export class RoomService {
     const maxPlayers = config.game.maxPlayers[room.type];
     if (room.player_count === maxPlayers) {
       room.status = 'playing';
+      // Emit game_started event through fastify.io
+      fastify.io.to(room.id.toString()).emit("game_started", {
+        message: "All players have joined! Game is starting.",
+        room: room
+      });
     }
 
     await this.ormConnection.getRepository(Room).save(room);
@@ -159,5 +164,16 @@ export class RoomService {
       },
       order: { created_at: "ASC" },
     });
+  }
+
+  async getActiveRoomsForUser(userId: number): Promise<Room[]> {
+    return this.ormConnection
+      .getRepository(Room)
+      .createQueryBuilder('room')
+      .leftJoinAndSelect('room.players', 'players')
+      .leftJoinAndSelect('room.crossword', 'crossword')
+      .where('players.id = :userId', { userId })
+      .andWhere('room.status = :status', { status: 'playing' })
+      .getMany();
   }
 }

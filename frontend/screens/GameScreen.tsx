@@ -14,16 +14,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GameMenu } from '../components/game/GameMenu';
 import { useRouter } from 'expo-router';
 import { ClueDisplay } from '../components/game/ClueDisplay';
-import { Square, useRoom } from '~/hooks/socket';
+import { Square, SquareType, useRoom } from '~/hooks/socket';
 import { Text } from 'react-native';
 
 
-
-
-
 export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
-    const { room, guess } = useRoom(roomId);
-    console.log('room', room);
+    const { room, guess,refresh } = useRoom(roomId);
 
     const router = useRouter();
     const insets = useSafeAreaInsets();
@@ -66,12 +62,43 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
     };
 
     const handleKeyPress = (key: string) => {
-        if (selectedCell) {
-            console.log(`Pressed ${key} for cell:`, selectedCell);
-            guess(roomId, { x: selectedCell.x, y: selectedCell.y }, key);
+        if (!selectedCell) {
+            return;
+        }
+        guess(roomId, { x: selectedCell.x, y: selectedCell.y }, key);
+        // Move to next cell based on direction
+        const nextCell = getNextCell(selectedCell);
+        if (nextCell) {
+            setSelectedCell(nextCell);
         }
     };
 
+    const getNextCell = (currentCell: Square): Square | null => {
+        if (!room?.board) return null;
+
+        if (isAcrossMode) {
+            // Move right
+            let nextY = currentCell.y + 1;
+            while (nextY < room.board[0].length) {
+                const nextCell = room.board[currentCell.x][nextY];
+                if (nextCell.squareType !== SquareType.BLACK && nextCell.squareType !== SquareType.SOLVED) {
+                    return nextCell;
+                }
+                nextY++;
+            }
+        } else {
+            // Move down
+            let nextX = currentCell.x + 1;
+            while (nextX < room.board.length) {
+                const nextCell = room.board[nextX][currentCell.y];
+                if (nextCell.squareType !== SquareType.BLACK && nextCell.squareType !== SquareType.SOLVED) {
+                    return nextCell;
+                }
+                nextX++;
+            }
+        }
+        return null;
+    };
 
     const menuOptions = [
         {
@@ -101,9 +128,14 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
         return <Text>Room not found</Text>;
     }
 
+
+    useEffect(() => {
+        refresh(roomId);
+    }, []);
+
     return (
         <View style={[styles.container, { paddingBottom: insets.bottom + 70 }]}>
-            <PlayerInfo 
+            <PlayerInfo
                 players={room.players}
                 scores={room.scores}
             />

@@ -2,6 +2,7 @@ import { createContext, JSXElementConstructor, ReactElement, ReactNode, ReactPor
 import io from 'socket.io-client';
 import { config } from "../config/config";
 import { secureStorage } from './storageApi';
+import { useRouter } from 'expo-router';
 
 export type Player = {
   created_at: string;
@@ -13,7 +14,7 @@ export type Player = {
   username: string;
 }
 
-type Room = {
+export type Room = {
   created_at: string;
   crossword: {
     answers: {
@@ -159,6 +160,7 @@ export const RoomProvider = ({ children }: { children: ReactNode }) => {
 // Update useRoom to use the context
 export const useRoom = (roomId?: number) => {
   const socket = useSocket();
+  const router = useRouter();
   const { room, setRoom } = useContext(RoomContext);
 
   const createBoard = (roomData: Room): Square[][] => {
@@ -238,11 +240,16 @@ export const useRoom = (roomId?: number) => {
 
   useEffect(() => {
     socket.on("room", (data: Room) => {
-      console.log('received room: ');
-      console.log(data);
       if (!data) return;
       const boardData = createBoard(data);
       setRoom({ ...data, board: boardData });
+    });
+
+    socket.on("game_started", (data: { message: string, room: Room }) => {
+      console.log("Game started:", data.message);
+      router.push(`/game?roomId=${data.room.id}`);
+      const boardData = createBoard(data.room);
+      setRoom({ ...data.room, board: boardData });
     });
 
     if (!room && roomId) {
@@ -251,6 +258,7 @@ export const useRoom = (roomId?: number) => {
 
     return () => {
       socket.off("room");
+      socket.off("game_started");
     };
   }, [socket, roomId]);
 

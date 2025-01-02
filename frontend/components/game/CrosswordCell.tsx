@@ -40,8 +40,11 @@ export const CrosswordCell: React.FC<CrosswordCellProps> = ({
     const isBlackSquare = squareType === SquareType.BLACK;
     const isSolved = squareType === SquareType.SOLVED;
 
+    // Disable press for black squares and solved squares
+    const isDisabled = squareType === SquareType.BLACK || squareType === SquareType.SOLVED;
+
     return (
-        <Pressable onPress={isBlackSquare ? undefined : onPress}>
+        <Pressable onPress={isDisabled ? undefined : onPress}>
             <View
                 style={[
                     styles.cell,
@@ -54,7 +57,7 @@ export const CrosswordCell: React.FC<CrosswordCellProps> = ({
                         borderBottomLeftRadius: isBottomLeft ? CORNER_RADIUS : 0,
                         borderBottomRightRadius: isBottomRight ? CORNER_RADIUS : 0,
                     },
-                    isSelected && !isBlackSquare && styles.selectedCell,
+                    isSelected && !isDisabled && styles.selectedCell,
                 ]}
             >
                 {gridNumber && gridNumber > 0 && (
