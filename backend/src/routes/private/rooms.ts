@@ -26,8 +26,10 @@ export default function (
   });
 
   fastify.post("/rooms/join", async (request, reply) => {
-    const { difficulty } = request.body as JoinRoom;
-    const room = await roomService.joinRoom(request.user?.id, difficulty);
+    const { difficulty, type } = request.body as JoinRoom;
+    const room = await roomService.joinRoom(request.user?.id, difficulty, type);
+    fastify.io.sockets.socketsJoin(room.id.toString());
+    fastify.io.to(room.id.toString()).emit("room", room);
     reply.send(room);
   });
 
@@ -42,6 +44,12 @@ export default function (
       request.user.id,
     );
     reply.send(room);
+  });
+
+  fastify.get("/rooms", async (request, reply) => {
+    const { status } = request.query as { status?: 'playing' | 'pending' | 'finished' | 'cancelled' };
+    const rooms = await roomService.getRoomsByUserAndStatus(request.user.id, status);
+    reply.send(rooms);
   });
 
   next();

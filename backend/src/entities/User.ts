@@ -1,5 +1,5 @@
-import { Column, Entity, PrimaryGeneratedColumn, OneToOne } from "typeorm";
-import { GameStats } from "./GameStats";
+import { Column, Entity, PrimaryGeneratedColumn, OneToOne, ManyToMany } from "typeorm";
+import { Room } from "./Room";
 
 @Entity()
 export class User {
@@ -41,6 +41,9 @@ export class User {
   @Column({ type: 'integer', default: 1200 })
   eloRating: number;
 
-  @OneToOne(() => GameStats, gameStats => gameStats.user)
-  gameStats: GameStats;
+  // @OneToOne(() => GameStats, gameStats => gameStats.user)
+  // gameStats: GameStats;
+
+  @ManyToMany(() => Room, room => room.players)
+  rooms: Room[];
 }

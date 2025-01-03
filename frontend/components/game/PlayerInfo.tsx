@@ -1,163 +1,47 @@
 import React from 'react';
-import { View, Text, StyleSheet, Image, ScrollView } from 'react-native';
-
-interface Player {
-  name: string;
-  elo: number;
-  score: number;
-  avatarUrl?: string;
-  isCurrentPlayer?: boolean;
-}
+import { StyleSheet, View, Text } from 'react-native';
+import { Player } from '~/hooks/socket';
 
 interface PlayerInfoProps {
   players: Player[];
-  gameTitle?: string;
+  scores: { [key: string]: number };
 }
 
-export const PlayerInfo: React.FC<PlayerInfoProps> = ({ 
-  players,
-  gameTitle = "1v1 Classic" // Default title
-}) => {
+export const PlayerInfo: React.FC<PlayerInfoProps> = ({ players, scores }) => {
   return (
     <View style={styles.container}>
-      <View style={styles.titleContainer}>
-        <Text style={styles.titleText}>{gameTitle}</Text>
-      </View>
-      <ScrollView 
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        {players.map((player, index) => (
-          <View 
-            key={index} 
-            style={[
-              styles.playerSection,
-              player.isCurrentPlayer && styles.currentPlayer,
-              index !== players.length - 1 && styles.playerSectionMargin
-            ]}
-          >
-            <View style={styles.avatarContainer}>
-              {player.avatarUrl ? (
-                <Image 
-                  source={{ uri: player.avatarUrl }} 
-                  style={styles.avatar}
-                />
-              ) : (
-                <View style={[styles.avatar, styles.placeholderAvatar]}>
-                  <Text style={styles.avatarText}>
-                    {player.name.charAt(0).toUpperCase()}
-                  </Text>
-                </View>
-              )}
-            </View>
-            <View style={styles.infoContainer}>
-              <Text 
-                style={styles.name}
-                numberOfLines={1}
-                ellipsizeMode="tail"
-              >
-                {player.name}
-              </Text>
-              <View style={styles.statsContainer}>
-                <View style={styles.statItem}>
-                  <Text style={styles.statLabel}>ELO</Text>
-                  <Text style={styles.statValue}>{player.elo}</Text>
-                </View>
-                <View style={styles.statItem}>
-                  <Text style={styles.statLabel}>Score</Text>
-                  <Text style={styles.statValue}>{player.score}</Text>
-                </View>
-              </View>
-            </View>
-          </View>
-        ))}
-      </ScrollView>
+      {players.map((player) => (
+        <View key={player.id} style={styles.playerCard}>
+          <Text style={styles.username}>{player.username}</Text>
+          <Text style={styles.score}>Score: {scores[player.id] || 0}</Text>
+        </View>
+      ))}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    width: '100%',
-    backgroundColor: 'white',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E5',
-  },
-  titleContainer: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 4,
-  },
-  titleText: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#333',
-    textAlign: 'left',
-  },
-  scrollContent: {
-    paddingHorizontal: 8,
-    paddingVertical: 8,
-  },
-  playerSection: {
     flexDirection: 'row',
-    alignItems: 'center',
-    padding: 8,
+    justifyContent: 'space-around',
+    padding: 16,
+    gap: 16,
+  },
+  playerCard: {
+    padding: 12,
+    backgroundColor: '#F5F5EB',
     borderRadius: 8,
-    minWidth: 160, // Ensure minimum width for readability
-    backgroundColor: 'white',
-  },
-  playerSectionMargin: {
-    marginRight: 8,
-  },
-  currentPlayer: {
-    backgroundColor: '#F5F5F5',
-  },
-  avatarContainer: {
-    marginRight: 8,
-  },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-  },
-  placeholderAvatar: {
-    backgroundColor: '#0061ff',
-    justifyContent: 'center',
     alignItems: 'center',
+    minWidth: 120,
   },
-  avatarText: {
-    color: 'white',
-    fontSize: 18,
-    fontWeight: 'bold',
+  username: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#2B2B2B',
+    marginBottom: 4,
   },
-  infoContainer: {
-    flex: 1,
-    minWidth: 80, // Ensure stats have room
-  },
-  name: {
+  score: {
     fontSize: 14,
-    fontWeight: 'bold',
-    marginBottom: 2,
-    color: '#333',
-  },
-  statsContainer: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  statItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  statLabel: {
-    fontSize: 12,
-    color: '#666',
-    fontWeight: '500',
-  },
-  statValue: {
-    fontSize: 12,
-    color: '#333',
-    fontWeight: 'bold',
+    color: '#2B2B2B',
   },
 }); 

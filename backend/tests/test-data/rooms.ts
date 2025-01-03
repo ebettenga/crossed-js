@@ -47,13 +47,9 @@ export const create = async (connection: DataSource) => {
   const crossword = await crosswordRepository.save(testCrosswords[0]);
 
   await roomRepository.save({
-    player_1: user1,
-    player_2: user2,
     crossword,
     found_letters: ["*", "*", "*", "*", "*", "*", "*", "*", "*", "*", "*"],
     difficulty: "easy",
-    player_1_score: 0,
-    player_2_score: 0,
   });
   console.log("Test room created.");
 };

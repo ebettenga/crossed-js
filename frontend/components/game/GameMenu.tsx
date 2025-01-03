@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, Text } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Text, StyleProp, ViewStyle, TextStyle } from 'react-native';
 import Animated, { 
   useAnimatedStyle, 
   withSpring, 
@@ -11,6 +11,7 @@ import { Menu } from 'lucide-react-native';
 interface MenuOption {
   label: string;
   onPress: () => void;
+  style?: StyleProp<TextStyle>;
 }
 
 interface GameMenuProps {
@@ -45,7 +46,7 @@ export const GameMenu: React.FC<GameMenuProps> = ({ options }) => {
   });
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container]}>
       {/* Menu Options */}
       <Animated.View style={[styles.menuItems, menuItemStyle]}>
         {options.map((option, index) => (
@@ -57,7 +58,7 @@ export const GameMenu: React.FC<GameMenuProps> = ({ options }) => {
               setIsOpen(false);
             }}
           >
-            <Text style={styles.menuText}>{option.label}</Text>
+            <Text style={[styles.menuText, option.style]}>{option.label}</Text>
           </TouchableOpacity>
         ))}
       </Animated.View>
