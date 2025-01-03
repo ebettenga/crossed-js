@@ -12,22 +12,16 @@ start-frontend: ## start the dev server
 	cd ./frontend && yarn install
 	cd ./frontend && npx expo start
 
-stop: ## stop the supabase container instances
-	npx supabase stop
+stop:
+	cd ./backend && docker compose down
+
+load-test-data:
+	cd ./backend && yarn commands load-crosswords
+	cd ./backend && yarn commands load-test-data
+
+
+build-android-dev: #creates a new eas build for android
+	cd frontend && eas build --platform android --profile development
 
 create: ## set up the project
 	yarn install
-	npx supabase start
-	npx supabase migration up
-
-upgrade: ## runs supabase migrations
-	npx supabase migration up
-
-reset: ## recreates local db. useful for testing migrations
-	npx supabase db reset
-
-edge-logs: ## show docker logs for edge runtime container
-	docker logs supabase_edge_runtime_HOA_Map -f
-
-edge-serve: ## serve your local supabase edge functions
-	npx supabase functions serve
