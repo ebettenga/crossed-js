@@ -12,10 +12,8 @@ start-frontend: ## start the dev server
 	cd ./frontend && yarn install
 	cd ./frontend && npx expo start
 
-stop:
-	cd ./backend && docker compose down
 
-load-test-data:
+load-test-data: start-backend ## load test data
 	cd ./backend && yarn commands load-crosswords
 	cd ./backend && yarn commands load-test-data
 
