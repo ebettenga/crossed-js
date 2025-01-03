@@ -14,6 +14,7 @@ export type Guess = {
 
 export type JoinRoom = {
   difficulty: string;
+  type: '1v1' | '2v2' | 'free4all';
 };
 
 export type Message = {
@@ -94,22 +95,6 @@ export default function (
       }
     });
 
-    // game stuff
-    socket.on("join", async (data: JoinRoom) => {
-      try {
-        const user = await verifyUser(authService, fastify, socket);
-        const room = await roomService.joinRoom(user.id, data.difficulty);
-        socket.emit("room", room);
-        socket.join(room.id.toString());
-      } catch (e) {
-        if (e instanceof UserNotFoundError) {
-          socket.emit("error", "Authentication failed");
-        } else {
-          socket.emit("error", e.message);
-        }
-      }
-    });
-
     socket.on("loadRoom", async (data: LoadRoom) => {
       try {
         const user = await verifyUser(authService, fastify, socket);
@@ -142,8 +127,7 @@ export default function (
         );
 
         socket.join(room.id.toString());
-        socket.to(room.id.toString()).emit("guess", { message: room });
-        socket.to(room.id.toString()).emit("room", { message: room });
+        fastify.io.to(room.id.toString()).emit("room", room);
       } catch (e) {
         if (e instanceof UserNotFoundError) {
           socket.emit("error", "Authentication failed");
@@ -159,7 +143,7 @@ export default function (
       async ({ message }: Message) => {
         try {
           const user = await verifyUser(authService, fastify, socket);
-          socket.send(message);
+          socket.emit("message", message);
           fastify.log.info(message);
         } catch (e) {
           if (e instanceof UserNotFoundError) {
@@ -178,6 +162,23 @@ export default function (
           .to(data.roomId.toString())
           .emit("message", data.roomId);
         fastify.log.info(data);
+      } catch (e) {
+        if (e instanceof UserNotFoundError) {
+          socket.emit("error", "Authentication failed");
+        } else {
+          socket.emit("error", e.message);
+        }
+      }
+    });
+
+    socket.on("forfeit", async ({ roomId }: LoadRoom) => {
+      try {
+        const user = await verifyUser(authService, fastify, socket);
+
+        const room = await roomService.forfeitGame(roomId, user.id);
+
+        // Emit the updated room state to all players
+        fastify.io.to(room.id.toString()).emit("room", room);
       } catch (e) {
         if (e instanceof UserNotFoundError) {
           socket.emit("error", "Authentication failed");

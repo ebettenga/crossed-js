@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { CrosswordBoard } from '../components/game/CrosswordBoard';
 import { Keyboard } from '../components/game/Keyboard';
@@ -14,35 +14,26 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GameMenu } from '../components/game/GameMenu';
 import { useRouter } from 'expo-router';
 import { ClueDisplay } from '../components/game/ClueDisplay';
+import { Square, SquareType, useRoom } from '~/hooks/socket';
+import { Text } from 'react-native';
 
-export const GameScreen: React.FC = () => {
+
+export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
+    const { room, guess, refresh, forfeit } = useRoom(roomId);
+
     const router = useRouter();
     const insets = useSafeAreaInsets();
-
-    const [letters] = useState([
-        'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O',
-        'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'A', 'B', 'C', 'D',
-        'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
-        'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H',
-        'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W',
-        'X', 'Y', 'Z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L',
-        'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'A',
-        'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P',
-        'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'A', 'B', 'C', 'D', 'E',
-        'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T',
-        'U', 'V', 'W', 'X', 'Y', 'Z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I',
-        'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X',
-        'Y', 'Z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
-        'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'A', 'B',
-        'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q'
-    ]);
-
-    const [foundLetters] = useState(Array(225).fill('')); // 15x15 = 225
-    const [selectedCell, setSelectedCell] = useState<{ x: number; y: number } | null>(null);
+    const [showSummary, setShowSummary] = useState(false);
+    const [selectedCell, setSelectedCell] = useState<Square | null>(null);
+    const [isAcrossMode, setIsAcrossMode] = useState(true);
 
     const scale = useSharedValue(1);
     const savedScale = useSharedValue(1);
     const rotation = useSharedValue(0);
+
+    useEffect(() => {
+        refresh(roomId);
+    }, []);
 
     const pinchGesture = Gesture.Pinch()
         .onUpdate((e) => {
@@ -69,44 +60,58 @@ export const GameScreen: React.FC = () => {
         ],
     }));
 
-    const handleCellPress = (coordinates: { x: number; y: number }) => {
+    const handleCellPress = (coordinates: Square) => {
+        console.log('handleCellPress GameScreen', coordinates);
         setSelectedCell(coordinates);
     };
 
     const handleKeyPress = (key: string) => {
-        if (selectedCell) {
-            console.log(`Pressed ${key} for cell:`, selectedCell);
-            // Add your guess logic here
+        if (!selectedCell) {
+            return;
+        }
+        guess(roomId, { x: selectedCell.x, y: selectedCell.y }, key);
+        // Move to next cell based on direction
+        const nextCell = getNextCell(selectedCell);
+        if (nextCell) {
+            setSelectedCell(nextCell);
         }
     };
 
-    const [showSummary, setShowSummary] = useState(false);
+    const getNextCell = (currentCell: Square): Square | null => {
+        if (!room?.board) return null;
 
-    // Mock game data - in a real app this would come from your game state
-    const mockGameResults = {
-        players: [
-            {
-                username: "John Doe",
-                lettersCaptured: 12,
-                wrongGuesses: 3,
-                correctGuessPercent: 80,
-                totalPoints: 240,
-                winner: true
-            },
-            {
-                username: "Jane Smith",
-                lettersCaptured: 8,
-                wrongGuesses: 5,
-                correctGuessPercent: 61.5,
-                totalPoints: 160,
-                winner: false
+        if (isAcrossMode) {
+            // Move right
+            let nextY = currentCell.y + 1;
+            while (nextY < room.board[0].length) {
+                const nextCell = room.board[currentCell.x][nextY];
+                if (nextCell.squareType !== SquareType.BLACK && nextCell.squareType !== SquareType.SOLVED) {
+                    return nextCell;
+                }
+                nextY++;
             }
-        ]
+        } else {
+            // Move down
+            let nextX = currentCell.x + 1;
+            while (nextX < room.board.length) {
+                const nextCell = room.board[nextX][currentCell.y];
+                if (nextCell.squareType !== SquareType.BLACK && nextCell.squareType !== SquareType.SOLVED) {
+                    return nextCell;
+                }
+                nextX++;
+            }
+        }
+        return null;
+    };
+
+    const handleForfeit = () => {
+        forfeit(roomId);
+        router.push('/(root)/(tabs)');
     };
 
     const menuOptions = [
         {
-            label: 'Quit Game',
+            label: 'Home',
             onPress: () => {
                 router.push('/(root)/(tabs)');
             },
@@ -120,34 +125,30 @@ export const GameScreen: React.FC = () => {
         {
             label: 'Show Summary',
             onPress: () => {
-                console.log('Opening summary...');  // Debug log
                 setShowSummary(true);
             },
         },
+        {
+            label: 'Forfeit Game',
+            onPress: handleForfeit,
+            style: { color: '#8B0000' }
+        },
     ];
+
+
+    if (!room) {
+        console.log('Room not found');
+        return <Text>Room not found</Text>;
+    }
+
+
+
 
     return (
         <View style={[styles.container, { paddingBottom: insets.bottom + 70 }]}>
             <PlayerInfo
-                gameTitle="1v1 Classic"
-                players={[
-                    {
-                        name: "John Doe",
-                        elo: 1200,
-                        score: 15,
-                        isCurrentPlayer: true,
-                    },
-                    {
-                        name: "Jane Smith",
-                        elo: 1250,
-                        score: 12,
-                    },
-                    {
-                        name: "Jane Smith",
-                        elo: 1250,
-                        score: 12,
-                    },
-                ]}
+                players={room.players}
+                scores={room.scores}
             />
             <View style={styles.boardContainer}>
                 <GestureDetector gesture={composed}>
@@ -156,18 +157,19 @@ export const GameScreen: React.FC = () => {
                         entering={FadeIn}
                     >
                         <CrosswordBoard
-                            letters={letters}
-                            columnCount={15}
-                            foundLetters={foundLetters}
+                            board={room?.board}
                             onCellPress={handleCellPress}
-                            selectedCell={selectedCell}
+                            selectedCell={selectedCell || null}
+                            isAcrossMode={isAcrossMode}
+                            setIsAcrossMode={setIsAcrossMode}
                         />
                     </Animated.View>
                 </GestureDetector>
             </View>
             <View style={styles.bottomSection}>
-                <ClueDisplay 
-                    text="4. Something Here that is a Crossword clue."
+                <ClueDisplay
+                    selectedSquare={selectedCell || null}
+                    isAcrossMode={isAcrossMode}
                 />
                 <Keyboard
                     onKeyPress={handleKeyPress}

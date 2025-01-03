@@ -16,12 +16,6 @@ export type GameType = '1v1' | '2v2' | 'free4all';
 export type GameStatus = 'playing' | 'pending' | 'finished' | 'cancelled';
 
 
-export const PLAYER_COUNT_MAP: Record<GameType, number> = {
-  '1v1': 2,
-  '2v2': 4,
-  'free4all': 5
-};
-
 @Entity()
 export class Room {
   @PrimaryGeneratedColumn()
@@ -41,8 +35,6 @@ export class Room {
   })
   status: GameStatus;
 
-  @Column('int', { default: 0 })
-  player_count: number;
   @ManyToMany(() => User, { eager: true })
   @JoinTable({
     name: "room_players",
@@ -51,7 +43,7 @@ export class Room {
   })
   players: User[];
 
-  @OneToOne(() => Crossword)
+  @OneToOne(() => Crossword, { eager: true })
   @JoinColumn()
   crossword: Crossword;
 

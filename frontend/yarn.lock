@@ -4626,13 +4626,13 @@ expo-constants@~17.0.0, expo-constants@~17.0.3:
     "@expo/config" "~10.0.4"
     "@expo/env" "~0.4.0"
 
-expo-dev-client@~5.0.7:
-  version "5.0.7"
-  resolved "https://registry.yarnpkg.com/expo-dev-client/-/expo-dev-client-5.0.7.tgz#7902cb0443224f6fbc106e88619fd4987e5f3d1c"
-  integrity sha512-Ui938ZTSBHqQW9W5LY8Qb8ezf03YqX2LeYoQBh+p3Oen9XAZ67qd0NiQtssJd5GvbS5C5JTtF0OQMMhJAtiIvA==
+expo-dev-client@~5.0.8:
+  version "5.0.8"
+  resolved "https://registry.yarnpkg.com/expo-dev-client/-/expo-dev-client-5.0.8.tgz#abfe5b2a0983672a5333c418918dd287620c2237"
+  integrity sha512-b9vEIoPBYNqCegxx1D/aZdXkLABa+JA7eFn/dygiU0HnFsr0YBFx3Lj2kzMukayy5x0u9EjMps3l/fznC1EMQg==
   dependencies:
     expo-dev-launcher "5.0.21"
-    expo-dev-menu "6.0.14"
+    expo-dev-menu "6.0.15"
     expo-dev-menu-interface "1.9.2"
     expo-manifests "~0.15.0"
     expo-updates-interface "~1.0.0"
@@ -4656,6 +4656,13 @@ expo-dev-menu@6.0.14:
   version "6.0.14"
   resolved "https://registry.yarnpkg.com/expo-dev-menu/-/expo-dev-menu-6.0.14.tgz#808393d5a96ad87b36c128a5b690bea7eade37d6"
   integrity sha512-bG4NXm4epHSmZdWW9hZCS7dTcKO82CyVfYMbNSOw5o/FKO9cY/AgfSj6ERPE9zBqYEJJEJaoJ0mzv0d47/h23g==
+  dependencies:
+    expo-dev-menu-interface "1.9.2"
+
+expo-dev-menu@6.0.15:
+  version "6.0.15"
+  resolved "https://registry.yarnpkg.com/expo-dev-menu/-/expo-dev-menu-6.0.15.tgz#1e9d9b2ad0335bfe379317b6576165179c0a0b09"
+  integrity sha512-GMMOSKq9Sjv6uZJt0pSHLHAi33ZHj6mdC+ostvz1A02+U86+mujcMUozYIBTzpiL4Vzj4v7D+sJB+oW6CmDxgg==
   dependencies:
     expo-dev-menu-interface "1.9.2"
 
@@ -4743,6 +4750,11 @@ expo-router@4.0.11:
     schema-utils "^4.0.1"
     semver "~7.6.3"
     server-only "^0.0.1"
+
+expo-secure-store@~14.0.0:
+  version "14.0.0"
+  resolved "https://registry.yarnpkg.com/expo-secure-store/-/expo-secure-store-14.0.0.tgz#cf6eb7f73e619f8907d5a073e2f438927b5fc2ab"
+  integrity sha512-VyhtRFXP+7hQmHhKlHIOWid1Q/IRpM7Uif32tZHLZHvQ6FNz2cUkr26XWGvCa7btYbrR6OL++FBFZYjbIcRZTw==
 
 expo-splash-screen@~0.29.18:
   version "0.29.18"

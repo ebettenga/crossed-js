@@ -4,13 +4,13 @@ import { Link, useRouter } from 'expo-router';
 import { Users, Settings, BarChart3, CreditCard, LogOut } from 'lucide-react-native';
 import { ProfileButton } from '~/components/profile/ProfileButton';
 import { HomeHeader } from '~/components/home/HomeHeader';
+import { useLogout } from '~/hooks/users';
 
 export default function Profile() {
     const router = useRouter();
-
+    const logout = useLogout();
     const handleLogout = () => {
-        // Handle logout logic
-        console.log('Logging out...');
+        logout();
     };
 
     return (
