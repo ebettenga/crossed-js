@@ -142,7 +142,6 @@ export default function Home() {
                     <SocialSquare size={BUTTON_SIZE} />
                 </View>
             </View>
-
             <DifficultyBottomSheet
                 isOpen={isBottomSheetOpen}
                 onClose={handleBottomSheetClose}

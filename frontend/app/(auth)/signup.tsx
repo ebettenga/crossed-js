@@ -1,48 +1,54 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, TextInput, TouchableOpacity, Image } from 'react-native';
-import { useRouter } from 'expo-router';
+import { View, StyleSheet, TextInput, TouchableOpacity } from 'react-native';
+import { Redirect, useRouter } from 'expo-router';
 import { Text } from '~/components/ui/text';
-import { useSignIn } from '~/hooks/users';
+import { useSignUp, useUser } from '~/hooks/users';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useUser } from '~/hooks/users';
-import { Redirect } from 'expo-router';
 
-export default function SignIn() {
+export default function SignUp() {
     const router = useRouter();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [username, setUsername] = useState('');
     const [error, setError] = useState('');
+    const { data: user } = useUser();  
     
-    const signInMutation = useSignIn();
-    const { data: user, isLoading: isLoadingUser } = useUser();
-    console.log(user);
+    const signUpMutation = useSignUp();
 
+    const handleSignUp = () => {
+        try {
+            setError('');
+            signUpMutation.mutate({ email, password, username });
+        } catch (err) {
+            console.log(err);
+            setError('Failed to create account');
+        }
+    };
 
-
-    // If user is already signed in, redirect to home
     if (user) {
         return <Redirect href="/(root)/(tabs)" />;
     }
-
-    const handleSignIn = () => {
-        try {
-            setError('');
-            signInMutation.mutate({ email, password });
-        } catch (err) {
-            console.log(err);
-            setError('Invalid email or password');
-        }
-    };
 
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.content}>
                 <View style={styles.header}>
-                    <Text style={styles.title}>Welcome Back</Text>
-                    <Text style={styles.subtitle}>Sign in to continue playing</Text>
+                    <Text style={styles.title}>Create Account</Text>
+                    <Text style={styles.subtitle}>Sign up to start playing</Text>
                 </View>
 
                 <View style={styles.form}>
+                    <View style={styles.inputContainer}>
+                        <Text style={styles.label}>Username</Text>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Choose a username"
+                            value={username}
+                            onChangeText={setUsername}
+                            autoCapitalize="none"
+                        />
+                    </View>
+
                     <View style={styles.inputContainer}>
                         <Text style={styles.label}>Email</Text>
                         <TextInput
@@ -59,7 +65,7 @@ export default function SignIn() {
                         <Text style={styles.label}>Password</Text>
                         <TextInput
                             style={styles.input}
-                            placeholder="Enter your password"
+                            placeholder="Choose a password"
                             value={password}
                             onChangeText={setPassword}
                             secureTextEntry
@@ -69,21 +75,21 @@ export default function SignIn() {
                     {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
                     <TouchableOpacity 
-                        style={styles.signInButton}
-                        onPress={handleSignIn}
-                        disabled={signInMutation.isPending}
+                        style={styles.signUpButton}
+                        onPress={handleSignUp}
+                        disabled={signUpMutation.isPending}
                     >
-                        <Text style={styles.signInButtonText}>
-                            {signInMutation.isPending || isLoadingUser ? 'Signing in...' : 'Sign In'}
+                        <Text style={styles.signUpButtonText}>
+                            {signUpMutation.isPending ? 'Creating Account...' : 'Create Account'}
                         </Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity 
-                        style={styles.createAccountButton}
-                        onPress={() => router.push('/(auth)/signup')}
+                        style={styles.signInButton}
+                        onPress={() => router.push('/')}
                     >
-                        <Text style={styles.createAccountText}>
-                            Don't have an account? Create one
+                        <Text style={styles.signInText}>
+                            Already have an account? Sign in
                         </Text>
                     </TouchableOpacity>
                 </View>
@@ -144,8 +150,8 @@ const styles = StyleSheet.create({
         fontSize: 14,
         textAlign: 'center',
     },
-    signInButton: {
-        backgroundColor: '#059669',
+    signUpButton: {
+        backgroundColor: '#8B0000',
         padding: 16,
         borderRadius: 8,
         alignItems: 'center',
@@ -158,17 +164,17 @@ const styles = StyleSheet.create({
         shadowRadius: 3,
         elevation: 2,
     },
-    signInButtonText: {
+    signUpButtonText: {
         color: 'white',
         fontSize: 16,
         fontWeight: '600',
     },
-    createAccountButton: {
+    signInButton: {
         padding: 12,
         alignItems: 'center',
     },
-    createAccountText: {
-        color: '#059669',
+    signInText: {
+        color: '#8B0000',
         fontSize: 14,
         fontWeight: '500',
     },

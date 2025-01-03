@@ -9,8 +9,8 @@ import { useLogout } from '~/hooks/users';
 export default function Profile() {
     const router = useRouter();
     const logout = useLogout();
-    const handleLogout = () => {
-        logout();
+    const handleLogout = async () => {
+        await logout();
     };
 
     return (
