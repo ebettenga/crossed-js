@@ -5,11 +5,13 @@ import {
   JoinColumn,
   JoinTable,
   ManyToMany,
+  OneToMany,
   OneToOne,
   PrimaryGeneratedColumn,
 } from "typeorm";
 import { User } from "./User";
 import { Crossword } from "./Crossword";
+import { GameStats } from "./GameStats";
 
 export type GameType = "1v1" | "2v2" | "free4all";
 export type GameStatus = "playing" | "pending" | "finished" | "cancelled";
@@ -92,15 +94,34 @@ export class Room {
   @Column("char", { array: true, default: "{}" })
   found_letters: string[];
 
+  @OneToMany(() => GameStats, (gameStats) => gameStats.room)
+  stats: GameStats[];
+
+  // Cache for toView result
+  private viewCache: any = null;
+  private lastModified: number = 0;
+  private lastViewUpdate: number = 0;
+
+  // Method to mark the room as modified
+  markModified() {
+    this.lastModified = Date.now();
+    this.viewCache = null;
+  }
+
   get player_count(): number {
     return this.players.length;
   }
 
   toView() {
+    // If cache exists and room hasn't been modified, return cached view
+    if (this.viewCache && this.lastModified === this.lastViewUpdate) {
+      return this.viewCache;
+    }
+
     const localCreatedAt = new Date(this.created_at);
     localCreatedAt.setHours(localCreatedAt.getHours() + 6);
 
-    return {
+    const view = {
       id: this.id,
       created_at: localCreatedAt.toISOString(),
       difficulty: this.difficulty,
@@ -117,13 +138,23 @@ export class Room {
         col_size: this.crossword.col_size,
         row_size: this.crossword.row_size,
         gridnums: this.crossword.gridnums,
-        clues: this.crossword.clues,
+        clues: {
+          across: this.crossword.clues.across,
+          down: this.crossword.clues.down
+        },
         title: this.crossword.title,
-        author: this.crossword.author,
+        author: this.crossword.author
       },
       found_letters: this.found_letters,
       board: this.createBoard(),
+      stats: null,
     };
+
+    // Update cache
+    this.viewCache = view;
+    this.lastViewUpdate = this.lastModified;
+
+    return view;
   }
 
   private getSquareType(
@@ -182,7 +213,6 @@ export class Room {
   ): Clue | undefined {
     return clueList.find((clue) => clue.number === questionNumber);
   }
-
 
   private createBoard(): Square[][] {
     const squares = this.createSquares();

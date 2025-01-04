@@ -4,6 +4,7 @@ import { User } from "../entities/User";
 import { CrosswordService } from "./CrosswordService";
 import { config } from "../config/config";
 import { fastify } from "../fastify";
+import { GameStats } from "../entities/GameStats";
 
 export class RoomService {
   private crosswordService: CrosswordService;
@@ -41,6 +42,7 @@ export class RoomService {
     if (!player) throw new Error("User not found");
     
     room.players.push(player);
+    room.markModified();
     
     // If room is full based on game type, change status to playing
     const maxPlayers = config.game.maxPlayers[room.type];
@@ -80,78 +82,7 @@ export class RoomService {
 
     return await this.ormConnection.getRepository(Room).save(room);
   }
-
-  async guess(
-    roomId: number,
-    coordinates: { x: number; y: number },
-    guess: string,
-    userId: number,
-  ): Promise<Room> {
-    let room = await this.ormConnection
-      .getRepository(Room)
-      .findOneBy({ id: roomId });
-
-    if (!room.players.some(player => player.id === userId)) {
-      throw new Error("User is not a participant in this room");
-    }
-
-    const isCorrect = await this.crosswordService.checkGuess(
-      room,
-      coordinates,
-      guess,
-    );
-
-    if (isCorrect) {
-      this.modifyPoints(room, userId, config.game.points.correct);
-      this.updateFoundBoard(room, coordinates, guess);
-    } else {
-      this.modifyPoints(room, userId, config.game.points.incorrect);
-    }
-
-    await this.ormConnection.getRepository(Room).save(room);
-
-    // Check if this was the last letter to be found
-    const remainingBlanks = room.found_letters.filter(letter => letter === '*').length;
-    if (remainingBlanks === 0) {
-      room.status = 'finished';
-      await this.handleGameEnd(room);
-    }
-
-    return room;
-  }
-
-  private async handleGameEnd(room: Room): Promise<void> {
-    // Get scores array sorted by score (highest first)
-    const playerScores = Object.entries(room.scores)
-      .map(([playerId, score]) => ({ 
-        playerId: parseInt(playerId), 
-        score 
-      }))
-      .sort((a, b) => b.score - a.score);
-
-    // TODO: Update ELO calculations for multiple players
-
-
-    await this.ormConnection.getRepository(Room).save(room);
-  }
-
-  private updateFoundBoard(
-    room: Room,
-    coordinates: { x: number; y: number },
-    guess: string,
-  ): void {
-    const space = coordinates.x * room.crossword.row_size + coordinates.y;
-    room.found_letters[space] = guess;
-
-  }
-
-  private modifyPoints(room: Room, userId: number, points: number): void {
-    if (!room.scores[userId]) {
-      room.scores[userId] = 0;
-    }
-    room.scores[userId] += points;
-  }
-
+  
   private async findEmptyRoomByDifficulty(difficulty: string, type: '1v1' | '2v2' | 'free4all'): Promise<Room> {
     return this.ormConnection.getRepository(Room).findOne({
       where: { 
@@ -190,6 +121,7 @@ export class RoomService {
 
     // Set the game as finished
     room.status = 'finished';
+    room.markModified();
 
     await this.ormConnection.getRepository(Room).save(room);
     return room;
@@ -208,5 +140,57 @@ export class RoomService {
     }
 
     return query.getMany();
+  }
+
+  async handleGuess(roomId: number, userId: number, x: number, y: number, guess: string): Promise<Room> {
+    const room = await this.getRoomById(roomId);
+    if (!room) throw new Error("Room not found");
+
+    const isCorrect = await this.crosswordService.checkGuess(room, { x, y }, guess);
+
+    // Get or create game stats for this user and room
+    let gameStats = await this.ormConnection.getRepository(GameStats).findOne({
+      where: { userId, roomId }
+    });
+
+    if (!gameStats) {
+      const user = await this.ormConnection.getRepository(User).findOneBy({ id: userId });
+      if (!user) throw new Error("User not found");
+
+      gameStats = new GameStats();
+      gameStats.user = user;
+      gameStats.room = room;
+      gameStats.userId = userId;
+      gameStats.roomId = roomId;
+      gameStats.userEloAtGame = user.eloRating;
+    }
+
+    // Update stats based on guess result
+    if (isCorrect) {
+      gameStats.correctGuesses++;
+      gameStats.correctGuessRecords.push({
+        x,
+        y,
+        letter: guess,
+        timestamp: new Date()
+      });
+      
+      // Update room state
+      room.found_letters[x * room.crossword.col_size + y] = guess;
+      room.scores[userId] = (room.scores[userId] || 0) + config.game.points.correct;
+      room.markModified();
+    } else {
+      gameStats.incorrectGuesses++;
+      room.scores[userId] = (room.scores[userId] || 0) + config.game.points.incorrect;
+      room.markModified();
+    }
+
+    // Save both game stats and room
+    await Promise.all([
+      this.ormConnection.getRepository(GameStats).save(gameStats),
+      this.ormConnection.getRepository(Room).save(room)
+    ]);
+
+    return room;
   }
 }

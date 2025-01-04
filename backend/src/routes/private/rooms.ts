@@ -37,12 +37,8 @@ export default function (
     const { coordinates, guess } = request
       .body as RoomQueryParams;
     const { roomId } = request.params as { roomId: number };
-    const room = await roomService.guess(
-      roomId,
-      coordinates,
-      guess,
-      request.user.id,
-    );
+    const room = await roomService.handleGuess(roomId, request.user.id, coordinates.x, coordinates.y, guess);
+    fastify.io.to(room.id.toString()).emit("room", room.toView());
     reply.send(room.toView());
   });
 

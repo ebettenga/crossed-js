@@ -115,27 +115,27 @@ export default function (
       }
     });
 
-    socket.on("guess", async (data: Guess) => {
+    socket.on("guess", async ({ roomId, x, y, guess }) => {
       try {
-        fastify.log.info("guess");
-        fastify.log.info(data);
         const user = await verifyUser(authService, fastify, socket);
-        const coordinates = { x: data.x, y: data.y };
-        const room = await roomService.guess(
-          data.roomId,
-          coordinates,
-          data.guess,
-          user.id,
-        );
-        fastify.log.info(room.toView());
-        socket.join(room.id.toString());
-        fastify.io.to(room.id.toString()).emit("room", room.toView());
-      } catch (e) {
-        if (e instanceof UserNotFoundError) {
-          socket.emit("error", "Authentication failed");
-        } else {
-          socket.emit("error", e.message);
+        if (!user) {
+          socket.emit("error", { message: "Authentication failed" });
+          return;
         }
+
+        const room = await roomService.handleGuess(roomId, user.id, x, y, guess);
+
+        if (!room) {
+          socket.emit("error", { message: "Room not found" });
+          return;
+        }
+
+        // Broadcast updated room state to all players
+        fastify.io.to(roomId.toString()).emit("room", room.toView());
+
+      } catch (error) {
+        console.error("Error handling guess:", error);
+        socket.emit("error", { message: "Failed to process guess" });
       }
     });
 
