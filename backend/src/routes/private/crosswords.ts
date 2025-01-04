@@ -35,8 +35,8 @@ export default function (
   });
 
   fastify.post("/crosswords/load_crosswords", async (request, reply) => {
-    if (!request.user?.roles.includes("admin")) {
-      reply.send({ error: "Unauthorized" });
+    if (!request.user) {
+      reply.code(403).send({ error: "Unauthorized" });
     } else {
       await crosswordService.loadCrosswords();
     }

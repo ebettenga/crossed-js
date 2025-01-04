@@ -9,8 +9,6 @@ interface ClueDisplayProps {
 
 export const ClueDisplay: React.FC<ClueDisplayProps> = ({ selectedSquare, isAcrossMode }) => {
   if (!selectedSquare) return null;
-  console.log('selectedSquare', selectedSquare);
-  console.log('isAcrossMode', isAcrossMode);
   const clue = isAcrossMode ? selectedSquare.acrossQuestion : selectedSquare.downQuestion;
   const direction = isAcrossMode ? 'Across' : 'Down';
   

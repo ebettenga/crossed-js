@@ -21,6 +21,7 @@ type SignInResponse = {
   user_id: number;
   access_token: string;
   refresh_token: string;
+  user: User;
 };
 
 export type User = {
@@ -51,10 +52,10 @@ export const useSignIn = () => {
     onSuccess: (res) => {
       secureStorage.set("token", res.access_token);
       secureStorage.set("refresh_token", res.refresh_token);
-      queryClient.fetchQuery({ queryKey: ['me'] });
+      queryClient.setQueryData(['me'], res.user);
     },
     onError: (err) => {
-      console.log(err);
+      console.error(err);
     }
   });
 };
@@ -69,10 +70,10 @@ export const useSignUp = () => {
     onSuccess: (res) => {
       secureStorage.set("token", res.access_token);
       secureStorage.set("refresh_token", res.refresh_token);
-      queryClient.fetchQuery({ queryKey: ['me'] });
+      queryClient.setQueryData(['me'], res.user);
     },
     onError: (err) => {
-      console.log(err);
+      console.error(err);
     }
   });
 };
@@ -87,6 +88,7 @@ export const useLogout = () => {
     queryClient.clear();
     queryClient.invalidateQueries({ queryKey: ['me'] });
     queryClient.removeQueries({ queryKey: ['me'] });
-    router.replace('/');
+    queryClient.setQueryData(['me'], null);
+    router.replace('/(auth)/signin');
   };
 };

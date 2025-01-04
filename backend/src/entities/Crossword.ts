@@ -1,6 +1,9 @@
-
 import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
-import { Room } from './Room';
+
+export type Clues = {
+  across: string[];
+  down: string[];
+};
 
 @Entity()
 export class Crossword {
@@ -8,10 +11,13 @@ export class Crossword {
   id: number;
 
   @Column('jsonb')
-  clues: object;
+  clues: Clues;
 
   @Column('jsonb')
-  answers: object;
+  answers: {
+    across: string[];
+    down: string[];
+  };
 
   @Column('text', { nullable: true })
   author: string;
@@ -29,7 +35,7 @@ export class Crossword {
   grid: string[];
 
   @Column('simple-array', { nullable: true })
-  gridnums: number[];
+  gridnums: string[];
 
   @Column('boolean', { nullable: true })
   shadecircles: boolean;
@@ -48,5 +54,4 @@ export class Crossword {
 
   @Column('text', { nullable: true })
   title: string;
-
 }

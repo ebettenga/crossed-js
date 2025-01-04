@@ -1,6 +1,7 @@
 import "reflect-metadata";
 import fastifySecureSession from "@fastify/secure-session";
 import fastifyIO from "fastify-socket.io";
+import fastifyCors from "@fastify/cors";
 import { registerDb } from "./db";
 import { config } from "./config/config";
 import fs from "fs";
@@ -19,6 +20,9 @@ const __dirname = path.dirname(__filename);
 // DB Stuff
 registerDb(fastify);
 
+// CORS
+fastify.register(fastifyCors, config.cors);
+
 // Auth Stuff
 fastify.register(fastifySecureSession, {
   key: fs.readFileSync(path.join(__dirname, config.secretKeyPath)),
@@ -26,10 +30,7 @@ fastify.register(fastifySecureSession, {
 
 // Socket Stuff
 fastify.register(fastifyIO, {
-  cors: {
-    origin: "*",
-    methods: ["GET", "POST"],
-  },
+  cors: config.cors,
 });
 
 fastify.register(fastifyAutoload, {

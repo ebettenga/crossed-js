@@ -8,7 +8,7 @@ export default function (
 ): void {
   fastify.get("/me", async (request, reply) => {
     if (!request.user) {
-      reply.send({ error: "Unauthorized" });
+      reply.code(403).send({ error: "Unauthorized" });
     }
     reply.send(request.user);
   });

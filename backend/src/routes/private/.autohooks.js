@@ -16,17 +16,17 @@ export default async function (fastify, opts) {
           .findOneById(user.sub);
 
         if (!userRecord) {
-          reply.code(401).send({ error: 'Unauthorized' });
+          reply.code(403).send({ error: 'Unauthorized' });
           return;
         }
         request.user = userRecord;
       } catch (err) {
         fastify.log.error('Token verification failed:', err);
-        reply.code(401).send({ error: 'Unauthorized' });
+        reply.code(403).send({ error: 'Unauthorized' });
       }
     } else {
       fastify.log.warn('Authorization header missing or malformed');
-      reply.code(401).send({ error: 'Unauthorized' });
+      reply.code(403).send({ error: 'Unauthorized' });
     }
   });
 }

@@ -34,19 +34,19 @@ export const GlobalProvider = ({ children }: { children: ReactNode }) => {
 
     const isLoggedIn = !!user;
 
-    useEffect(() => {
-        if (__DEV__) {
-            DevClient.registerDevMenuItems([
-                {
-                    name: "Debug User Session",
-                    callback: () => {
-                        console.log("Current user:", user);
-                    },
-                    shouldCollapse: false,
-                }
-            ]);
-        }
-    }, [user]);
+    // useEffect(() => {
+    //     if (__DEV__) {
+    //         DevClient.registerDevMenuItems([
+    //             {
+    //                 name: "Debug User Session",
+    //                 callback: () => {
+    //                     console.log("Current user:", user);
+    //                 },
+    //                 shouldCollapse: false,
+    //             }
+    //         ]);
+    //     }
+    // }, [user]);
 
     return (
         <GlobalContext.Provider value={{

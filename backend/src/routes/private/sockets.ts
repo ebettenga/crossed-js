@@ -34,7 +34,7 @@ async function verifyUser(
   fastify: FastifyInstance,
   socket: Socket,
 ) {
-  const userToken = authService.verify(fastify, {
+  const userToken = authService. verify(fastify, {
     token: socket.handshake.auth.authToken,
   });
   const user = await fastify.orm.getRepository(User).findOne({
@@ -84,7 +84,7 @@ export default function (
       try {
         const user = await verifyUser(authService, fastify, socket);
         const room = await roomService.getRoomById(data.roomId);
-        socket.emit("room", room);
+        socket.emit("room", room.toView());
         socket.join(room.id.toString());
       } catch (e) {
         if (e instanceof UserNotFoundError) {
@@ -104,7 +104,7 @@ export default function (
           socket.emit("error", "Couldn't find room.");
         } else {
           socket.join(room.id.toString());
-          socket.emit("room", room);
+          socket.emit("room", room.toView());
         }
       } catch (e) {
         if (e instanceof UserNotFoundError) {
@@ -117,6 +117,8 @@ export default function (
 
     socket.on("guess", async (data: Guess) => {
       try {
+        fastify.log.info("guess");
+        fastify.log.info(data);
         const user = await verifyUser(authService, fastify, socket);
         const coordinates = { x: data.x, y: data.y };
         const room = await roomService.guess(
@@ -125,9 +127,9 @@ export default function (
           data.guess,
           user.id,
         );
-
+        fastify.log.info(room.toView());
         socket.join(room.id.toString());
-        fastify.io.to(room.id.toString()).emit("room", room);
+        fastify.io.to(room.id.toString()).emit("room", room.toView());
       } catch (e) {
         if (e instanceof UserNotFoundError) {
           socket.emit("error", "Authentication failed");

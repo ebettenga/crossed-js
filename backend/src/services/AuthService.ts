@@ -56,11 +56,15 @@ export class AuthService {
     const accessToken = this.generateAccessToken(user);
     const refreshToken = this.generateRefreshToken(user);
 
+    // Remove password from user object before sending
+    delete user.password;
+
     return {
       token_type: "Bearer",
       user_id: user.id,
       access_token: accessToken,
       refresh_token: refreshToken,
+      user,
     };
   }
 
@@ -77,6 +81,9 @@ export class AuthService {
         "roles",
         "username",
         "attributes",
+        "created_at",
+        "description",
+        "eloRating",
       ],
     });
 
@@ -93,11 +100,15 @@ export class AuthService {
     const accessToken = this.generateAccessToken(user);
     const refreshToken = this.generateRefreshToken(user);
 
+    // Remove password from user object before sending
+    delete user.password;
+
     return {
       token_type: "Bearer",
       user_id: user.id,
       access_token: accessToken,
       refresh_token: refreshToken,
+      user,
     };
   }
 

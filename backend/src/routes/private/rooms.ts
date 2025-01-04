@@ -22,15 +22,15 @@ export default function (
   fastify.get("/rooms/:roomId", async (request, reply) => {
     const params = request.params as { roomId: string };
     const room = await roomService.getRoomById(parseInt(params.roomId));
-    reply.send(room);
+    reply.send(room.toView());
   });
 
   fastify.post("/rooms/join", async (request, reply) => {
     const { difficulty, type } = request.body as JoinRoom;
     const room = await roomService.joinRoom(request.user?.id, difficulty, type);
     fastify.io.sockets.socketsJoin(room.id.toString());
-    fastify.io.to(room.id.toString()).emit("room", room);
-    reply.send(room);
+    fastify.io.to(room.id.toString()).emit("room", room.toView());
+    reply.send(room.toView());
   });
 
   fastify.post("/rooms/:roomId", async (request, reply) => {
@@ -43,13 +43,13 @@ export default function (
       guess,
       request.user.id,
     );
-    reply.send(room);
+    reply.send(room.toView());
   });
 
   fastify.get("/rooms", async (request, reply) => {
     const { status } = request.query as { status?: 'playing' | 'pending' | 'finished' | 'cancelled' };
     const rooms = await roomService.getRoomsByUserAndStatus(request.user.id, status);
-    reply.send(rooms);
+    reply.send(rooms.map((room) => room.toView()));
   });
 
   next();

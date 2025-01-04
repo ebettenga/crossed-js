@@ -28,7 +28,6 @@ export default function Home() {
     const { mutate: join } = useJoinRoom();
     const { data: activeRooms, isLoading: isLoadingRooms, error: activeRoomsError } = useActiveRooms();
     const { data: pendingRooms, isLoading: isLoadingPendingRooms, error: pendingRoomsError } = usePendingRooms();
-    console.log(activeRooms);
     const { data: user, isLoading: isLoadingUser } = useUser();
 
     const isBottomSheetOpen = useSharedValue(false);

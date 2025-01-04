@@ -4,6 +4,12 @@ export const commonConfig = {
     port: 3000,
     host: '0.0.0.0',
   },
+  cors: {
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true
+  },
   game: {
     points: {
       correct: 3,
@@ -19,6 +25,6 @@ export const commonConfig = {
       '1v1': 2,
       '2v2': 4,
       'free4all': 5,
-    }
+    },
   }
 };

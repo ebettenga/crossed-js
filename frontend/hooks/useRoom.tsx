@@ -1,48 +1,54 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { post } from "./api";
 
+export enum SquareType {
+    SOLVED,
+    BLANK,
+    BLACK,
+    CIRCLE_BLANK,
+    CIRCLE_SOLVED,
+}
+
+export interface Square {
+    id: number;
+    squareType: SquareType;
+    letter?: string;
+    gridnumber: number | null;
+    x: number;
+    y: number;
+    downQuestion?: string;
+    acrossQuestion?: string;
+}
+
+export type Player = {
+    id: number;
+    username: string;
+    score: number;
+};
 
 export type Room = {
     id: number;
+    created_at: string;
+    difficulty: string;
     type: '1v1' | '2v2' | 'free4all';
     status: 'playing' | 'pending' | 'finished' | 'cancelled';
-    players: {
-        id: number;
-        username: string;
-        email: string;
-        description: string | null;
-        created_at: string;
-        roles: string[];
-        score: number;
-    }[];
+    player_count: number;
+    players: Player[];
+    scores: { [key: number]: number };
     crossword: {
-        id: number;
-        grid: string[];
-        gridnums: any[];
+        col_size: number;
+        row_size: number;
+        gridnums: number[];
         clues: {
             across: string[];
             down: string[];
         };
-        answers: {
-            across: string[];
-            down: string[];
-        };
-        col_size: number;
-        row_size: number;
-        circles: any[];
-        author: string;
         title: string;
-        date: string;
-        dow: string;
-        notepad: string;
-        jnote: string;
-        shadecircles: boolean;
+        author: string;
     };
-    scores: { [key: number]: number };
-    created_at: string;
-    difficulty: string;
     found_letters: string[];
-}
+    board: Square[][];
+};
 
 type JoinRoomParams = {
     difficulty: string;

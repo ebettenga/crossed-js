@@ -5,11 +5,7 @@ import { Keyboard } from '../components/game/Keyboard';
 import { PlayerInfo } from '../components/game/PlayerInfo';
 import Animated, {
     FadeIn,
-    useAnimatedStyle,
-    useSharedValue,
-    withSpring,
 } from 'react-native-reanimated';
-import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GameMenu } from '../components/game/GameMenu';
 import { useRouter } from 'expo-router';
@@ -27,41 +23,12 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
     const [selectedCell, setSelectedCell] = useState<Square | null>(null);
     const [isAcrossMode, setIsAcrossMode] = useState(true);
 
-    const scale = useSharedValue(1);
-    const savedScale = useSharedValue(1);
-    const rotation = useSharedValue(0);
-
     useEffect(() => {
         refresh(roomId);
     }, []);
 
-    const pinchGesture = Gesture.Pinch()
-        .onUpdate((e) => {
-            scale.value = savedScale.value * e.scale;
-        })
-        .onEnd(() => {
-            savedScale.value = scale.value;
-        });
-
-    const rotateGesture = Gesture.Rotation()
-        .onUpdate((e) => {
-            rotation.value = e.rotation;
-        })
-        .onEnd(() => {
-            rotation.value = withSpring(0);
-        });
-
-    const composed = Gesture.Simultaneous(pinchGesture, rotateGesture);
-
-    const animatedStyle = useAnimatedStyle(() => ({
-        transform: [
-            { scale: scale.value },
-            { rotateZ: `${rotation.value}rad` },
-        ],
-    }));
 
     const handleCellPress = (coordinates: Square) => {
-        console.log('handleCellPress GameScreen', coordinates);
         setSelectedCell(coordinates);
     };
 
@@ -151,20 +118,18 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
                 scores={room.scores}
             />
             <View style={styles.boardContainer}>
-                <GestureDetector gesture={composed}>
-                    <Animated.View
-                        style={[styles.board, animatedStyle]}
-                        entering={FadeIn}
-                    >
-                        <CrosswordBoard
-                            board={room?.board}
-                            onCellPress={handleCellPress}
-                            selectedCell={selectedCell || null}
-                            isAcrossMode={isAcrossMode}
-                            setIsAcrossMode={setIsAcrossMode}
-                        />
-                    </Animated.View>
-                </GestureDetector>
+                <Animated.View
+                    style={[styles.board]}
+                    entering={FadeIn}
+                >
+                    <CrosswordBoard
+                        board={room?.board}
+                        onCellPress={handleCellPress}
+                        selectedCell={selectedCell || null}
+                        isAcrossMode={isAcrossMode}
+                        setIsAcrossMode={setIsAcrossMode}
+                    />
+                </Animated.View>
             </View>
             <View style={styles.bottomSection}>
                 <ClueDisplay

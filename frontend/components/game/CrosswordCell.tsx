@@ -1,18 +1,19 @@
 import React from 'react';
 import { StyleSheet, Dimensions, Pressable, View, Text } from 'react-native';
 import { SquareType } from '~/hooks/socket';
+import { config } from '~/config/config';
 
 // Calculate cell size based on screen width
 const SCREEN_WIDTH = Dimensions.get('window').width;
-const GRID_SIZE = 15;
-const BORDER_WIDTH = 1;
+const GRID_SIZE = config.game.crossword.gridSize;
+const BORDER_WIDTH = config.game.crossword.borderWidth;
 const CELL_SIZE = Math.floor((SCREEN_WIDTH) / GRID_SIZE);
-const CORNER_RADIUS = 4;
+const CORNER_RADIUS = config.game.crossword.cornerRadius;
 
-// Newspaper theme colors
-const PAPER_COLOR = '#F5F5EB'; // Slightly off-white, newspaper-like color
-const SELECTED_COLOR = '#E6E6DC'; // Slightly darker version of paper color
-const BORDER_COLOR = '#2B2B2B'; // Softer than pure black
+// Colors from config
+const PAPER_COLOR = config.game.crossword.colors.paper;
+const SELECTED_COLOR = config.game.crossword.colors.selected;
+const BORDER_COLOR = config.game.crossword.colors.border;
 
 interface CrosswordCellProps {
     letter: string;
