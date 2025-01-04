@@ -29,6 +29,12 @@ export type LoadRoom = {
   roomId: number;
 };
 
+export type Challenge = {
+  roomId: number;
+  challengedId: number;
+  difficulty: string;
+};
+
 async function verifyUser(
   authService: AuthService,
   fastify: FastifyInstance,
@@ -60,93 +66,37 @@ export default function (
   const authService = new AuthService(fastify.orm);
   const roomService = new RoomService(fastify.orm);
   // connection stuff
-  fastify.io.on("connection", (socket) => {
-    fastify.log.info("a user connected");
-    // middleware to parse JSON payloads
-    socket.use((packet, next) => {
-      try {
-        if (typeof packet[1] === "string") {
-          packet[1] = JSON.parse(packet[1]);
-        }
-      } catch (e) {
-        fastify.log.error("Invalid JSON payload");
-      }
-      next();
-    });
-    socket.emit("connection", { data: `id: ${socket.id} is connected` });
+  fastify.io.on("connection", async (socket) => {
+    try {
+      const user = await verifyUser(authService, fastify, socket);
+      
+      // Join a room for user-specific events
+      socket.join(user.id.toString());
 
-    socket.on("disconnect", () => {
-      fastify.log.info("user disconnected");
-      socket.broadcast.emit("disconnection", `user ${socket.id} disconnected`);
-    });
-
-    socket.on("join_room_bus", async (data: RoomMessage) => {
-      try {
-        const user = await verifyUser(authService, fastify, socket);
-        const room = await roomService.getRoomById(data.roomId);
-        socket.emit("room", room.toView());
-        socket.join(room.id.toString());
-      } catch (e) {
-        if (e instanceof UserNotFoundError) {
-          socket.emit("error", "Authentication failed");
-        } else {
-          socket.emit("error", e.message);
-        }
-      }
-    });
-
-    socket.on("loadRoom", async (data: LoadRoom) => {
-      try {
-        const user = await verifyUser(authService, fastify, socket);
-        const room = await roomService.getRoomById(data.roomId);
-
-        if (!room) {
-          socket.emit("error", "Couldn't find room.");
-        } else {
-          socket.join(room.id.toString());
-          socket.emit("room", room.toView());
-        }
-      } catch (e) {
-        if (e instanceof UserNotFoundError) {
-          socket.emit("error", "Authentication failed");
-        } else {
-          socket.emit("error", e.message);
-        }
-      }
-    });
-
-    socket.on("guess", async ({ roomId, x, y, guess }) => {
-      try {
-        const user = await verifyUser(authService, fastify, socket);
-        if (!user) {
-          socket.emit("error", { message: "Authentication failed" });
-          return;
-        }
-
-        const room = await roomService.handleGuess(roomId, user.id, x, y, guess);
-
-        if (!room) {
-          socket.emit("error", { message: "Room not found" });
-          return;
-        }
-
-        // Broadcast updated room state to all players
-        fastify.io.to(roomId.toString()).emit("room", room.toView());
-
-      } catch (error) {
-        console.error("Error handling guess:", error);
-        socket.emit("error", { message: "Failed to process guess" });
-      }
-    });
-
-    // chat stuff
-    socket.on(
-      "message",
-      async ({ message }: Message) => {
+      fastify.log.info("a user connected");
+      // middleware to parse JSON payloads
+      socket.use((packet, next) => {
         try {
-          const user = await verifyUser(authService, fastify, socket);
-          socket.emit("message", message);
-          fastify.log.info(message);
+          if (typeof packet[1] === "string") {
+            packet[1] = JSON.parse(packet[1]);
+          }
+        } catch (e) {
+          fastify.log.error("Invalid JSON payload");
+        }
+        next();
+      });
+      socket.emit("connection", { data: `id: ${socket.id} is connected` });
+
+      socket.on("disconnect", () => {
+        fastify.log.info("user disconnected");
+        socket.broadcast.emit("disconnection", `user ${socket.id} disconnected`);
+      });
+
+      socket.on("join_room_bus", async (data: RoomMessage) => {
+        try {
+          const room = await roomService.getRoomById(data.roomId);
+          socket.emit("room", room.toView());
+          socket.join(room.id.toString());
         } catch (e) {
           if (e instanceof UserNotFoundError) {
             socket.emit("error", "Authentication failed");
@@ -154,41 +104,131 @@ export default function (
             socket.emit("error", e.message);
           }
         }
-      },
-    );
+      });
 
-    socket.on("message_room", async (data: RoomMessage) => {
-      try {
-        const user = await verifyUser(authService, fastify, socket);
-        socket.broadcast
-          .to(data.roomId.toString())
-          .emit("message", data.roomId);
-        fastify.log.info(data);
-      } catch (e) {
-        if (e instanceof UserNotFoundError) {
-          socket.emit("error", "Authentication failed");
-        } else {
-          socket.emit("error", e.message);
+      socket.on("loadRoom", async (data: LoadRoom) => {
+        try {
+          const room = await roomService.getRoomById(data.roomId);
+
+          if (!room) {
+            socket.emit("error", "Couldn't find room.");
+          } else {
+            socket.join(room.id.toString());
+            socket.emit("room", room.toView());
+          }
+        } catch (e) {
+          if (e instanceof UserNotFoundError) {
+            socket.emit("error", "Authentication failed");
+          } else {
+            socket.emit("error", e.message);
+          }
         }
-      }
-    });
+      });
 
-    socket.on("forfeit", async ({ roomId }: LoadRoom) => {
-      try {
-        const user = await verifyUser(authService, fastify, socket);
+      socket.on("guess", async ({ roomId, x, y, guess }) => {
+        try {
+          const room = await roomService.handleGuess(roomId, user.id, x, y, guess);
 
-        const room = await roomService.forfeitGame(roomId, user.id);
+          if (!room) {
+            socket.emit("error", { message: "Room not found" });
+            return;
+          }
 
-        // Emit the updated room state to all players
-        fastify.io.to(room.id.toString()).emit("room", room);
-      } catch (e) {
-        if (e instanceof UserNotFoundError) {
-          socket.emit("error", "Authentication failed");
-        } else {
-          socket.emit("error", e.message);
+          // Broadcast updated room state to all players
+          fastify.io.to(roomId.toString()).emit("room", room.toView());
+
+        } catch (error) {
+          console.error("Error handling guess:", error);
+          socket.emit("error", { message: "Failed to process guess" });
         }
-      }
-    });
+      });
+
+      // chat stuff
+      socket.on(
+        "message",
+        async ({ message }: Message) => {
+          try {
+            socket.emit("message", message);
+            fastify.log.info(message);
+          } catch (e) {
+            if (e instanceof UserNotFoundError) {
+              socket.emit("error", "Authentication failed");
+            } else {
+              socket.emit("error", e.message);
+            }
+          }
+        },
+      );
+
+      socket.on("message_room", async (data: RoomMessage) => {
+        try {
+          socket.broadcast
+            .to(data.roomId.toString())
+            .emit("message", data.roomId);
+          fastify.log.info(data);
+        } catch (e) {
+          if (e instanceof UserNotFoundError) {
+            socket.emit("error", "Authentication failed");
+          } else {
+            socket.emit("error", e.message);
+          }
+        }
+      });
+
+      socket.on("forfeit", async ({ roomId }: LoadRoom) => {
+        try {
+          const room = await roomService.forfeitGame(roomId, user.id);
+
+          // Emit the updated room state to all players
+          fastify.io.to(room.id.toString()).emit("room", room);
+        } catch (e) {
+          if (e instanceof UserNotFoundError) {
+            socket.emit("error", "Authentication failed");
+          } else {
+            socket.emit("error", e.message);
+          }
+        }
+      });
+
+      socket.on("challenge", async (data: string) => {
+        try {
+          const { challengedId, difficulty } = JSON.parse(data) as Challenge;
+          const room = await roomService.createChallengeRoom(user.id, challengedId, difficulty);
+          socket.join(room.id.toString());
+          fastify.io.to(room.id.toString()).emit("room", room.toView());
+        } catch (error) {
+          fastify.log.error(error);
+          socket.emit("error", { message: "Failed to create challenge" });
+        }
+      });
+
+      socket.on("accept_challenge", async (data: string) => {
+        try {
+          const { roomId } = JSON.parse(data) as { roomId: number };
+          const room = await roomService.acceptChallenge(roomId, user.id);
+          socket.join(room.id.toString());
+          fastify.io.to(room.id.toString()).emit("room", room.toView());
+        } catch (error) {
+          fastify.log.error(error);
+          socket.emit("error", { message: "Failed to accept challenge" });
+        }
+      });
+
+      socket.on("reject_challenge", async (data: string) => {
+        try {
+          const { roomId } = JSON.parse(data) as { roomId: number };
+          const room = await roomService.rejectChallenge(roomId);
+          fastify.io.to(room.id.toString()).emit("room", room.toView());
+        } catch (error) {
+          fastify.log.error(error);
+          socket.emit("error", { message: "Failed to reject challenge" });
+        }
+      });
+
+    } catch (error) {
+      fastify.log.error(error);
+      socket.disconnect();
+    }
   });
 
   next();

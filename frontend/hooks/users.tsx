@@ -32,6 +32,10 @@ export type User = {
   roles: string[];
   description: string | null;
   eloRating: number;
+  gamesWon: number;
+  gamesLost: number;
+  guessAccuracy: number;
+  winRate: number;
 };
 
 export const useUser = () => {

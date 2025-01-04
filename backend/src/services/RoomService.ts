@@ -235,4 +235,116 @@ export class RoomService {
     room.markModified();
     return room;
   }
+
+  async getRecentGamesWithStats(userId: number, limit: number = 10): Promise<{
+    room: Room;
+    stats: GameStats;
+  }[]> {
+    const gameStats = await this.ormConnection
+        .getRepository(GameStats)
+        .createQueryBuilder('stats')
+        .leftJoinAndSelect('stats.room', 'room')
+        .leftJoinAndSelect('room.crossword', 'crossword')
+        .where('stats.userId = :userId', { userId })
+        .orderBy('stats.createdAt', 'DESC')
+        .take(limit)
+        .getMany();
+
+    return gameStats.map(stats => ({
+        room: stats.room,
+        stats: stats
+    }));
+  }
+
+  async createChallengeRoom(challengerId: number, challengedId: number, difficulty: string): Promise<Room> {
+    const [challenger, challenged] = await Promise.all([
+      this.ormConnection.getRepository(User).findOneBy({ id: challengerId }),
+      this.ormConnection.getRepository(User).findOneBy({ id: challengedId })
+    ]);
+
+    if (!challenger || !challenged) {
+      throw new NotFoundError("User not found");
+    }
+
+    const crossword = await this.crosswordService.getCrosswordByDifficulty(difficulty);
+
+    const room = new Room();
+    room.players = [challenger];
+    room.crossword = crossword;
+    room.difficulty = difficulty;
+    room.type = '1v1';
+    room.status = 'pending';
+    room.scores = { [challenger.id]: 0 };
+
+    room.found_letters = await this.crosswordService.createFoundLettersTemplate(
+      crossword.id,
+    );
+
+    const savedRoom = await this.ormConnection.getRepository(Room).save(room);
+
+    // Emit a challenge event through socket.io
+    fastify.io.to(challenged.id.toString()).emit("challenge_received", {
+      room: savedRoom.toView(),
+      challenger: {
+        id: challenger.id,
+        username: challenger.username
+      }
+    });
+
+    return savedRoom;
+  }
+
+  async acceptChallenge(roomId: number, userId: number): Promise<Room> {
+    const room = await this.getRoomById(roomId);
+    if (!room) throw new NotFoundError("Room not found");
+
+    await this.joinExistingRoom(room, userId);
+    return room;
+  }
+
+  async rejectChallenge(roomId: number): Promise<Room> {
+    const room = await this.getRoomById(roomId);
+    if (!room) throw new NotFoundError("Room not found");
+
+    room.status = 'cancelled';
+    room.markModified();
+    
+    await this.ormConnection.getRepository(Room).save(room);
+    return room;
+  }
+
+  async getPendingChallenges(userId: number): Promise<{ room: Room; challenger: { id: number; username: string } }[]> {
+    const rooms = await this.ormConnection
+      .getRepository(Room)
+      .createQueryBuilder('room')
+      .leftJoinAndSelect('room.players', 'player')
+      .leftJoinAndSelect('player.user', 'user')
+      .where('room.status = :status', { status: 'pending' })
+      .andWhere('room.type = :type', { type: '1v1' })
+      .andWhere(qb => {
+        const subQuery = qb
+          .subQuery()
+          .select('1')
+          .from('room_players_user', 'rpu')
+          .where('rpu.roomId = room.id')
+          .andWhere('rpu.userId = :userId')
+          .getQuery();
+        return 'EXISTS ' + subQuery;
+      })
+      .setParameter('userId', userId)
+      .getMany();
+
+    return rooms.map(room => {
+      const challenger = room.players.find(p => p.id !== userId);
+      if (!challenger) return null;
+
+      return {
+        room,
+        challenger: {
+          id: challenger.id,
+          username: challenger.username
+        }
+      };
+    }).filter(Boolean);
+  }
 }

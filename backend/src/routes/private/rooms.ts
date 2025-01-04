@@ -12,6 +12,11 @@ type RoomQueryParams = {
   guess: string;
 };
 
+type ChallengeParams = {
+  challengedId: number;
+  difficulty: string;
+};
+
 export default function (
   fastify: FastifyInstance,
   _: object,
@@ -46,6 +51,43 @@ export default function (
     const { status } = request.query as { status?: 'playing' | 'pending' | 'finished' | 'cancelled' };
     const rooms = await roomService.getRoomsByUserAndStatus(request.user.id, status);
     reply.send(rooms.map((room) => room.toView()));
+  });
+
+  // Get recent games with stats
+  fastify.get("/rooms/recent", async (request, reply) => {
+    const recentGames = await roomService.getRecentGamesWithStats(request.user.id);
+    reply.send(recentGames);
+  });
+
+  fastify.post("/rooms/challenge", async (request, reply) => {
+    const { challengedId, difficulty } = request.body as ChallengeParams;
+    const room = await roomService.createChallengeRoom(request.user.id, challengedId, difficulty);
+    fastify.io.sockets.socketsJoin(room.id.toString());
+    fastify.io.to(room.id.toString()).emit("room", room.toView());
+    reply.send(room.toView());
+  });
+
+  fastify.post("/rooms/challenge/:roomId/accept", async (request, reply) => {
+    const { roomId } = request.params as { roomId: string };
+    const room = await roomService.acceptChallenge(parseInt(roomId), request.user.id);
+    fastify.io.to(room.id.toString()).emit("room", room.toView());
+    reply.send(room.toView());
+  });
+
+  fastify.post("/rooms/challenge/:roomId/reject", async (request, reply) => {
+    const { roomId } = request.params as { roomId: string };
+    const room = await roomService.rejectChallenge(parseInt(roomId));
+    fastify.io.to(room.id.toString()).emit("room", room.toView());
+    reply.send(room.toView());
+  });
+
+  fastify.get('/challenges/pending', async (request, reply) => {
+    const userId = request.user.id;
+    const challenges = await roomService.getPendingChallenges(userId);
+    return challenges.map(challenge => ({
+      ...challenge,
+      room: challenge.room.toView()
+    }));
   });
 
   next();
