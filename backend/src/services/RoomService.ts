@@ -1,10 +1,11 @@
-import { DataSource, FindOperator, LessThan, LessThanOrEqual } from "typeorm";
+import { DataSource, FindOperator, In, LessThan, LessThanOrEqual } from "typeorm";
 import { Room } from "../entities/Room";
 import { User } from "../entities/User";
 import { CrosswordService } from "./CrosswordService";
 import { config } from "../config/config";
 import { fastify } from "../fastify";
 import { GameStats } from "../entities/GameStats";
+import { NotFoundError } from "../errors/api";
 
 export class RoomService {
   private crosswordService: CrosswordService;
@@ -142,9 +143,18 @@ export class RoomService {
     return query.getMany();
   }
 
+  private isGameFinished(room: Room): boolean {
+    // If room is not in playing state, it can't be won
+    if (room.status !== 'playing') return false;
+
+    // Check if all letters have been found
+    // found_letters is a string array where '*' represents unfound letters
+    return !room.found_letters.includes('*');
+  }
+
   async handleGuess(roomId: number, userId: number, x: number, y: number, guess: string): Promise<Room> {
     const room = await this.getRoomById(roomId);
-    if (!room) throw new Error("Room not found");
+    if (!room) throw new NotFoundError("Room not found");
 
     const isCorrect = await this.crosswordService.checkGuess(room, { x, y }, guess);
 
@@ -154,43 +164,75 @@ export class RoomService {
     });
 
     if (!gameStats) {
-      const user = await this.ormConnection.getRepository(User).findOneBy({ id: userId });
-      if (!user) throw new Error("User not found");
+        const user = await this.ormConnection.getRepository(User).findOneBy({ id: userId });
+        if (!user) throw new NotFoundError("User not found");
 
-      gameStats = new GameStats();
-      gameStats.user = user;
-      gameStats.room = room;
-      gameStats.userId = userId;
-      gameStats.roomId = roomId;
-      gameStats.userEloAtGame = user.eloRating;
+        gameStats = new GameStats();
+        gameStats.user = user;
+        gameStats.room = room;
+        gameStats.userId = userId;
+        gameStats.roomId = roomId;
+        gameStats.eloAtGame = user.eloRating;
+        gameStats.correctGuesses = 0;
+        gameStats.incorrectGuesses = 0;
+        gameStats.correctGuessDetails = [];
     }
 
     // Update stats based on guess result
     if (isCorrect) {
-      gameStats.correctGuesses++;
-      gameStats.correctGuessRecords.push({
-        x,
-        y,
-        letter: guess,
-        timestamp: new Date()
-      });
-      
-      // Update room state
-      room.found_letters[x * room.crossword.col_size + y] = guess;
-      room.scores[userId] = (room.scores[userId] || 0) + config.game.points.correct;
-      room.markModified();
+        gameStats.correctGuesses++;
+        gameStats.correctGuessDetails = [
+            ...(gameStats.correctGuessDetails || []),
+            {
+                row: x,
+                col: y,
+                letter: guess,
+                timestamp: new Date()
+            }
+        ];
+
+        // Update room state
+        room.found_letters[x * room.crossword.col_size + y] = guess;
+        room.scores[userId] = (room.scores[userId] || 0) + config.game.points.correct;
+        room.markModified();
     } else {
-      gameStats.incorrectGuesses++;
-      room.scores[userId] = (room.scores[userId] || 0) + config.game.points.incorrect;
-      room.markModified();
+        gameStats.incorrectGuesses++;
+        room.scores[userId] = (room.scores[userId] || 0) + config.game.points.incorrect;
+        room.markModified();
+    }
+
+    // Check if game is won
+    if (this.isGameFinished(room)) {
+        room.status = 'finished';
+        
+        // Find player with highest score
+        const highestScore = Math.max(...Object.values(room.scores));
+        const winnerIds = Object.entries(room.scores)
+            .filter(([_, score]) => score === highestScore)
+            .map(([userId]) => parseInt(userId));
+            
+
+        // Update winner status in gameStats for all winners
+        const gameStatsRepo = this.ormConnection.getRepository(GameStats);
+        const winnerGameStats = await gameStatsRepo.find({
+            where: {
+                roomId: room.id,
+                userId: In(winnerIds)
+            }
+        });
+        
+        for (const stats of winnerGameStats) {
+            stats.isWinner = true;
+            await gameStatsRepo.save(stats);
+        }
     }
 
     // Save both game stats and room
     await Promise.all([
-      this.ormConnection.getRepository(GameStats).save(gameStats),
-      this.ormConnection.getRepository(Room).save(room)
+        this.ormConnection.getRepository(GameStats).save(gameStats),
+        this.ormConnection.getRepository(Room).save(room)
     ]);
-
+    room.markModified();
     return room;
   }
 }

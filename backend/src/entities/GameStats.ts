@@ -2,48 +2,44 @@ import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn } f
 import { User } from "./User";
 import { Room } from "./Room";
 
-interface GuessRecord {
-  x: number;
-  y: number;
-  letter: string;
-  timestamp: Date;
-}
-
 @Entity()
 export class GameStats {
-  @PrimaryGeneratedColumn()
-  id: number;
+    @PrimaryGeneratedColumn()
+    id: number;
 
-  @ManyToOne(() => User, { eager: true })
-  user: User;
+    @ManyToOne(() => User, user => user.gameStats)
+    user: User;
 
-  @ManyToOne(() => Room, { eager: true })
-  room: Room;
+    @Column("integer")
+    userId: number;
 
-  @Column("integer")
-  userId: number;
+    @ManyToOne(() => Room)
+    room: Room;
 
-  @Column("integer")
-  roomId: number;
+    @Column("integer")
+    roomId: number;
 
-  @Column("integer")
-  correctGuesses: number;
+    @Column("integer")
+    correctGuesses: number;
 
-  @Column("integer")
-  incorrectGuesses: number;
+    @Column("integer")
+    incorrectGuesses: number;
 
-  @Column("integer")
-  userEloAtGame: number;
+    @Column("boolean", { default: false })
+    isWinner: boolean;
 
-  @Column("jsonb", { nullable: true })
-  correctGuessRecords: GuessRecord[];
+    @Column("float")
+    eloAtGame: number;
 
-  @CreateDateColumn()
-  createdAt: Date;
+    @CreateDateColumn()
+    createdAt: Date;
 
-  constructor() {
-    this.correctGuesses = 0;
-    this.incorrectGuesses = 0;
-    this.correctGuessRecords = [];
-  }
+    // Store coordinates and letters of correct guesses
+    @Column("simple-json", { nullable: true })
+    correctGuessDetails: {
+        row: number;
+        col: number;
+        letter: string;
+        timestamp: Date;
+    }[];
 }
