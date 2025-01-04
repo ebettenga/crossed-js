@@ -14,7 +14,6 @@ import { Text } from 'react-native';
 
 export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
     const { room, guess, refresh, forfeit } = useRoom(roomId);
-    console.log(room);
 
     const router = useRouter();
     const insets = useSafeAreaInsets();
