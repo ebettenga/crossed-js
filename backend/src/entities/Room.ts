@@ -97,9 +97,12 @@ export class Room {
   }
 
   toView() {
+    const localCreatedAt = new Date(this.created_at);
+    localCreatedAt.setHours(localCreatedAt.getHours() + 6);
+
     return {
       id: this.id,
-      created_at: this.created_at,
+      created_at: localCreatedAt.toISOString(),
       difficulty: this.difficulty,
       type: this.type,
       status: this.status,

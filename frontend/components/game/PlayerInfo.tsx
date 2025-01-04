@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, View, Text } from 'react-native';
-import { Player } from '~/hooks/socket';
+import { Player } from '~/hooks/useRoom';
 
 interface PlayerInfoProps {
   players: Player[];
@@ -24,7 +24,9 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     justifyContent: 'space-around',
+    paddingTop: 16,
     padding: 16,
+    paddingBottom: 0,
     gap: 16,
   },
   playerCard: {

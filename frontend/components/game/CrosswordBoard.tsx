@@ -1,12 +1,8 @@
 import React, { useMemo } from 'react';
-import { StyleSheet, View, Dimensions } from 'react-native';
+import { StyleSheet, View, Dimensions, Text } from 'react-native';
 import { CrosswordCell } from './CrosswordCell';
-import Animated, {
-    FadeIn,
-    LinearTransition,
-} from 'react-native-reanimated';
 import { ScrollView } from 'react-native-gesture-handler';
-import { Square } from '~/hooks/socket';
+import { Square } from '~/hooks/useRoom';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
@@ -16,6 +12,7 @@ interface CrosswordBoardProps {
     selectedCell?: Square | null;
     isAcrossMode: boolean;
     setIsAcrossMode: (isAcross: boolean) => void;
+    title: string;
 }
 
 export const CrosswordBoard: React.FC<CrosswordBoardProps> = ({
@@ -23,7 +20,8 @@ export const CrosswordBoard: React.FC<CrosswordBoardProps> = ({
     onCellPress,
     selectedCell,
     isAcrossMode,
-    setIsAcrossMode
+    setIsAcrossMode,
+    title
 }) => {
 
     const handleCellPress = (square: Square) => {
@@ -37,11 +35,9 @@ export const CrosswordBoard: React.FC<CrosswordBoardProps> = ({
     // Memoize the board rendering to prevent unnecessary re-renders
     const boardContent = useMemo(() => {
         return board.map((row, x) => (
-            <Animated.View
+            <View
                 key={x}
                 style={styles.row}
-                entering={FadeIn.delay(x * 25).springify()}
-                layout={LinearTransition.springify()}
             >
                 {row.map((square, y) => {
                     const isSelected = selectedCell?.id === square.id;
@@ -54,10 +50,11 @@ export const CrosswordBoard: React.FC<CrosswordBoardProps> = ({
                             isSelected={isSelected}
                             gridNumber={square.gridnumber}
                             squareType={square.squareType}
+                            isAcrossMode={isAcrossMode}
                         />
                     );
                 })}
-            </Animated.View>
+            </View>
         ));
     }, [board, selectedCell, onCellPress]);
 
@@ -76,9 +73,9 @@ export const CrosswordBoard: React.FC<CrosswordBoardProps> = ({
                     showsVerticalScrollIndicator={false}
                     removeClippedSubviews={true}
                 >
-                    <Animated.View layout={LinearTransition.springify()}>
+                    <View>
                         {boardContent}
-                    </Animated.View>
+                    </View>
                 </ScrollView>
             </ScrollView>
         </View>
@@ -89,6 +86,15 @@ const styles = StyleSheet.create({
     container: {
         width: '100%',
         alignItems: 'center',
+    },
+    title: {
+        fontSize: 14,
+        fontFamily: 'Times New Roman',
+        color: '#2B2B2B',
+        marginBottom: 0,
+        textAlign: 'left',
+        paddingHorizontal: 6,
+        alignSelf: 'flex-start',
     },
     scrollContainer: {
         flexGrow: 1,

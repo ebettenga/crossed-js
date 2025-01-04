@@ -6,10 +6,17 @@ export const getConfig = () => {
   const env = process.env.NODE_ENV || 'local';
 
   try {
+    let config;
     if (process.env.CI === 'true') {
-      return { ...commonConfig, ...ciConfig };
+      config = { ...commonConfig, ...ciConfig };
+    } else {
+      config = { ...commonConfig, ...localConfig };
     }
-    return { ...commonConfig, ...localConfig };
+
+    // Set timezone from config
+    process.env.TZ = config.timezone;
+    
+    return config;
   } catch (e) {
     throw Error('Unknown environment, unable to load config');
   }

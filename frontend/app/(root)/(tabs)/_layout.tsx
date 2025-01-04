@@ -1,4 +1,4 @@
-import { View, Text, Image } from 'react-native'
+import { View, Text, Image, StatusBar } from 'react-native'
 import React, { useEffect } from 'react'
 import { Tabs } from "expo-router";
 import { usePathname } from 'expo-router';
@@ -24,6 +24,11 @@ const TabIcon = ({ focused, icon, title }: { focused: boolean; icon: any; title:
 const TabsLayout = () => {
     const pathname = usePathname();
     const hideTabBar = pathname === '/game';
+
+    useEffect(() => {
+        StatusBar.setBackgroundColor('white');
+        StatusBar.setBarStyle('dark-content');
+    }, []);
 
     return (
         <Tabs

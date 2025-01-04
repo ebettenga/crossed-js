@@ -114,7 +114,6 @@ export class AuthService {
 
   verify(app, body) {
     const { token } = body;
-
     try {
       const decoded = jwt.verify(token, config.auth.secretAccessToken);
       return decoded;

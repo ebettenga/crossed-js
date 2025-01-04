@@ -49,7 +49,7 @@ export class RoomService {
       // Emit game_started event through fastify.io
       fastify.io.to(room.id.toString()).emit("game_started", {
         message: "All players have joined! Game is starting.",
-        room: room
+        room: room.toView()
       });
     }
 

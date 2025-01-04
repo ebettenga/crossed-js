@@ -1,16 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, StatusBar } from 'react-native';
 import { CrosswordBoard } from '../components/game/CrosswordBoard';
 import { Keyboard } from '../components/game/Keyboard';
 import { PlayerInfo } from '../components/game/PlayerInfo';
-import Animated, {
-    FadeIn,
-} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GameMenu } from '../components/game/GameMenu';
 import { useRouter } from 'expo-router';
 import { ClueDisplay } from '../components/game/ClueDisplay';
-import { Square, SquareType, useRoom } from '~/hooks/socket';
+import { useRoom } from '~/hooks/socket';
+import { Square, SquareType } from "~/hooks/useRoom";
 import { Text } from 'react-native';
 
 
@@ -26,6 +24,11 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
     useEffect(() => {
         refresh(roomId);
     }, []);
+
+
+    if (!room) {
+        return <Text>Room not found</Text>;
+    }
 
 
     const handleCellPress = (coordinates: Square) => {
@@ -113,14 +116,14 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
 
     return (
         <View style={[styles.container, { paddingBottom: insets.bottom + 70 }]}>
+            <Text style={styles.title}>{room.crossword.title}</Text>
             <PlayerInfo
                 players={room.players}
                 scores={room.scores}
             />
             <View style={styles.boardContainer}>
-                <Animated.View
+                <View
                     style={[styles.board]}
-                    entering={FadeIn}
                 >
                     <CrosswordBoard
                         board={room?.board}
@@ -128,8 +131,9 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
                         selectedCell={selectedCell || null}
                         isAcrossMode={isAcrossMode}
                         setIsAcrossMode={setIsAcrossMode}
+                        title={room.crossword.title}
                     />
-                </Animated.View>
+                </View>
             </View>
             <View style={styles.bottomSection}>
                 <ClueDisplay
@@ -151,6 +155,16 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#F5F5EB',
+    },
+    title: {
+        fontSize: 14,
+        fontFamily: 'Times New Roman',
+        color: '#2B2B2B',
+        paddingTop: 10,
+        marginBottom: -10,
+        textAlign: 'left',
+        paddingHorizontal: 6,
+        alignSelf: 'flex-start',
     },
     boardContainer: {
         flex: 1,

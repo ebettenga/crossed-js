@@ -26,5 +26,6 @@ export const commonConfig = {
       '2v2': 4,
       'free4all': 5,
     },
-  }
+  },
+  timezone: 'UTC',
 };

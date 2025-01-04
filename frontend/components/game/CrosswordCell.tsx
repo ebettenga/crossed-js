@@ -1,7 +1,8 @@
 import React from 'react';
 import { StyleSheet, Dimensions, Pressable, View, Text } from 'react-native';
-import { SquareType } from '~/hooks/socket';
+import { SquareType } from '~/hooks/useRoom';
 import { config } from '~/config/config';
+import { ArrowRight, ArrowDown } from 'lucide-react-native';
 
 // Calculate cell size based on screen width
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -22,6 +23,7 @@ interface CrosswordCellProps {
     isSelected?: boolean;
     gridNumber?: number | null;
     squareType: SquareType;
+    isAcrossMode?: boolean;
 }
 
 export const CrosswordCell: React.FC<CrosswordCellProps> = ({
@@ -30,7 +32,8 @@ export const CrosswordCell: React.FC<CrosswordCellProps> = ({
     coordinates,
     isSelected = false,
     gridNumber,
-    squareType
+    squareType,
+    isAcrossMode = true,
 }) => {
     // Determine if this cell is a corner
     const isTopLeft = coordinates.x === 0 && coordinates.y === 0;
@@ -69,6 +72,15 @@ export const CrosswordCell: React.FC<CrosswordCellProps> = ({
                         {letter}
                     </Text>
                 )}
+                {isSelected && !isDisabled && (
+                    <View style={styles.directionIndicator}>
+                        {isAcrossMode ? (
+                            <ArrowRight size={12} color={BORDER_COLOR} />
+                        ) : (
+                            <ArrowDown size={12} color={BORDER_COLOR} />
+                        )}
+                    </View>
+                )}
             </View>
         </Pressable>
     );
@@ -104,5 +116,10 @@ const styles = StyleSheet.create({
     },
     hiddenText: {
         color: 'transparent',
+    },
+    directionIndicator: {
+        position: 'absolute',
+        bottom: 2,
+        right: 2,
     },
 }); 

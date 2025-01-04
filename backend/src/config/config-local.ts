@@ -1,6 +1,7 @@
 import { PostgresConnectionOptions } from "typeorm/driver/postgres/PostgresConnectionOptions";
 
 export const config = {
+  timezone: 'America/Chicago',
   logger: {
     transport: {
       target: "pino-pretty",
@@ -26,8 +27,8 @@ export const config = {
   },
   auth: {
     secretAccessToken: "aklwj*$%rngbak4a43",
-    authRefreshTokenExpiry: "7d",
-    authTokenExpiry: "1h",
+    authRefreshTokenExpiry: "3w",
+    authTokenExpiry: "2h",
   },
   secretKeyPath: "./config/secret-key",
 };

@@ -11,7 +11,7 @@ import { Theme, ThemeProvider } from "@react-navigation/native";
 import { Platform, StatusBar } from "react-native";
 import { storage } from "@/hooks/storageApi";
 import { PortalHost } from '@rn-primitives/portal';
-import { RoomProvider } from '~/hooks/socket';
+import { RoomProvider, SocketProvider } from '~/hooks/socket';
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 // @ts-ignore
@@ -24,7 +24,6 @@ const DARK_THEME: Theme = {
   dark: true,
   colors: NAV_THEME.dark,
 };
-
 
 // Prevent the splash screen from auto-hiding before getting the color scheme.
 SplashScreen.preventAutoHideAsync();
@@ -64,12 +63,14 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <GlobalProvider>
-        <RoomProvider>
-          <GestureHandlerRootView style={{ flex: 1 }}>
-            <Slot screenOptions={{ headerShown: false }} />
-            <PortalHost />
-          </GestureHandlerRootView>
-        </RoomProvider>
+        <SocketProvider>
+          <RoomProvider>
+            <GestureHandlerRootView style={{ flex: 1 }}>
+              <Slot screenOptions={{ headerShown: false }} />
+              <PortalHost />
+            </GestureHandlerRootView>
+          </RoomProvider>
+        </SocketProvider>
       </GlobalProvider>
     </QueryClientProvider>
   );

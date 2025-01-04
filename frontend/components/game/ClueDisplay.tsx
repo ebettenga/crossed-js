@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, View, Text } from 'react-native';
-import { Square } from '~/hooks/socket';
+import { Square } from '~/hooks/useRoom';
 
 interface ClueDisplayProps {
   selectedSquare: Square | null;
@@ -25,16 +25,22 @@ export const ClueDisplay: React.FC<ClueDisplayProps> = ({ selectedSquare, isAcro
 const styles = StyleSheet.create({
   container: {
     padding: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 80,
   },
   direction: {
     fontSize: 14,
     color: '#2B2B2B',
     fontWeight: '600',
     marginBottom: 4,
+    textAlign: 'center',
   },
   clueText: {
     fontSize: 16,
     color: '#2B2B2B',
     lineHeight: 24,
+    textAlign: 'center',
+    paddingHorizontal: 16,
   },
 }); 
