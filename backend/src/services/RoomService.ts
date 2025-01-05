@@ -269,12 +269,12 @@ export class RoomService {
     const crossword = await this.crosswordService.getCrosswordByDifficulty(difficulty);
 
     const room = new Room();
-    room.players = [challenger];
+    room.players = [challenger, challenged];
     room.crossword = crossword;
     room.difficulty = difficulty;
     room.type = '1v1';
     room.status = 'pending';
-    room.scores = { [challenger.id]: 0 };
+    room.scores = { [challenger.id]: 0, [challenged.id]: 0 };
 
     room.found_letters = await this.crosswordService.createFoundLettersTemplate(
       crossword.id,
@@ -291,7 +291,7 @@ export class RoomService {
       }
     });
 
-    return savedRoom;
+    return savedRoom ;
   }
 
   async acceptChallenge(roomId: number, userId: number): Promise<Room> {
@@ -313,38 +313,30 @@ export class RoomService {
     return room;
   }
 
-  async getPendingChallenges(userId: number): Promise<{ room: Room; challenger: { id: number; username: string } }[]> {
-    const rooms = await this.ormConnection
+  async getPendingChallenges(userId: number): Promise<Room[]> {
+    const query = this.ormConnection
       .getRepository(Room)
       .createQueryBuilder('room')
-      .leftJoinAndSelect('room.players', 'player')
-      .leftJoinAndSelect('player.user', 'user')
+      .innerJoinAndSelect('room.players', 'players')
+      .leftJoinAndSelect('room.crossword', 'crossword')
       .where('room.status = :status', { status: 'pending' })
       .andWhere('room.type = :type', { type: '1v1' })
-      .andWhere(qb => {
+      .andWhere((qb) => {
         const subQuery = qb
           .subQuery()
-          .select('1')
-          .from('room_players_user', 'rpu')
-          .where('rpu.roomId = room.id')
-          .andWhere('rpu.userId = :userId')
+          .select('r.id')
+          .from(Room, 'r')
+          .innerJoin('r.players', 'p')
+          .where('p.id = :userId')
           .getQuery();
-        return 'EXISTS ' + subQuery;
+        return 'room.id IN ' + subQuery;
       })
-      .setParameter('userId', userId)
-      .getMany();
+      .setParameters({
+        status: 'pending',
+        type: '1v1',
+        userId
+      });
 
-    return rooms.map(room => {
-      const challenger = room.players.find(p => p.id !== userId);
-      if (!challenger) return null;
-
-      return {
-        room,
-        challenger: {
-          id: challenger.id,
-          username: challenger.username
-        }
-      };
-    }).filter(Boolean);
+    return query.getMany();
   }
 }

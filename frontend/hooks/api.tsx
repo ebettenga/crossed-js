@@ -45,6 +45,7 @@ export const post = async (url: string, body: any, options: RequestOptions = { a
       headers["authorization"] = `Bearer ${token}`;
     }
 
+    console.log(`${config.api.baseURL}${url}`);
     const response = await fetch(`${config.api.baseURL}${url}`, {
       method: 'POST',
       headers,
@@ -61,6 +62,20 @@ export const put = async (url: string, body: any) => {
     const token = await getToken();
     const response = await fetch(`${config.api.baseURL}${url}`, {
       method: 'PUT',
+      headers: headers(token),
+      body: JSON.stringify(body)
+    });
+    return await response.json();
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const patch = async (url: string, body: any) => {
+  try {
+    const token = await getToken();
+    const response = await fetch(`${config.api.baseURL}${url}`, {
+      method: 'PATCH',
       headers: headers(token),
       body: JSON.stringify(body)
     });

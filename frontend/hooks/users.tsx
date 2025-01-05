@@ -3,7 +3,7 @@ import { post } from "./api";
 import { secureStorage } from "./storageApi";
 import { useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
-import { get } from './api';
+import { get, patch } from './api';
 
 export type SignInRequest = {
   email: string;
@@ -95,4 +95,21 @@ export const useLogout = () => {
     queryClient.setQueryData(['me'], null);
     router.replace('/(auth)/signin');
   };
+};
+
+export type UpdateUserRequest = {
+  username?: string;
+  email?: string;
+};
+
+export const useUpdateUser = () => {
+  const queryClient = useQueryClient();
+  return useMutation<User, Error, UpdateUserRequest>({
+    mutationFn: async (data: UpdateUserRequest) => {
+      return await patch('/me', data);
+    },
+    onSuccess: (updatedUser) => {
+      queryClient.setQueryData(['me'], updatedUser);
+    },
+  });
 };

@@ -13,6 +13,7 @@ import {
 import { useUser } from '~/hooks/users';
 import { ChallengeDialog } from '~/components/ChallengeDialog';
 import { useChallenge } from '~/hooks/useChallenge';
+import { ChallengeRow } from '~/components/ChallengeRow';
 
 interface FriendRowProps {
     friend: Friend;
@@ -110,7 +111,7 @@ export default function Friends() {
     } = useFriendsList();
 
     const {
-        pendingChallenges,
+        challenges,
         acceptChallenge,
         rejectChallenge
     } = useChallenge();
@@ -167,164 +168,99 @@ export default function Friends() {
         null;
 
     return (
-        <View style={styles.container}>
-            <HomeHeader 
-                username={user.username}
-                elo={user.eloRating}
-                eloChange={-10}
-                gamesPlayed={34}
-                avatarUrl={"https://i.pravatar.cc/150"}
-                coins={42}
+        <View style={[styles.container, { paddingTop: insets.top }]}>
+            <HomeHeader
+                username={user?.username}
+                elo={user?.eloRating}
+                eloChange={0}
+                gamesPlayed={0}
+                coins={0}
             />
-            {isLoading ? (
-                <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color="#8B0000" />
+            
+            <View style={styles.tabContainer}>
+                <TouchableOpacity 
+                    style={[styles.tab, activeTab === 'friends' && styles.activeTab]}
+                    onPress={() => setActiveTab('friends')}
+                >
+                    <Text style={[styles.tabText, activeTab === 'friends' && styles.activeTabText]}>Friends</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                    style={[styles.tab, activeTab === 'challenges' && styles.activeTab]}
+                    onPress={() => setActiveTab('challenges')}
+                >
+                    <Text style={[styles.tabText, activeTab === 'challenges' && styles.activeTabText]}>Challenges</Text>
+                </TouchableOpacity>
+            </View>
+
+            {activeTab === 'friends' ? (
+                <View style={styles.content}>
+                    <View style={styles.addFriendContainer}>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Enter username"
+                            value={username}
+                            onChangeText={setUsername}
+                            autoCapitalize="none"
+                        />
+                        <TouchableOpacity 
+                            style={styles.addButton}
+                            onPress={handleAddFriend}
+                            disabled={isAddingFriend}
+                        >
+                            {isAddingFriend ? (
+                                <ActivityIndicator size="small" color="#FFFFFF" />
+                            ) : (
+                                <>
+                                    <UserPlus size={16} color="#FFFFFF" />
+                                    <Text style={styles.addButtonText}>Add</Text>
+                                </>
+                            )}
+                        </TouchableOpacity>
+                    </View>
+
+                    {isLoading ? (
+                        <ActivityIndicator style={styles.loader} />
+                    ) : error ? (
+                        <Text style={styles.errorText}>Failed to load friends</Text>
+                    ) : (
+                        <ScrollView style={styles.list}>
+                            {friends.map((friend) => (
+                                <FriendRow
+                                    key={friend.id}
+                                    friend={friend}
+                                    currentUserId={user.id}
+                                    onChallenge={handleChallenge}
+                                    onRemove={handleRemoveFriend}
+                                />
+                            ))}
+                        </ScrollView>
+                    )}
                 </View>
             ) : (
-                <ScrollView 
-                    style={styles.content}
-                    contentContainerStyle={[
-                        styles.contentContainer,
-                        { paddingBottom: insets.bottom + 90 }
-                    ]}
-                >
-                    {error && (
-                        <Text style={styles.errorText}>
-                            {error instanceof Error ? error.message : 'An error occurred'}
-                        </Text>
-                    )}
-
-                    <View style={styles.searchSection}>
-                        <View style={styles.searchContainer}>
-                            <TextInput
-                                style={styles.searchInput}
-                                placeholder="Enter username to add friend"
-                                value={username}
-                                onChangeText={setUsername}
-                                onSubmitEditing={handleAddFriend}
-                                autoCapitalize="none"
-                                autoCorrect={false}
+                <View style={styles.content}>
+                    <ScrollView style={styles.list}>
+                        {challenges.map((room) => (
+                            <ChallengeRow
+                                key={room.id}
+                                room={room}
+                                user={user}
+                                challenger={room.players.find(p => p.id !== user.id)}
+                                onAccept={handleAcceptChallenge}
+                                onReject={handleRejectChallenge}
+                                isAccepting={acceptChallenge.isPending}
+                                isRejecting={rejectChallenge.isPending}
                             />
-                            <TouchableOpacity 
-                                style={[
-                                    styles.addButton,
-                                    (!username.trim() || isAddingFriend) && styles.addButtonDisabled
-                                ]}
-                                onPress={handleAddFriend}
-                                disabled={!username.trim() || isAddingFriend}
-                            >
-                                {isAddingFriend ? (
-                                    <ActivityIndicator size="small" color="#FFFFFF" />
-                                ) : (
-                                    <UserPlus size={20} color="#FFFFFF" />
-                                )}
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-
-                    <View style={styles.tabContainer}>
-                        <Pressable 
-                            style={[
-                                styles.tab,
-                                activeTab === 'friends' && styles.activeTab
-                            ]}
-                            onPress={() => setActiveTab('friends')}
-                        >
-                            <Text style={[
-                                styles.tabText,
-                                activeTab === 'friends' && styles.activeTabText
-                            ]}>
-                                Friends
-                            </Text>
-                        </Pressable>
-                        <Pressable 
-                            style={[
-                                styles.tab,
-                                activeTab === 'challenges' && styles.activeTab
-                            ]}
-                            onPress={() => setActiveTab('challenges')}
-                        >
-                            <Text style={[
-                                styles.tabText,
-                                activeTab === 'challenges' && styles.activeTabText
-                            ]}>
-                                Challenges
-                                {pendingChallenges.length > 0 && (
-                                    <Text style={styles.badge}> {pendingChallenges.length}</Text>
-                                )}
-                            </Text>
-                        </Pressable>
-                    </View>
-
-                    {activeTab === 'friends' ? (
-                        <View style={styles.section}>
-                            <View style={styles.friendsList}>
-                                {friends.map(friend => (
-                                    <FriendRow
-                                        key={friend.id}
-                                        friend={friend}
-                                        currentUserId={user.id}
-                                        onChallenge={handleChallenge}
-                                        onRemove={handleRemoveFriend}
-                                    />
-                                ))}
-                                {friends.length === 0 && (
-                                    <Text style={styles.emptyText}>
-                                        No friends yet. Add some friends to play with!
-                                    </Text>
-                                )}
-                            </View>
-                        </View>
-                    ) : (
-                        <View style={styles.section}>
-                            <View style={styles.friendsList}>
-                                {pendingChallenges.map(challenge => (
-                                    <FriendRow
-                                        key={challenge.challenger.id}
-                                        friend={{
-                                            id: challenge.challenger.id,
-                                            sender: {
-                                                id: challenge.challenger.id,
-                                                username: challenge.challenger.username,
-                                                avatarUrl: ''
-                                            },
-                                            receiver: {
-                                                id: user.id,
-                                                username: user.username,
-                                                avatarUrl: ''
-                                            },
-                                            status: 'pending',
-                                            createdAt: new Date().toISOString(),
-                                            acceptedAt: null
-                                        }}
-                                        currentUserId={user.id}
-                                        onChallenge={() => {}}
-                                        onRemove={() => {}}
-                                        onAccept={handleAcceptChallenge}
-                                        onReject={handleRejectChallenge}
-                                        isChallenge={true}
-                                        roomId={challenge.room.id}
-                                    />
-                                ))}
-                                {pendingChallenges.length === 0 && (
-                                    <Text style={styles.emptyText}>
-                                        No pending challenges
-                                    </Text>
-                                )}
-                            </View>
-                        </View>
-                    )}
-                </ScrollView>
+                        ))}
+                    </ScrollView>
+                </View>
             )}
 
-            {selectedFriend && otherUser && (
-                <ChallengeDialog
-                    isVisible={!!selectedFriend}
-                    onClose={() => setSelectedFriend(null)}
-                    friendId={otherUser.id}
-                    friendName={otherUser.username}
-                />
-            )}
+            <ChallengeDialog
+                isVisible={!!selectedFriend}
+                onClose={() => setSelectedFriend(null)}
+                friendId={otherUser?.id || 0}
+                friendName={otherUser?.username || ''}
+            />
         </View>
     );
 }
@@ -332,36 +268,74 @@ export default function Friends() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: 'white',
+        backgroundColor: '#FFFFFF',
+    },
+    tabContainer: {
+        flexDirection: 'row',
+        paddingHorizontal: 16,
+        marginBottom: 16,
+    },
+    tab: {
+        flex: 1,
+        paddingVertical: 16,
+        alignItems: 'center',
+        borderBottomWidth: 2,
+        borderBottomColor: 'transparent',
+    },
+    activeTab: {
+        borderBottomColor: '#8B0000',
+    },
+    tabText: {
+        fontSize: 16,
+        color: '#666666',
+        fontFamily: 'Times New Roman',
+    },
+    activeTabText: {
+        color: '#8B0000',
     },
     content: {
         flex: 1,
+        paddingHorizontal: 16,
     },
-    contentContainer: {
-        padding: 16,
+    addFriendContainer: {
+        flexDirection: 'row',
+        gap: 8,
+        marginBottom: 16,
     },
-    loadingContainer: {
+    input: {
         flex: 1,
-        justifyContent: 'center',
+        height: 46,
+        borderWidth: 1,
+        borderColor: '#E5E5E5',
+        borderRadius: 8,
+        paddingHorizontal: 12,
+        backgroundColor: '#F8F8F5',
+        fontFamily: 'Times New Roman',
+    },
+    addButton: {
+        flexDirection: 'row',
         alignItems: 'center',
+        backgroundColor: '#8B0000',
+        paddingHorizontal: 16,
+        borderRadius: 8,
+        gap: 4,
+    },
+    addButtonText: {
+        color: '#FFFFFF',
+        fontSize: 14,
+        fontFamily: 'Times New Roman',
+    },
+    list: {
+        flex: 1,
+    },
+    loader: {
+        marginTop: 20,
     },
     errorText: {
         color: '#EF4444',
         textAlign: 'center',
-        marginBottom: 16,
-    },
-    section: {
-        marginBottom: 24,
-    },
-    sectionTitle: {
-        fontSize: 18,
-        fontWeight: '600',
-        color: '#2B2B2B',
-        marginBottom: 12,
+        marginTop: 20,
         fontFamily: 'Times New Roman',
-    },
-    friendsList: {
-        gap: 12,
     },
     friendRow: {
         flexDirection: 'row',
@@ -372,6 +346,7 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         borderWidth: 1,
         borderColor: '#E5E5E5',
+        marginBottom: 8,
     },
     leftSection: {
         flex: 1,
@@ -388,12 +363,27 @@ const styles = StyleSheet.create({
         borderRadius: 20,
         backgroundColor: '#F5F5EB',
     },
+    userInfo: {
+        flex: 1,
+    },
     name: {
         fontSize: 16,
         color: '#2B2B2B',
         fontFamily: 'Times New Roman',
     },
+    challengeText: {
+        fontSize: 12,
+        color: '#666666',
+        fontFamily: 'Times New Roman',
+    },
     actions: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        marginLeft: 'auto',
+        paddingLeft: 12,
+    },
+    challengeActions: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 6,
@@ -406,14 +396,15 @@ const styles = StyleSheet.create({
         padding: 8,
         borderRadius: 6,
         borderWidth: 1,
+        gap: 4,
     },
     challengeButton: {
-        backgroundColor: '#FFF5F5',
+        backgroundColor: '#FEF2F2',
         borderColor: '#FECACA',
     },
     removeButton: {
-        backgroundColor: '#F8F8F5',
-        borderColor: '#E5E5E5',
+        backgroundColor: '#F3F4F6',
+        borderColor: '#E5E7EB',
     },
     acceptButton: {
         backgroundColor: '#F0FDF4',
@@ -423,95 +414,9 @@ const styles = StyleSheet.create({
         backgroundColor: '#FEF2F2',
         borderColor: '#FECACA',
     },
-    searchSection: {
-        marginBottom: 24,
-    },
-    searchContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-    },
-    searchInput: {
-        flex: 1,
-        height: 44,
-        backgroundColor: '#F8F8F5',
-        borderRadius: 8,
-        paddingHorizontal: 16,
-        borderWidth: 1,
-        borderColor: '#E5E5E5',
-        fontFamily: 'Times New Roman',
-    },
-    addButton: {
-        width: 44,
-        height: 44,
-        backgroundColor: '#8B0000',
-        borderRadius: 8,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    addButtonDisabled: {
-        backgroundColor: '#D1D1D1',
-    },
-    emptyText: {
-        textAlign: 'center',
-        color: '#666666',
-        fontFamily: 'Times New Roman',
-        fontSize: 16,
-        paddingVertical: 24,
-    },
-    tabContainer: {
-        flexDirection: 'row',
-        marginBottom: 16,
-        borderRadius: 8,
-        backgroundColor: '#F8F8F5',
-        padding: 4,
-    },
-    tab: {
-        flex: 1,
-        paddingVertical: 8,
-        alignItems: 'center',
-        borderRadius: 6,
-    },
-    activeTab: {
-        backgroundColor: '#FFFFFF',
-        shadowColor: '#000',
-        shadowOffset: {
-            width: 0,
-            height: 1,
-        },
-        shadowOpacity: 0.1,
-        shadowRadius: 1,
-        elevation: 2,
-    },
-    tabText: {
-        fontSize: 14,
-        color: '#666666',
-        fontFamily: 'Times New Roman',
-    },
-    activeTabText: {
-        color: '#2B2B2B',
-        fontWeight: '600',
-    },
-    badge: {
-        color: '#8B0000',
-        fontWeight: '600',
-    },
-    userInfo: {
-        flex: 1,
-    },
-    challengeText: {
-        fontSize: 12,
-        color: '#666666',
-        fontFamily: 'Times New Roman',
-    },
     buttonText: {
         fontSize: 12,
-        marginLeft: 4,
         fontFamily: 'Times New Roman',
     },
-    challengeActions: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 6,
-    },
 });
+

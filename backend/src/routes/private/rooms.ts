@@ -81,12 +81,12 @@ export default function (
     reply.send(room.toView());
   });
 
-  fastify.get('/challenges/pending', async (request, reply) => {
+  fastify.get('/rooms/challenges/pending', async (request, reply) => {
     const userId = request.user.id;
     const challenges = await roomService.getPendingChallenges(userId);
-    return challenges.map(challenge => ({
-      ...challenge,
-      room: challenge.room.toView()
+    reply.send(challenges.map(room => {
+      room.markModified();
+      return room.toView()
     }));
   });
 

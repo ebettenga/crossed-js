@@ -29,7 +29,6 @@ export default function Home() {
     const { data: activeRooms, isLoading: isLoadingRooms, error: activeRoomsError } = useActiveRooms();
     const { data: pendingRooms, isLoading: isLoadingPendingRooms, error: pendingRoomsError } = usePendingRooms();
     const { data: user, isLoading: isLoadingUser } = useUser();
-    console.log(user);
 
     const isBottomSheetOpen = useSharedValue(false);
     const [selectedGameMode, setSelectedGameMode] = React.useState<GameMode | null>(null);

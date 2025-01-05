@@ -1,29 +1,20 @@
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { post, get } from "./api";
 import { useSocket } from "./socket";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Room } from "./useRoom";
-import { useRouter } from "expo-router";
-
-type Challenge = {
-    room: Room;
-    challenger: {
-        id: number;
-        username: string;
-    };
-};
+import { useRouter } from "expo-router";     
 
 export const useChallenge = () => {
     const queryClient = useQueryClient();
     const { socket, isConnected } = useSocket();
-    const [pendingChallenges, setPendingChallenges] = useState<Challenge[]>([]);
     const router = useRouter();
 
     useEffect(() => {
         if (!isConnected || !socket) return;
 
-        const handleChallengeReceived = (challenge: Challenge) => {
-            setPendingChallenges(prev => [...prev, challenge]);
+        const handleChallengeReceived = () => {
+            queryClient.invalidateQueries({ queryKey: ['challenges', 'pending'] });
         };
 
         socket.on("challenge_received", handleChallengeReceived);
@@ -33,9 +24,10 @@ export const useChallenge = () => {
         };
     }, [socket, isConnected]);
 
-    const { data: challenges = [] } = useQuery<Challenge[]>({
+    const { data: challenges = [] } = useQuery<Room[]>({
         queryKey: ['challenges', 'pending'],
         queryFn: () => get('/rooms/challenges/pending'),
+        refetchInterval: 10000, 
     });
 
     const sendChallenge = useMutation({
@@ -45,7 +37,7 @@ export const useChallenge = () => {
         },
         onSuccess: (room) => {
             queryClient.invalidateQueries({ queryKey: ['rooms'] });
-            queryClient.invalidateQueries({ queryKey: ['challenges'] });
+            queryClient.invalidateQueries({ queryKey: ['challenges', 'pending'] });
             router.push(`/game?roomId=${room.id}`);
         },
     });
@@ -57,8 +49,7 @@ export const useChallenge = () => {
         },
         onSuccess: (room) => {
             queryClient.invalidateQueries({ queryKey: ['rooms'] });
-            queryClient.invalidateQueries({ queryKey: ['challenges'] });
-            setPendingChallenges(prev => prev.filter(c => c.room.id !== room.id));
+            queryClient.invalidateQueries({ queryKey: ['challenges', 'pending'] });
             router.push(`/game?roomId=${room.id}`);
         },
     });
@@ -68,20 +59,14 @@ export const useChallenge = () => {
             const { data } = await post(`/rooms/challenge/${roomId}/reject`, { roomId });
             return data as Room;
         },
-        onSuccess: (room) => {
+        onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['rooms'] });
-            queryClient.invalidateQueries({ queryKey: ['challenges'] });
-            setPendingChallenges(prev => prev.filter(c => c.room.id !== room.id));
+            queryClient.invalidateQueries({ queryKey: ['challenges', 'pending'] });
         },
     });
 
-    // Combine socket challenges with fetched challenges
-    console.log(challenges);
-    console.log(pendingChallenges);
-    const allChallenges = [...challenges, ...pendingChallenges];
-
     return {
-        pendingChallenges: allChallenges,
+        challenges,
         sendChallenge,
         acceptChallenge,
         rejectChallenge,

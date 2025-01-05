@@ -4,7 +4,7 @@ export interface User {
     created_at: string;
     email: string;
     roles: string[];
-    description: string;
+    description?: string | null;
     eloRating: number;
     gamesWon: number;
     gamesLost: number;
