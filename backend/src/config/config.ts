@@ -14,7 +14,7 @@ export const getConfig = () => {
     }
 
     // Set timezone from config
-    process.env.TZ = config.timezone;
+    process.env.TZ = config.api.timezone;
     
     return config;
   } catch (e) {
