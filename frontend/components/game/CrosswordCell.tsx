@@ -25,9 +25,9 @@ const CELL_SIZE = Math.floor(Math.min(
 const CORNER_RADIUS = config.game.crossword.cornerRadius;
 
 // Colors from config
-const PAPER_COLOR = config.game.crossword.colors.paper;
-const SELECTED_COLOR = config.game.crossword.colors.selected;
-const BORDER_COLOR = config.game.crossword.colors.border;
+const PAPER_COLOR = config.theme.colors.background.paper
+const SELECTED_COLOR = config.theme.colors.primary.DEFAULT
+const BORDER_COLOR = config.theme.colors.border.light
 
 interface CrosswordCellProps {
     letter: string;
@@ -135,4 +135,4 @@ const styles = StyleSheet.create({
         bottom: 2,
         right: 2,
     },
-}); 
+});

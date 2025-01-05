@@ -27,6 +27,7 @@
 - make settings page
 - [make payment options page](https://superwall.com/blog/integrating-superwall-in-your-indie-react-native-app)
 - set up ad network
+- Add a Game complete animation/ modal
 
 
 
@@ -36,3 +37,25 @@ get a game played on the mobile app
     - connect to game
     - be able to guess letters and see them show up
     - get a summary modal when a game finished event comes through
+
+
+Add Toasts to front end(i.e. friend added, etc.)
+Get a summary modal with stats when the game is finished that redirects to home()
+Make pages responsive for both Mobile and web
+Make a Tournment Style Game
+Dark mode
+Lose variables in front end to variables(AI Work)
+Have Avatar photos show up in the game screen visable others
+Get Superwall(i.e. Paywall) integrated into the app
+Create a design system for the App
+Getting Socal Media Pages up and running
+Have user set timezone in Profile(Should Auto lookup)
+Get tests written and working
+Configure Backend so it can run schedulable Jobs(async)
+Be able to send Emails(reset password,marketingemails,etc.)
+Be able to make a custom game(i.e. set number of players)
+Add Audio sound effects to the game
+Create Mapping service so we don't send confidential data(i.e. don't send user password, don't send game answers)
+Add loading indicators to the frontend
+Deploy the backend to external provider(Railway)
+Get iOS working
