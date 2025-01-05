@@ -56,7 +56,7 @@ export const HomeSquareButton: React.FC<HomeSquareButtonProps> = ({
 const styles = StyleSheet.create({
     wrapper: {
         borderWidth: 1.5,
-        borderColor: '#E5E5E5',
+        borderColor: '#343434',
         backgroundColor: '#FAFAF7',
     },
     container: {

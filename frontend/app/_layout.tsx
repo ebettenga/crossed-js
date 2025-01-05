@@ -1,15 +1,11 @@
-import { Slot, SplashScreen } from "expo-router";
-import { useReactQueryDevTools } from '@dev-plugins/react-query';
+import { Slot, SplashScreen, useRouter, useSegments } from "expo-router";
 
 import "./globals.css";
 import { useEffect, useState } from "react";
 import GlobalProvider from "@/lib/global-provider";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useColorScheme } from "@/lib/useColorScheme";
 import { NAV_THEME } from "@/lib/constants";
 import { Theme } from "@react-navigation/native";
-import { Platform } from "react-native";
-import { storage } from "@/hooks/storageApi";
 import { PortalHost } from '@rn-primitives/portal';
 import { RoomProvider, SocketProvider } from '~/hooks/socket';
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -32,6 +28,42 @@ SplashScreen.preventAutoHideAsync();
 const queryClient = new QueryClient();
 
 function AppContent() {
+  const segments = useSegments();
+  const router = useRouter();
+  const { data: user, isLoading } = useUser();
+  const [isReady, setIsReady] = useState(false);
+
+  useEffect(() => {
+    if (!isLoading) {
+      setIsReady(true);
+    }
+  }, [isLoading]);
+
+  useEffect(() => {
+    if (!isReady) {
+      return;
+    }
+
+    const inAuthGroup = segments[0] === '(auth)';
+
+    if (user && inAuthGroup) {
+      // Redirect to home if user is signed in and in auth group
+      router.replace('/(root)/(tabs)');
+    } else if (!user && !inAuthGroup) {
+      // Redirect to sign in if user is not signed in and not in auth group
+      router.replace('/(auth)/signin');
+    }
+  }, [user, segments, isReady]);
+
+  useEffect(() => {
+    if (isReady) {
+      SplashScreen.hideAsync();
+    }
+  }, [isReady]);
+
+  if (!isReady) {
+    return null;
+  }
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -42,8 +74,6 @@ function AppContent() {
 }
 
 export default function RootLayout() {
-  useReactQueryDevTools(queryClient);
-
   return (
     <QueryClientProvider client={queryClient}>
       <GlobalProvider>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, Dimensions, ScrollView } from 'react-native';
+import { View, StyleSheet, Dimensions, ScrollView, ActivityIndicator } from 'react-native';
 import { Users, Swords, Group } from 'lucide-react-native';
 import { HomeSquareButton } from '~/components/home/HomeSquareButton';
 import { PageHeader } from '~/components/Header';
@@ -8,7 +8,7 @@ import { GameBanner } from '~/components/home/GameBanner';
 import { DifficultyBottomSheet } from '~/components/game/DifficultyBottomSheet';
 import { useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useJoinRoom } from '~/hooks/useRoom';
+import { useJoinRoom, Room } from '~/hooks/useRoom';
 import { useRoom } from '~/hooks/socket';
 import { Link } from 'expo-router';
 import { useActiveRooms, usePendingRooms } from '~/hooks/useActiveRooms';
@@ -26,8 +26,8 @@ export default function Home() {
     const insets = useSafeAreaInsets();
     const { room } = useRoom();
     const { mutate: join } = useJoinRoom();
-    const { data: activeRooms, isLoading: isLoadingRooms, error: activeRoomsError } = useActiveRooms();
-    const { data: pendingRooms, isLoading: isLoadingPendingRooms, error: pendingRoomsError } = usePendingRooms();
+    const { data: activeRooms, isLoading: isLoadingRooms } = useActiveRooms();
+    const { data: pendingRooms, isLoading: isLoadingPendingRooms } = usePendingRooms();
     const { data: user, isLoading: isLoadingUser } = useUser();
 
     const isBottomSheetOpen = useSharedValue(false);
@@ -53,52 +53,63 @@ export default function Home() {
         setSelectedGameMode(null);
     };
 
+    // Show loading state while any data is loading
+    const isLoading = isLoadingUser || isLoadingRooms || isLoadingPendingRooms;
+    if (isLoading || !user) {
+        return (
+            <View style={[styles.container, styles.loadingContainer]}>
+                <ActivityIndicator size="large" color="#8B0000" />
+            </View>
+        );
+    }
+
+    const activeRoomsArray = activeRooms as Room[] || [];
+    const pendingRoomsArray = pendingRooms as Room[] || [];
+
     return (
         <View style={[
             styles.container,
             {
                 paddingTop: insets.top,
                 paddingBottom: insets.bottom,
-                // Add horizontal safe area padding if needed
                 paddingLeft: insets.left,
                 paddingRight: insets.right,
             }
         ]}>
             <View style={styles.content}>
                 <PageHeader />
-                {
-                    activeRooms?.length && activeRooms?.length > 0 && (
-                        <View style={styles.gameBannersScroll}>
-                            <ScrollView
-                                horizontal
-                                pagingEnabled
-                                showsHorizontalScrollIndicator={Boolean(activeRooms?.length && activeRooms?.length > 10)}
-                            >
-                                {activeRooms?.map((activeRoom) => (
-                                    <Link key={activeRoom.id} href={`/game?roomId=${activeRoom.id}`}>
-                                        <View style={styles.bannerContainer}>
-                                            <GameBanner
-                                                gameId={activeRoom.id.toString()}
-                                                gameType={activeRoom.type}
-                                                createdAt={activeRoom.created_at}
-                                                status="playing"
-                                            />
-                                        </View>
-                                    </Link>
-                                ))}
-                            </ScrollView>
-                        </View>
-                    )}
-
-                {pendingRooms?.length && pendingRooms?.length > 0 && (
+                {activeRoomsArray.length > 0 && (
                     <View style={styles.gameBannersScroll}>
                         <ScrollView
                             horizontal
                             pagingEnabled
-                            showsHorizontalScrollIndicator={Boolean(pendingRooms.length > 10)}
+                            showsHorizontalScrollIndicator={activeRoomsArray.length > 10}
                         >
-                            {pendingRooms.map((pendingRoom) => (
-                                <View style={styles.bannerContainer}>
+                            {activeRoomsArray.map((activeRoom) => (
+                                <Link key={activeRoom.id} href={`/game?roomId=${activeRoom.id}`}>
+                                    <View style={styles.bannerContainer}>
+                                        <GameBanner
+                                            gameId={activeRoom.id.toString()}
+                                            gameType={activeRoom.type}
+                                            createdAt={activeRoom.created_at}
+                                            status="playing"
+                                        />
+                                    </View>
+                                </Link>
+                            ))}
+                        </ScrollView>
+                    </View>
+                )}
+
+                {pendingRoomsArray.length > 0 && (
+                    <View style={styles.gameBannersScroll}>
+                        <ScrollView
+                            horizontal
+                            pagingEnabled
+                            showsHorizontalScrollIndicator={pendingRoomsArray.length > 10}
+                        >
+                            {pendingRoomsArray.map((pendingRoom) => (
+                                <View key={pendingRoom.id} style={styles.bannerContainer}>
                                     <GameBanner
                                         gameId={pendingRoom.id.toString()}
                                         gameType={pendingRoom.type}
@@ -143,12 +154,14 @@ export default function Home() {
     );
 }
 
-const BANNER_HEIGHT = 100;
-
 const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: 'white',
+    },
+    loadingContainer: {
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     content: {
         flex: 1,
@@ -164,11 +177,11 @@ const styles = StyleSheet.create({
     },
     gameBannersScroll: {
         width: SCREEN_WIDTH,
-        height: BANNER_HEIGHT,
+        height: 100,
     },
     bannerContainer: {
         width: SCREEN_WIDTH,
-        height: BANNER_HEIGHT,
+        height: 100,
         paddingHorizontal: PADDING,
     },
 });
