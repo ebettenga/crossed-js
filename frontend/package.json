@@ -14,7 +14,8 @@
     "build:web": "eas build --platform web",
     "build": "eas build --platform all",
     "prebuild:android": "npx expo prebuild --platform android --clean",
-    "build:android:dev": "eas build --platform android --profile development"
+    "build:android:dev": "eas build --platform android --profile development",
+    "preview:android:dev": "eas build --platform android --profile preview"
   },
   "jest": {
     "preset": "jest-expo"

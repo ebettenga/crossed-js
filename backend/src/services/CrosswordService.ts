@@ -5,6 +5,7 @@ import { NotFoundError } from '../errors/api';
 import * as fs from 'fs';
 import * as path from 'path';
 import { findDir } from '../scripts/findConfigDir';
+import { config } from '../config/config';
 
 export class CrosswordService {
   private ormConnection: DataSource;
@@ -107,6 +108,7 @@ export class CrosswordService {
       .getRepository(Crossword)
       .createQueryBuilder('crossword')
       .where('crossword.dow IN (:...days)', { days })
+      .andWhere('crossword.date >= :firstDate', { firstDate: new Date(config.game.crossword.firstCrosswordDate) })
       .orderBy('RANDOM()')
       .getOne();
 

@@ -1,10 +1,10 @@
-export interface User {
+export interface Player {
     id: number;
     username: string;
     avatarUrl?: string;
+    created_at: string;
     email: string;
     roles: string[];
-    created_at: string;
     eloRating: number;
     winStreak: number;
     gamesPlayed: number;
