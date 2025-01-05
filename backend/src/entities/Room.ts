@@ -117,13 +117,10 @@ export class Room {
     if (this.viewCache && this.lastModified === this.lastViewUpdate) {
       return this.viewCache;
     }
-
-    const localCreatedAt = new Date(this.created_at);
-    localCreatedAt.setHours(localCreatedAt.getHours() + 6);
-
+ 
     const view = {
       id: this.id,
-      created_at: localCreatedAt.toISOString(),
+      created_at: this.created_at,
       difficulty: this.difficulty,
       type: this.type,
       status: this.status,
