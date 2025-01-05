@@ -1,15 +1,13 @@
 export interface User {
     id: number;
     username: string;
-    created_at: string;
+    avatarUrl?: string;
     email: string;
     roles: string[];
-    description?: string | null;
-    photo?: string | null;
-    photoContentType?: string | null;
+    created_at: string;
     eloRating: number;
-    gamesWon: number;
-    gamesLost: number;
-    guessAccuracy: number;
-    winRate: number;
+    winStreak: number;
+    gamesPlayed: number;
+    isPremium: boolean;
+    premiumExpiresAt: string | null;
 } 

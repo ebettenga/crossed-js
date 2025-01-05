@@ -1,10 +1,25 @@
 import React, { useMemo } from 'react';
-import { StyleSheet, View, Dimensions, Text } from 'react-native';
+import { StyleSheet, View, Dimensions } from 'react-native';
 import { CrosswordCell } from './CrosswordCell';
 import { ScrollView } from 'react-native-gesture-handler';
 import { Square } from '~/hooks/useRoom';
+import { config } from '~/config/config';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
+const SCREEN_HEIGHT = Dimensions.get('window').height;
+const GRID_SIZE = config.game.crossword.gridSize;
+const BORDER_WIDTH = config.game.crossword.borderWidth;
+const KEYBOARD_HEIGHT = 250;
+const HEADER_HEIGHT = 120;
+
+// Calculate board size
+const AVAILABLE_HEIGHT = SCREEN_HEIGHT - KEYBOARD_HEIGHT - HEADER_HEIGHT;
+const AVAILABLE_WIDTH = SCREEN_WIDTH - (BORDER_WIDTH * 2);
+const CELL_SIZE = Math.floor(Math.min(
+    AVAILABLE_WIDTH / GRID_SIZE,
+    AVAILABLE_HEIGHT / GRID_SIZE
+));
+const BOARD_SIZE = CELL_SIZE * GRID_SIZE + (BORDER_WIDTH * 2);
 
 interface CrosswordBoardProps {
     board: Square[][];
@@ -23,22 +38,17 @@ export const CrosswordBoard: React.FC<CrosswordBoardProps> = ({
     setIsAcrossMode,
     title
 }) => {
-
     const handleCellPress = (square: Square) => {
         if (selectedCell?.id === square.id) {
             setIsAcrossMode(!isAcrossMode);
         }
-
         onCellPress(square);
     };
 
     // Memoize the board rendering to prevent unnecessary re-renders
     const boardContent = useMemo(() => {
         return board.map((row, x) => (
-            <View
-                key={x}
-                style={styles.row}
-            >
+            <View key={x} style={styles.row}>
                 {row.map((square, y) => {
                     const isSelected = selectedCell?.id === square.id;
                     return (
@@ -56,28 +66,15 @@ export const CrosswordBoard: React.FC<CrosswordBoardProps> = ({
                 })}
             </View>
         ));
-    }, [board, selectedCell, onCellPress]);
+    }, [board, selectedCell, onCellPress, isAcrossMode]);
 
     return (
         <View style={styles.container}>
-            <ScrollView
-                horizontal
-                contentContainerStyle={[styles.scrollContainer, { paddingTop: 2 }]}
-                showsHorizontalScrollIndicator={false}
-                showsVerticalScrollIndicator={false}
-                removeClippedSubviews={true}
-            >
-                <ScrollView
-                    contentContainerStyle={styles.boardContainer}
-                    showsHorizontalScrollIndicator={false}
-                    showsVerticalScrollIndicator={false}
-                    removeClippedSubviews={true}
-                >
-                    <View>
-                        {boardContent}
-                    </View>
-                </ScrollView>
-            </ScrollView>
+            <View style={styles.boardWrapper}>
+                <View style={[styles.board, { width: BOARD_SIZE, height: BOARD_SIZE }]}>
+                    {boardContent}
+                </View>
+            </View>
         </View>
     );
 };
@@ -85,26 +82,21 @@ export const CrosswordBoard: React.FC<CrosswordBoardProps> = ({
 const styles = StyleSheet.create({
     container: {
         width: '100%',
+        height: AVAILABLE_HEIGHT,
+        justifyContent: 'center',
         alignItems: 'center',
+        paddingTop: 20,
     },
-    title: {
-        fontSize: 14,
-        fontFamily: 'Times New Roman',
-        color: '#2B2B2B',
-        marginBottom: 0,
-        textAlign: 'left',
-        paddingHorizontal: 6,
-        alignSelf: 'flex-start',
-    },
-    scrollContainer: {
-        flexGrow: 1,
-        minWidth: SCREEN_WIDTH,
-        justifyContent: 'flex-start',
+    boardWrapper: {
+        width: BOARD_SIZE,
+        height: BOARD_SIZE,
         alignItems: 'center',
+        justifyContent: 'center',
     },
-    boardContainer: {
-        padding: 5,
-        alignItems: 'center',
+    board: {
+        backgroundColor: config.game.crossword.colors.paper,
+        borderRadius: config.game.crossword.cornerRadius,
+        overflow: 'hidden',
     },
     row: {
         flexDirection: 'row',

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, StatusBar } from 'react-native';
+import { View, StyleSheet, Text } from 'react-native';
 import { CrosswordBoard } from '../components/game/CrosswordBoard';
 import { Keyboard } from '../components/game/Keyboard';
 import { PlayerInfo } from '../components/game/PlayerInfo';
@@ -10,11 +10,13 @@ import { ClueDisplay } from '../components/game/ClueDisplay';
 import { useRoom } from '~/hooks/socket';
 import { Square, SquareType } from "~/hooks/useRoom";
 import { LoadingGame } from '~/components/game/LoadingGame';
-import { Text } from 'react-native';
+import { GameTimer } from '~/components/game/GameTimer';
+import { useUser } from '~/hooks/users';
+import { Avatar } from '~/components/shared/Avatar';
 
 export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
     const { room, guess, refresh, forfeit } = useRoom(roomId);
-
+    const { data: currentUser } = useUser();
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const [showSummary, setShowSummary] = useState(false);
@@ -138,15 +140,21 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
 
     return (
         <View style={[styles.container, { paddingBottom: insets.bottom + 70 }]}>
-            <Text style={styles.title}>{room.crossword.title}</Text>
+            <View style={styles.header}>
+                <View style={styles.headerLeft}>
+                    {currentUser && (
+                        <Avatar user={currentUser} size={32} imageUrl={currentUser.avatarUrl} />
+                    )}
+                    <Text style={styles.title}>{room.crossword.title}</Text>
+                </View>
+                <GameTimer startTime={room.created_at} />
+            </View>
             <PlayerInfo
                 players={room.players}
                 scores={room.scores}
             />
             <View style={styles.boardContainer}>
-                <View
-                    style={[styles.board]}
-                >
+                <View style={[styles.board]}>
                     <CrosswordBoard
                         board={room?.board}
                         onCellPress={handleCellPress}
@@ -168,7 +176,6 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
                 />
             </View>
             <GameMenu options={menuOptions} />
-
         </View>
     );
 };
@@ -178,15 +185,23 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#F5F5EB',
     },
+    header: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: 16,
+        paddingTop: 10,
+        marginBottom: -10,
+    },
+    headerLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
     title: {
         fontSize: 14,
         fontFamily: 'Times New Roman',
         color: '#2B2B2B',
-        paddingTop: 10,
-        marginBottom: -10,
-        textAlign: 'left',
-        paddingHorizontal: 6,
-        alignSelf: 'flex-start',
     },
     boardContainer: {
         flex: 1,

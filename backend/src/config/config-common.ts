@@ -26,6 +26,9 @@ export const commonConfig = {
       '2v2': 4,
       'free4all': 5,
     },
+    crossword: {
+      firstCrosswordDate: '2000-01-01',
+    },
   },
   timezone: 'UTC',
 };

@@ -4,11 +4,24 @@ import { SquareType } from '~/hooks/useRoom';
 import { config } from '~/config/config';
 import { ArrowRight, ArrowDown } from 'lucide-react-native';
 
-// Calculate cell size based on screen width
+// Calculate cell size based on screen width and height
 const SCREEN_WIDTH = Dimensions.get('window').width;
+const SCREEN_HEIGHT = Dimensions.get('window').height;
 const GRID_SIZE = config.game.crossword.gridSize;
 const BORDER_WIDTH = config.game.crossword.borderWidth;
-const CELL_SIZE = Math.floor((SCREEN_WIDTH) / GRID_SIZE);
+const KEYBOARD_HEIGHT = 250; // Approximate height of keyboard + clue display
+const HEADER_HEIGHT = 120; // Approximate height of header section
+
+// Calculate the maximum available space for the board
+const AVAILABLE_HEIGHT = SCREEN_HEIGHT - KEYBOARD_HEIGHT - HEADER_HEIGHT;
+const AVAILABLE_WIDTH = SCREEN_WIDTH - (BORDER_WIDTH * 2);
+
+// Use the smaller of width or height to ensure square cells that fit the screen
+const CELL_SIZE = Math.floor(Math.min(
+    AVAILABLE_WIDTH / GRID_SIZE,
+    AVAILABLE_HEIGHT / GRID_SIZE
+));
+
 const CORNER_RADIUS = config.game.crossword.cornerRadius;
 
 // Colors from config
@@ -104,7 +117,7 @@ const styles = StyleSheet.create({
         fontSize: CELL_SIZE * 0.5,
         fontWeight: '600',
         color: BORDER_COLOR,
-        fontFamily: 'Times New Roman', // More newspaper-like font
+        fontFamily: 'Times New Roman',
     },
     gridNumber: {
         position: 'absolute',
