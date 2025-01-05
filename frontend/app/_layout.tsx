@@ -77,11 +77,11 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <GlobalProvider>
-        <SocketProvider>
-          <RoomProvider>
-            <AppContent />
-          </RoomProvider>
-        </SocketProvider>
+          <SocketProvider>
+            <RoomProvider>
+              <AppContent />
+            </RoomProvider>
+          </SocketProvider>
       </GlobalProvider>
     </QueryClientProvider>
   );

@@ -10,5 +10,13 @@ export const commonConfig = {
               border: '#2B2B2B'
             }
           }
+    },
+    superwall: {
+        ios: {
+            apiKey: process.env.EXPO_PUBLIC_SUPERWALL_IOS_API_KEY,
+        },
+        android: {
+            apiKey: process.env.EXPO_PUBLIC_SUPERWALL_ANDROID_API_KEY,
+        }
     }
 };

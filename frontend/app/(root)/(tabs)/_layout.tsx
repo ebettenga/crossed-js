@@ -75,16 +75,6 @@ const TabsLayout = () => {
                 }}
             />
             <Tabs.Screen
-                name="store"
-                options={{
-                    title: 'Store',
-                    headerShown: false,
-                    tabBarIcon: ({ focused }) => (
-                        <TabIcon icon={icons.wallet} focused={focused} title="Store" />
-                    )
-                }}
-            />
-            <Tabs.Screen
                 name="profile"
                 options={{
                     title: 'Profile',
