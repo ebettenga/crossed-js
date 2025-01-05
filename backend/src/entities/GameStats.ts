@@ -31,6 +31,9 @@ export class GameStats {
     @Column("float")
     eloAtGame: number;
 
+    @Column("integer", { default: 0 })
+    winStreak: number;
+
     @CreateDateColumn()
     createdAt: Date;
 

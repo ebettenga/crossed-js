@@ -51,27 +51,60 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
         if (!room?.board) return null;
 
         if (isAcrossMode) {
-            // Move right
+            // Start from next column
             let nextY = currentCell.y + 1;
-            while (nextY < room.board[0].length) {
-                const nextCell = room.board[currentCell.x][nextY];
+            let currentX = currentCell.x;
+
+            // Keep searching until we find a valid cell or check all positions
+            while (true) {
+                // If we've reached the end of the row, move to the next row
+                if (nextY >= room.board[0].length) {
+                    currentX = (currentX + 1) % room.board.length;
+                    nextY = 0;
+                }
+
+                // If we've wrapped around to the starting position, stop searching
+                if (currentX === currentCell.x && nextY === currentCell.y) {
+                    return null;
+                }
+
+                // Check if current position is a valid cell
+                const nextCell = room.board[currentX][nextY];
                 if (nextCell.squareType !== SquareType.BLACK && nextCell.squareType !== SquareType.SOLVED) {
                     return nextCell;
                 }
+
+                // Move to next column
                 nextY++;
             }
         } else {
-            // Move down
+            // Start from next row
             let nextX = currentCell.x + 1;
-            while (nextX < room.board.length) {
-                const nextCell = room.board[nextX][currentCell.y];
+            let currentY = currentCell.y;
+
+            // Keep searching until we find a valid cell or check all positions
+            while (true) {
+                // If we've reached the bottom of the column, move to the next column
+                if (nextX >= room.board.length) {
+                    currentY = (currentY + 1) % room.board[0].length;
+                    nextX = 0;
+                }
+
+                // If we've wrapped around to the starting position, stop searching
+                if (nextX === currentCell.x && currentY === currentCell.y) {
+                    return null;
+                }
+
+                // Check if current position is a valid cell
+                const nextCell = room.board[nextX][currentY];
                 if (nextCell.squareType !== SquareType.BLACK && nextCell.squareType !== SquareType.SOLVED) {
                     return nextCell;
                 }
+
+                // Move to next row
                 nextX++;
             }
         }
-        return null;
     };
 
     const handleForfeit = () => {
