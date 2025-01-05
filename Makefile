@@ -17,6 +17,8 @@ load-test-data: start-backend ## load test data
 	cd ./backend && yarn commands load-crosswords
 	cd ./backend && yarn commands load-test-data
 
+find-local-ip-mac: ## finds the local IP address so you can update the EXPO_PUBLIC_API_BASE_URL value in the .env.local file.
+	 ipconfig getifaddr en0
 
 build-android-dev: #creates a new eas build for android
 	cd frontend && eas build --platform android --profile development
