@@ -13,6 +13,8 @@ import { useRoom } from '~/hooks/socket';
 import { Link } from 'expo-router';
 import { useActiveRooms, usePendingRooms } from '~/hooks/useActiveRooms';
 import { useUser } from '~/hooks/users';
+import { useState } from 'react';
+import {useCalendars} from 'expo-localization'
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const PADDING = 6;
@@ -29,6 +31,10 @@ export default function Home() {
     const { data: activeRooms, isLoading: isLoadingRooms } = useActiveRooms();
     const { data: pendingRooms, isLoading: isLoadingPendingRooms } = usePendingRooms();
     const { data: user, isLoading: isLoadingUser } = useUser();
+
+    const calenders = useCalendars();
+
+    console.log('Calendars: ',calenders);
 
     const isBottomSheetOpen = useSharedValue(false);
     const [selectedGameMode, setSelectedGameMode] = React.useState<GameMode | null>(null);

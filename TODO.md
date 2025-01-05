@@ -58,3 +58,4 @@ Add Audio sound effects to the game
 Create Mapping service so we don't send confidential data(i.e. don't send user password, don't send game answers)
 Add loading indicators to the frontend
 Deploy the backend to external provider(Railway)
+Get iOS working
