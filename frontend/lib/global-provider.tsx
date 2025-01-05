@@ -1,15 +1,5 @@
-import { createContext, ReactNode, useContext, useEffect } from "react";
-import { QueryObserverResult, RefetchOptions, useQuery } from "@tanstack/react-query";
-import { get } from "@/hooks/api";
-import * as DevClient from 'expo-dev-client';
-
-interface User {
-    $id: string;
-    name: string;
-    email: string;
-    avatar: string;
-    refetch: (options?: RefetchOptions) => Promise<QueryObserverResult<any, Error>>;
-}
+import { createContext, ReactNode, useContext } from "react";
+import { User, useUser } from "~/hooks/users";
 
 interface GlobalContextType {
     isLoggedIn: boolean;
@@ -20,17 +10,7 @@ interface GlobalContextType {
 const GlobalContext = createContext<GlobalContextType | undefined>(undefined);
 
 export const GlobalProvider = ({ children }: { children: ReactNode }) => {
-    const {
-        data: user,
-        isLoading: loading,
-        refetch
-    } = useQuery({
-        queryKey: ["me"],
-        queryFn: async () => {
-            const data = await get("/me");
-            return data;
-        },
-    });
+    const { data: user, isLoading: loading } = useUser();
 
     const isLoggedIn = !!user;
 
@@ -51,10 +31,8 @@ export const GlobalProvider = ({ children }: { children: ReactNode }) => {
     return (
         <GlobalContext.Provider value={{
             isLoggedIn,
-            user,
+            user: user || null,
             loading,
-            // @ts-ignore
-            refetch,
         }}>
             {children}
         </GlobalContext.Provider>

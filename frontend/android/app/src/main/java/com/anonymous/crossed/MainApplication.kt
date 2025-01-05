@@ -1,4 +1,4 @@
-package com.anonymous.react_native_restate
+package com.anonymous.crossed
 
 import android.app.Application
 import android.content.res.Configuration

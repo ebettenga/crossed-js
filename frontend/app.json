@@ -1,23 +1,23 @@
 {
   "expo": {
-    "name": "react_native_restate",
+    "name": "Crossed",
     "slug": "crossed",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "restate",
+    "scheme": "crossed",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.react-native-restate"
+      "bundleIdentifier": "com.anonymous.crossed"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#92979b"
       },
-      "package": "com.anonymous.react_native_restate"
+      "package": "com.anonymous.crossed"
     },
     "web": {
       "bundler": "metro",
@@ -31,7 +31,7 @@
         {
           "image": "./assets/images/splash-icon.png",
           "resizeMode": "cover",
-          "backgroundColor": "#ffffff",
+          "backgroundColor": "#92979b",
           "enableFullScreenImage_legacy": true
         }
       ],

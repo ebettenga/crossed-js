@@ -3,7 +3,7 @@ import { View, StyleSheet, ScrollView } from 'react-native';
 import { Link, useRouter } from 'expo-router';
 import { Users, Settings, BarChart3, CreditCard, LogOut, UserCog } from 'lucide-react-native';
 import { ProfileButton } from '~/components/profile/ProfileButton';
-import { HomeHeader } from '~/components/home/HomeHeader';
+import { PageHeader } from '~/components/Header';
 import { useLogout, useUser } from '~/hooks/users';
 
 export default function Profile() {
@@ -19,13 +19,7 @@ export default function Profile() {
 
     return (
         <View style={styles.container}>
-            <HomeHeader
-                username={user.username}
-                elo={user.eloRating}
-                eloChange={0}
-                gamesPlayed={user.gamesWon + user.gamesLost}
-                coins={0}
-            />
+            <PageHeader />
             <ScrollView style={styles.content}>
                 <View style={styles.section}>
                     <ProfileButton

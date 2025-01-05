@@ -1,15 +1,18 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, Alert, Image } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useUser, useUpdateUser } from '~/hooks/users';
+import { useUser, useUpdateUser, useUpdatePhoto } from '~/hooks/users';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ChevronLeft } from 'lucide-react-native';
+import { ChevronLeft, Camera } from 'lucide-react-native';
+import * as ImagePicker from 'expo-image-picker';
+import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 
 export default function EditProfile() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const { data: user } = useUser();
     const updateUser = useUpdateUser();
+    const updatePhoto = useUpdatePhoto();
     const [username, setUsername] = useState(user?.username || '');
     const [email, setEmail] = useState(user?.email || '');
     const [isLoading, setIsLoading] = useState(false);
@@ -32,6 +35,59 @@ export default function EditProfile() {
         }
     };
 
+    const handlePhotoUpload = async () => {
+        try {
+            // Request permissions
+            const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            if (!permissionResult.granted) {
+                Alert.alert('Permission Required', 'Please grant access to your photo library to upload a photo.');
+                return;
+            }
+
+            // Pick image
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: 'images',
+                allowsEditing: true,
+                aspect: [1, 1],
+                quality: 0.8,
+            });
+
+            if (!result.canceled) {
+                // Compress the image using the non-deprecated API
+                const manipulateResult = await manipulateAsync(
+                    result.assets[0].uri,
+                    [{ resize: { width: 800, height: 800 } }],
+                    { compress: 0.5, format: SaveFormat.JPEG }
+                );
+
+                const formData = new FormData();
+                formData.append('photo', {
+                    uri: manipulateResult.uri,
+                    type: 'image/jpeg',
+                    name: 'photo.jpg',
+                } as any);
+
+                try {
+                    await updatePhoto.mutateAsync(formData);
+                } catch (uploadError: any) {
+                    if (uploadError?.message?.includes('File too large')) {
+                        Alert.alert(
+                            'Error',
+                            'The image file is too large. Please choose a smaller image or try again with a more compressed version.'
+                        );
+                    } else {
+                        throw uploadError;
+                    }
+                }
+            }
+        } catch (error) {
+            Alert.alert(
+                'Error',
+                error instanceof Error ? error.message : 'Failed to upload photo'
+            );
+        }
+    };
+
     if (!user) return null;
 
     return (
@@ -48,6 +104,23 @@ export default function EditProfile() {
             </View>
 
             <View style={styles.form}>
+                <TouchableOpacity 
+                    style={styles.photoContainer}
+                    onPress={handlePhotoUpload}
+                >
+                    {user.photo ? (
+                        <Image 
+                            source={{ uri: user.photo }} 
+                            style={styles.photo}
+                        />
+                    ) : (
+                        <View style={styles.photoPlaceholder}>
+                            <Camera size={32} color="#666666" />
+                        </View>
+                    )}
+                    <Text style={styles.photoText}>Change Photo</Text>
+                </TouchableOpacity>
+
                 <View style={styles.inputGroup}>
                     <Text style={styles.label}>Username</Text>
                     <TextInput
@@ -118,6 +191,32 @@ const styles = StyleSheet.create({
     form: {
         padding: 16,
         gap: 24,
+    },
+    photoContainer: {
+        alignItems: 'center',
+        gap: 8,
+    },
+    photo: {
+        width: 120,
+        height: 120,
+        borderRadius: 60,
+        backgroundColor: '#F8F8F5',
+    },
+    photoPlaceholder: {
+        width: 120,
+        height: 120,
+        borderRadius: 60,
+        backgroundColor: '#F8F8F5',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: '#E5E5E5',
+        borderStyle: 'dashed',
+    },
+    photoText: {
+        fontSize: 16,
+        color: '#8B0000',
+        fontFamily: 'Times New Roman',
     },
     inputGroup: {
         gap: 8,

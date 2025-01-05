@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
 import { Coins, Plus, PlayCircle } from 'lucide-react-native';
-import { HomeHeader } from '~/components/home/HomeHeader';
+import { PageHeader } from '~/components/Header';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface CoinPackageProps {
@@ -66,7 +66,7 @@ export default function Store() {
 
     return (
         <View style={styles.container}>
-            <HomeHeader 
+            <PageHeader 
                 username="John Doe"
                 elo={1250}
                 eloChange={25}

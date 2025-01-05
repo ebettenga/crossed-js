@@ -1,11 +1,12 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
-import { HomeHeader } from '~/components/home/HomeHeader';
+import { PageHeader } from '~/components/Header';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useUser } from '~/hooks/users';
 import { useRecentGames, RecentGame } from '~/hooks/useRecentGames';
 import { Trophy, Target, TrendingUp, Crown, X } from 'lucide-react-native';
 import { formatDistanceToNow } from 'date-fns';
+import { EloChart } from '~/components/stats/EloChart';
 
 interface StatCardProps {
     title: string;
@@ -33,11 +34,7 @@ interface GameRowProps {
 
 const GameRow: React.FC<GameRowProps> = ({ game, userId }) => {
     const userScore = game.room.scores[userId] || 0;
-    const otherScores = Object.entries(game.room.scores)
-        .filter(([id]) => id !== userId.toString())
-        .map(([_, score]) => score);
-    const highestOtherScore = Math.max(0, ...otherScores);
-
+    
     return (
         <View style={styles.gameRow}>
             <View style={styles.gameInfo}>
@@ -77,18 +74,18 @@ export default function Stats() {
     const { data: user } = useUser();
     const { data: recentGames, isLoading: gamesLoading } = useRecentGames();
 
+    // Get stats from the last month for the chart
+    const oneMonthAgo = React.useMemo(() => {
+        const date = new Date();
+        date.setMonth(date.getMonth() - 1);
+        return date;
+    }, []);
+
     if (!user) return null;
 
     return (
         <View style={styles.container}>
-            <HomeHeader 
-                username={user.username}
-                elo={user.eloRating}
-                eloChange={0}
-                gamesPlayed={user.gamesWon + user.gamesLost}
-                avatarUrl={"https://i.pravatar.cc/150"}
-                coins={42}
-            />
+            <PageHeader />
             <ScrollView 
                 style={styles.content}
                 contentContainerStyle={[
@@ -119,6 +116,11 @@ export default function Stats() {
                         suffix="%"
                         icon={<Target size={24} color="#8B0000" />}
                     />
+                </View>
+
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>ELO History</Text>
+                    <EloChart startDate={oneMonthAgo} />
                 </View>
 
                 <View style={styles.section}>

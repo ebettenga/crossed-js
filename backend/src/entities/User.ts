@@ -36,6 +36,12 @@ export class User {
   @Column("text", { nullable: true })
   description?: string;
 
+  @Column("bytea", { nullable: true })
+  photo?: Buffer;
+
+  @Column("text", { nullable: true })
+  photoContentType?: string;
+
   @Column("simple-json", { nullable: true, select: false })
   attributes?: { key: string; value: string }[];
 
@@ -79,6 +85,8 @@ export class User {
       gamesLost: this.gamesLost || 0,
       guessAccuracy: Math.round(this.guessAccuracy || 0),
       winRate: Math.round(this.winRate || 0),
+      photo: this.photo ? `data:${this.photoContentType};base64,${this.photo.toString('base64')}` : null,
+      photoContentType: undefined,
     };
   }
 

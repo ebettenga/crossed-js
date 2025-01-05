@@ -9,8 +9,8 @@ import { useRouter } from 'expo-router';
 import { ClueDisplay } from '../components/game/ClueDisplay';
 import { useRoom } from '~/hooks/socket';
 import { Square, SquareType } from "~/hooks/useRoom";
+import { LoadingGame } from '~/components/game/LoadingGame';
 import { Text } from 'react-native';
-
 
 export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
     const { room, guess, refresh, forfeit } = useRoom(roomId);
@@ -25,11 +25,9 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
         refresh(roomId);
     }, []);
 
-
-    if (!room) {
-        return <Text>Room not found</Text>;
+    if (!room || room.id !== roomId) {
+        return <LoadingGame />;
     }
-
 
     const handleCellPress = (coordinates: Square) => {
         setSelectedCell(coordinates);
@@ -137,15 +135,6 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
             style: { color: '#8B0000' }
         },
     ];
-
-
-    if (!room) {
-        console.log('Room not found');
-        return <Text>Room not found</Text>;
-    }
-
-
-
 
     return (
         <View style={[styles.container, { paddingBottom: insets.bottom + 70 }]}>

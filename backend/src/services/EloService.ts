@@ -61,6 +61,28 @@ export class EloService {
     }
 
     /**
+     * Get user's GameStats for a given time period
+     */
+    async getUserGameStats(userId: number, startDate?: Date, endDate?: Date): Promise<GameStats[]> {
+        const query = this.roomRepository.manager.getRepository(GameStats)
+            .createQueryBuilder('stats')
+            .innerJoinAndSelect('stats.room', 'room')
+            .where('stats.userId = :userId', { userId })
+            .andWhere('room.status = :status', { status: 'finished' })
+            .orderBy('stats.createdAt', 'ASC');
+
+        if (startDate) {
+            query.andWhere('stats.createdAt >= :startDate', { startDate });
+        }
+
+        if (endDate) {
+            query.andWhere('stats.createdAt <= :endDate', { endDate });
+        }
+
+        return query.getMany();
+    }
+
+    /**
      * Update ELO ratings for a finished game room
      */
     async updateEloRatings(room: Room): Promise<Map<number, number>> {

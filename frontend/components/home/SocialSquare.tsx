@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, Linking } from 'react-native';
-import { Twitter, Youtube, Facebook, HelpCircle } from 'lucide-react-native';
+import { Twitter, Youtube, Facebook, Swords } from 'lucide-react-native';
 import { HomeSquareButton } from './HomeSquareButton';
-import { HowToPlayModal } from './HowToPlayModal';
+import { TournamentInfoModal } from './TournamentInfoModal';
 
 interface SocialSquareProps {
     size: number;
@@ -26,6 +26,23 @@ export const SocialSquare: React.FC<SocialSquareProps> = ({ size }) => {
             <View style={[styles.container, { width: size, height: size }]}>
                 <View style={styles.grid}>
                     <HomeSquareButton
+                        icon={<Swords size={16} color="#FFFFFF" />}
+                        onPress={() => setModalVisible(true)}
+                        size={miniSquareSize}
+                        customStyle={{
+                            wrapper: {
+                                backgroundColor: '#000000',
+                                borderColor: '#000000',
+                            },
+                            container: {
+                                backgroundColor: '#000000',
+                            },
+                            pressed: {
+                                backgroundColor: '#333333',
+                            }
+                        }}
+                    />
+                    <HomeSquareButton
                         icon={<Twitter size={16} color={TWITTER_BLUE} />}
                         onPress={() => openUrl('https://twitter.com')}
                         size={miniSquareSize}
@@ -41,14 +58,9 @@ export const SocialSquare: React.FC<SocialSquareProps> = ({ size }) => {
                         onPress={() => openUrl('https://facebook.com')}
                         size={miniSquareSize}
                     />
-                    <HomeSquareButton
-                        icon={<HelpCircle size={16} color="#666666" />}
-                        onPress={() => setModalVisible(true)}
-                        size={miniSquareSize}
-                    />
                 </View>
             </View>
-            <HowToPlayModal
+            <TournamentInfoModal
                 visible={modalVisible}
                 onClose={() => setModalVisible(false)}
             />

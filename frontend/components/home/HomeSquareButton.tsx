@@ -8,6 +8,11 @@ interface HomeSquareButtonProps {
     onPress: () => void;
     size?: number;
     number?: number;
+    customStyle?: {
+        wrapper?: object;
+        container?: object;
+        pressed?: object;
+    };
 }
 
 export const HomeSquareButton: React.FC<HomeSquareButtonProps> = ({
@@ -15,17 +20,19 @@ export const HomeSquareButton: React.FC<HomeSquareButtonProps> = ({
     icon,
     onPress,
     size = 120,
-    number
+    number,
+    customStyle
 }) => {
     return (
-        <View style={[styles.wrapper, { width: size, height: size }]}>
+        <View style={[styles.wrapper, { width: size, height: size }, customStyle?.wrapper]}>
             <Pressable 
                 onPress={onPress}
                 style={({ pressed }) => [
                     styles.container,
-                    {
-                        backgroundColor: pressed ? '#E6E6DC' : '#F8F8F5',
-                    }
+                    customStyle?.container || {
+                        backgroundColor: pressed ? '#F0F0ED' : '#FAFAF7',
+                    },
+                    pressed && (customStyle?.pressed || {})
                 ]}
             >
                 {number !== undefined && (
@@ -48,16 +55,15 @@ export const HomeSquareButton: React.FC<HomeSquareButtonProps> = ({
 
 const styles = StyleSheet.create({
     wrapper: {
-        borderWidth: 2,
-        borderColor: '#666666',
-        backgroundColor: '#F8F8F5',
+        borderWidth: 1.5,
+        borderColor: '#E5E5E5',
+        backgroundColor: '#FAFAF7',
     },
     container: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
         position: 'relative',
-
     },
     content: {
         width: '100%',

@@ -1,11 +1,22 @@
 import { FastifyInstance } from "fastify";
 import { User } from "../../entities/User";
+import { PhotoService } from "../../services/PhotoService";
+import multipart from "@fastify/multipart";
 
 export default function (
   fastify: FastifyInstance,
   _: object,
   next: (err?: Error) => void,
 ): void {
+  // Register multipart plugin for file uploads with increased limits
+  fastify.register(multipart, {
+    limits: {
+      fileSize: 5 * 1024 * 1024, // 5MB limit
+    }
+  });
+  
+  const photoService = new PhotoService();
+
   fastify.get("/me", async (request, reply) => {
     if (!request.user) {
       reply.code(403).send({ error: "Unauthorized" });
@@ -53,6 +64,57 @@ export default function (
     reply.send(updatedUser);
   });
 
+  fastify.post("/me/photo", async (request, reply) => {
+    if (!request.user) {
+      reply.code(403).send({ error: "Unauthorized" });
+      return;
+    }
+
+    try {
+      const data = await request.file();
+      if (!data) {
+        reply.code(400).send({ error: "No file uploaded" });
+        return;
+      }
+
+      fastify.log.info('File upload details:', {
+        mimetype: data.mimetype,
+        filename: data.filename,
+        encoding: data.encoding,
+        fieldname: data.fieldname
+      });
+
+      // Validate file type
+      if (!data.mimetype.startsWith('image/')) {
+        reply.code(400).send({ error: "Only image files are allowed" });
+        return;
+      }
+
+      const buffer = await data.toBuffer();
+      fastify.log.info('File size:', { bytes: buffer.length });
+
+      const processedPhoto = await photoService.processPhoto(buffer);
+      fastify.log.info('Processed photo size:', { bytes: processedPhoto.length });
+
+      // Update user's photo in database
+      const userRepository = fastify.orm.getRepository(User);
+      await userRepository.update(request.user.id, { 
+        photo: processedPhoto,
+        photoContentType: data.mimetype
+      });
+
+      const updatedUser = await userRepository.findOne({ where: { id: request.user.id } });
+      reply.send(updatedUser);
+    } catch (error) {
+      fastify.log.error('Error uploading photo:', error);
+      if (error.code === 'FST_REQ_FILE_TOO_LARGE') {
+        reply.code(413).send({ error: "File too large. Maximum size is 5MB." });
+        return;
+      }
+      reply.code(500).send({ error: "Failed to upload photo" });
+    }
+  });
+
   fastify.get(
     "/users",
     async (request, reply) => {
@@ -62,8 +124,6 @@ export default function (
 
   fastify.post("/change-password", async (request, reply) => {
     reply.status(501).send({ message: "Not implemented" });
-    // const result = await change_password(fastify)(request.body);
-    // reply.send(result);
   });
 
   next();

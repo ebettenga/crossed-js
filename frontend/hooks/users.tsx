@@ -1,9 +1,8 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { post } from "./api";
 import { secureStorage } from "./storageApi";
 import { useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
-import { get, patch } from './api';
+import { get, patch, post } from './api';
 
 export type SignInRequest = {
   email: string;
@@ -31,6 +30,8 @@ export type User = {
   email: string;
   roles: string[];
   description: string | null;
+  photo?: string | null;
+  photoContentType?: string | null;
   eloRating: number;
   gamesWon: number;
   gamesLost: number;
@@ -42,8 +43,14 @@ export const useUser = () => {
   return useQuery<User>({
     queryKey: ['me'],
     queryFn: async () => {
-      return await get('/me');
+      const response = await get<User>('/me');
+      if (response.photo && response.photoContentType) {
+        // Convert the base64 string to a data URL
+        response.photo = `data:${response.photoContentType};base64,${response.photo}`;
+      }
+      return response;
     },
+    retry: 1,
   });
 };
 
@@ -68,8 +75,7 @@ export const useSignUp = () => {
   const queryClient = useQueryClient();
   return useMutation<SignInResponse, Error, SignUpRequest>({
     mutationFn: async (data: SignUpRequest) => {
-      const res = await post("/signup", data, { auth: false });
-      return res;
+      return await post<SignInResponse>("/signup", data, { auth: false });
     },
     onSuccess: (res) => {
       secureStorage.set("token", res.access_token);
@@ -113,3 +119,52 @@ export const useUpdateUser = () => {
     },
   });
 };
+
+interface GameStats {
+  id: number;
+  userId: number;
+  roomId: number;
+  correctGuesses: number;
+  incorrectGuesses: number;
+  correctGuessDetails: {
+    row: number;
+    col: number;
+    letter: string;
+    timestamp: Date;
+  }[];
+  isWinner: boolean;
+  winStreak: number;
+  eloAtGame: number;
+  createdAt: Date;
+}
+
+
+export function useUserGameStats(startTime?: Date, endTime?: Date) {
+
+  return useQuery<GameStats[]>({
+      queryKey: ['userGameStats', startTime?.toISOString(), endTime?.toISOString()],
+      queryFn: async () => {
+          const params: Record<string, string> = {};
+          if (startTime) params.startTime = startTime.toISOString();
+          if (endTime) params.endTime = endTime.toISOString();
+          return await get('/stats/me', { params });
+      },
+      staleTime: 1000 * 60 * 10,
+  });
+}
+
+export const useUpdatePhoto = () => {
+  const queryClient = useQueryClient();
+  return useMutation<User, Error, FormData>({
+    mutationFn: async (formData: FormData) => {
+      return await post('/me/photo', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+    },
+    onSuccess: (updatedUser) => {
+      queryClient.setQueryData(['me'], updatedUser);
+    },
+  });
+}; 

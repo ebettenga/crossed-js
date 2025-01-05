@@ -2,7 +2,7 @@ import React from 'react';
 import { View, StyleSheet, Dimensions, ScrollView } from 'react-native';
 import { Users, Swords, Group } from 'lucide-react-native';
 import { HomeSquareButton } from '~/components/home/HomeSquareButton';
-import { HomeHeader } from '~/components/home/HomeHeader';
+import { PageHeader } from '~/components/Header';
 import { SocialSquare } from '~/components/home/SocialSquare';
 import { GameBanner } from '~/components/home/GameBanner';
 import { DifficultyBottomSheet } from '~/components/game/DifficultyBottomSheet';
@@ -65,14 +65,7 @@ export default function Home() {
             }
         ]}>
             <View style={styles.content}>
-                <HomeHeader
-                    username={user?.username || "Loading..."}
-                    elo={user?.eloRating || 0}
-                    eloChange={25}
-                    gamesPlayed={42}
-                    avatarUrl="https://i.pravatar.cc/300"
-                    coins={100}
-                />
+                <PageHeader />
                 {
                     activeRooms?.length && activeRooms?.length > 0 && (
                         <View style={styles.gameBannersScroll}>

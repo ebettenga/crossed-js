@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ActivityIndicator, TextInput, Pressable } from 'react-native';
 import { Swords, X, UserPlus } from 'lucide-react-native';
-import { HomeHeader } from '~/components/home/HomeHeader';
+import { PageHeader } from '~/components/Header';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { 
@@ -169,13 +169,7 @@ export default function Friends() {
 
     return (
         <View style={[styles.container, { paddingTop: insets.top }]}>
-            <HomeHeader
-                username={user?.username}
-                elo={user?.eloRating}
-                eloChange={0}
-                gamesPlayed={0}
-                coins={0}
-            />
+            <PageHeader />
             
             <View style={styles.tabContainer}>
                 <TouchableOpacity 

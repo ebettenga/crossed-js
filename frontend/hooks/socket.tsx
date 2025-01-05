@@ -278,6 +278,15 @@ export const useRoom = (roomId?: number) => {
 
     const handleRoom = (data: Room) => {
       if (!data) return;
+      
+      // Check if room status changed to finished
+      if (data.status === 'finished' && room?.status !== 'finished') {
+        // Invalidate user stats and data
+        queryClient.invalidateQueries({ queryKey: ['me'] });
+        queryClient.invalidateQueries({ queryKey: ['userGameStats'] });
+        queryClient.invalidateQueries({ queryKey: ['recentGames'] });
+      }
+      
       setRoom(data);
       setIsInitialized(true);
     };

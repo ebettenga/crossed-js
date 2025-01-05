@@ -1,48 +1,54 @@
-import React from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
-import { Coins, TrendingUp, TrendingDown } from 'lucide-react-native';
-import { Link } from 'expo-router';
+import React, { useMemo } from 'react';
+import { View, Text, StyleSheet, Image } from 'react-native';
+import { TrendingUp, TrendingDown } from 'lucide-react-native';
+import { useUserGameStats, useUser } from '~/hooks/users';
 
-interface HomeHeaderProps {
-    username?: string;
-    elo?: number;
-    eloChange?: number;
-    gamesPlayed?: number;
-    avatarUrl?: string;
-    coins?: number;
-}
+export const PageHeader = React.memo(() => {
+    const { data: user } = useUser();
+    if (!user) return null;
 
-export const HomeHeader: React.FC<HomeHeaderProps> = ({
-    username = "Player",
-    elo = 1200,
-    eloChange = 0,
-    gamesPlayed = 0,
-    avatarUrl,
-    coins = 0
-}) => {
-    const isEloUp = eloChange > 0;
-    const eloChangeColor = isEloUp ? '#34D399' : '#EF4444';
+    // Get stats from the last week
+    const oneWeekAgo = useMemo(() => {
+        const date = new Date();
+        date.setDate(date.getDate() - 7);
+        return date;
+    }, []);
+
+    const { data: weeklyStats } = useUserGameStats(oneWeekAgo);
+
+    // Calculate ELO difference and games played
+    const { eloChange, gamesPlayed, isEloUp, eloChangeColor } = useMemo(() => {
+        const change = weeklyStats?.length ? user.eloRating - weeklyStats[0].eloAtGame : 0;
+        const games = user.gamesWon + user.gamesLost;
+        const up = change > 0;
+        return {
+            eloChange: change,
+            gamesPlayed: games,
+            isEloUp: up,
+            eloChangeColor: up ? '#34D399' : '#EF4444'
+        };
+    }, [weeklyStats, user.eloRating, user.gamesWon, user.gamesLost]);
 
     return (
         <View style={styles.container}>
             <View style={styles.userInfo}>
                 <View style={styles.leftSection}>
-                    {avatarUrl && (
+                    {user.photo && (
                         <Image
-                            source={{ uri: avatarUrl }}
+                            source={{ uri: user.photo }}
                             style={styles.avatar}
                         />
                     )}
                     <View style={styles.nameSection}>
                         <Text style={styles.welcomeText}>Welcome back,</Text>
-                        <Text style={styles.username}>{username}</Text>
+                        <Text style={styles.username}>{user.username}</Text>
                     </View>
                 </View>
                 <View style={styles.rightSide}>
                     <View style={styles.stats}>
                         <View style={styles.statItem}>
                             <View style={styles.eloContainer}>
-                                <Text style={styles.statValue}>{elo}</Text>
+                                <Text style={styles.statValue}>{user.eloRating}</Text>
                                 {eloChange !== 0 && (
                                     <View style={styles.eloChange}>
                                         {isEloUp ? (
@@ -65,23 +71,17 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
                             <Text style={styles.statLabel}>Games</Text>
                         </View>
                     </View>
-                    <Link href="/store">
-                        <View style={styles.coinsButton}>
-                            <Coins size={18} color="#E6C200" />
-                            <Text style={styles.coinsText}>{coins}</Text>
-                        </View>
-                    </Link>
                 </View>
             </View>
         </View>
     );
-};
+});
 
 const styles = StyleSheet.create({
     container: {
+        backgroundColor: '#FFFFFF',
         paddingHorizontal: 16,
-        paddingVertical: 24,
-        backgroundColor: 'white',
+        paddingVertical: 20,
         borderBottomWidth: 1,
         borderBottomColor: '#E5E5E5',
     },
@@ -94,64 +94,57 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 12,
-        flex: 1,
     },
     avatar: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
+        width: 56,
+        height: 56,
+        borderRadius: 28,
         backgroundColor: '#F5F5EB',
     },
     nameSection: {
-        flex: 1,
-        marginRight: 16,
+        gap: 2,
     },
     welcomeText: {
-        fontSize: 14,
+        fontSize: 12,
         color: '#666666',
         fontFamily: 'Times New Roman',
     },
     username: {
-        fontSize: 24,
+        fontSize: 16,
         fontWeight: '600',
         color: '#2B2B2B',
         fontFamily: 'Times New Roman',
+    },
+    rightSide: {
+        alignItems: 'flex-end',
     },
     stats: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 12,
-        marginLeft: 'auto',
+        backgroundColor: '#F8F8F5',
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: '#E5E5E5',
     },
     statItem: {
         alignItems: 'center',
-        minWidth: 50,
+        gap: 2,
+    },
+    eloContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
     },
     statValue: {
-        fontSize: 18,
+        fontSize: 16,
         fontWeight: '600',
         color: '#2B2B2B',
         fontFamily: 'Times New Roman',
     },
     statLabel: {
-        fontSize: 12,
-        color: '#666666',
-        marginTop: 2,
-        fontFamily: 'Times New Roman',
-    },
-    rightSide: {
-        flexDirection: 'column',
-        alignItems: 'center',
-        gap: 12,
-    },
-    coinsButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 4,
-        marginTop: 4,
-        padding: 4,
-    },
-    coinsText: {
         fontSize: 12,
         color: '#666666',
         fontFamily: 'Times New Roman',
@@ -161,11 +154,6 @@ const styles = StyleSheet.create({
         height: 24,
         backgroundColor: '#E5E5E5',
     },
-    eloContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 4,
-    },
     eloChange: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -174,5 +162,5 @@ const styles = StyleSheet.create({
     eloChangeText: {
         fontSize: 12,
         fontFamily: 'Times New Roman',
-    },
+    }
 }); 

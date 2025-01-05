@@ -1,4 +1,4 @@
-package com.anonymous.react_native_restate
+package com.anonymous.crossed
 import expo.modules.splashscreen.SplashScreenManager
 
 import android.os.Build

@@ -21,7 +21,7 @@ extensions.configure(com.facebook.react.ReactSettingsExtension) { ex ->
   }
 }
 
-rootProject.name = 'react_native_restate'
+rootProject.name = 'Crossed'
 
 dependencyResolutionManagement {
   versionCatalogs {

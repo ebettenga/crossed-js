@@ -7,7 +7,7 @@
     <key>CFBundleDevelopmentRegion</key>
     <string>$(DEVELOPMENT_LANGUAGE)</string>
     <key>CFBundleDisplayName</key>
-    <string>react_native_restate</string>
+    <string>crossed</string>
     <key>CFBundleExecutable</key>
     <string>$(EXECUTABLE_NAME)</string>
     <key>CFBundleIdentifier</key>
@@ -27,8 +27,8 @@
       <dict>
         <key>CFBundleURLSchemes</key>
         <array>
-          <string>restate</string>
-          <string>com.anonymous.react-native-restate</string>
+          <string>crossed</string>
+          <string>com.anonymous.crossed</string>
         </array>
       </dict>
       <dict>
