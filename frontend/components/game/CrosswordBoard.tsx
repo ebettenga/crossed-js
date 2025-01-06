@@ -94,11 +94,11 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     board: {
-        backgroundColor: config.game.crossword.colors.paper,
-        borderRadius: config.game.crossword.cornerRadius,
+        backgroundColor: config.theme.colors.background.paper,
+        borderRadius: 6,
         overflow: 'hidden',
     },
     row: {
         flexDirection: 'row',
     },
-}); 
+});
