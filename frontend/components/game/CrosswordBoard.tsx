@@ -1,7 +1,6 @@
 import React, { useMemo } from 'react';
 import { StyleSheet, View, Dimensions } from 'react-native';
 import { CrosswordCell } from './CrosswordCell';
-import { ScrollView } from 'react-native-gesture-handler';
 import { Square } from '~/hooks/useRoom';
 import { config } from '~/config/config';
 

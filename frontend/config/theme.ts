@@ -22,7 +22,7 @@ export const theme = {
     border: {
       DEFAULT: '#E5E5E5',
       light: '#EBEBEB',
-      dark: '#E6E6E6',
+      dark: 'rgb(75 85 99)',
     },
     status: {
       success: '#34D399',

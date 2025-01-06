@@ -26,8 +26,8 @@ const CORNER_RADIUS = config.game.crossword.cornerRadius;
 
 // Colors from config
 const PAPER_COLOR = config.theme.colors.background.paper
-const SELECTED_COLOR = config.theme.colors.primary.light
-const BORDER_COLOR = config.theme.colors.border.dark
+const SELECTED_COLOR = config.theme.colors.primary.DEFAULT
+const BORDER_COLOR = "#000000"
 
 interface CrosswordCellProps {
     letter: string;
@@ -78,19 +78,28 @@ export const CrosswordCell: React.FC<CrosswordCellProps> = ({
                 ]}
             >
                 {gridNumber && gridNumber > 0 && (
-                    <Text style={styles.gridNumber}>{gridNumber}</Text>
+                    <Text style={[
+                        styles.gridNumber,
+                        isSelected && !isDisabled && styles.selectedText
+                    ]}>
+                        {gridNumber}
+                    </Text>
                 )}
                 {!isBlackSquare && (
-                    <Text style={[styles.letter, !isSolved && styles.hiddenText]}>
+                    <Text style={[
+                        styles.letter,
+                        !isSolved && styles.hiddenText,
+                        isSelected && !isDisabled && styles.selectedText
+                    ]}>
                         {letter}
                     </Text>
                 )}
                 {isSelected && !isDisabled && (
                     <View style={styles.directionIndicator}>
                         {isAcrossMode ? (
-                            <ArrowRight size={12} color={BORDER_COLOR} />
+                            <ArrowRight size={12} color={"#FFFFFF"} />
                         ) : (
-                            <ArrowDown size={12} color={BORDER_COLOR} />
+                            <ArrowDown size={12} color={"#FFFFFF"} />
                         )}
                     </View>
                 )}
@@ -134,5 +143,8 @@ const styles = StyleSheet.create({
         position: 'absolute',
         bottom: 2,
         right: 2,
+    },
+    selectedText: {
+        color: '#FFFFFF',
     },
 });
