@@ -26,8 +26,8 @@ const CORNER_RADIUS = config.game.crossword.cornerRadius;
 
 // Colors from config
 const PAPER_COLOR = config.theme.colors.background.paper
-const SELECTED_COLOR = config.theme.colors.primary.DEFAULT
-const BORDER_COLOR = config.theme.colors.border.light
+const SELECTED_COLOR = config.theme.colors.primary.light
+const BORDER_COLOR = config.theme.colors.border.dark
 
 interface CrosswordCellProps {
     letter: string;
