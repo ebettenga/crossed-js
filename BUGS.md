@@ -7,3 +7,4 @@ List of open Bugs
 6. Make Friend requests work
 7. Fix all the Times in the App(Times are likey displaying UTC and need to be format)
 8. verify the routes work as expected(i.e. Click the Profile and have it go to the right page)
+9. Add validation to user create to ensure passwords is not empty
