@@ -133,7 +133,7 @@ export default function Stats() {
                     />
                 }
             >
-                <View className="flex-row flex-wrap gap-3 mt-6">
+                <View className="flex-row flex-wrap gap-3 my-6">
                     {isEloVisible && (
                         <StatCard
                             title="Current ELO"
