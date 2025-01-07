@@ -11,13 +11,14 @@ export const ClueDisplay: React.FC<ClueDisplayProps> = ({ selectedSquare, isAcro
   if (!selectedSquare) return null;
   const clue = isAcrossMode ? selectedSquare.acrossQuestion : selectedSquare.downQuestion;
   const direction = isAcrossMode ? 'Across' : 'Down';
-  
+
   if (!clue) return null;
+
+  const clueText = clue.split(".")[1];
 
   return (
     <View style={styles.container}>
-      <Text style={styles.direction}>{direction}</Text>
-      <Text style={styles.clueText}>{clue}</Text>
+      <Text style={styles.clueText}>{clueText}</Text>
     </View>
   );
 };
@@ -27,7 +28,8 @@ const styles = StyleSheet.create({
     padding: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    height: 80,
+    height: 60,
+    display: 'flex',
   },
   direction: {
     fontSize: 14,
@@ -42,5 +44,7 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     textAlign: 'center',
     paddingHorizontal: 16,
+    flexWrap: 'nowrap',
+    flexShrink: 1
   },
-}); 
+});

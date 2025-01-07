@@ -8,7 +8,6 @@ import Animated, {
     useSharedValue,
 } from 'react-native-reanimated';
 import { useUser } from '~/hooks/users';
-import { Avatar } from '../shared/Avatar'; 
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const CARD_WIDTH = (SCREEN_WIDTH / 2) - 12; // Half screen minus padding
@@ -106,7 +105,6 @@ export const PlayerInfo: React.FC<PlayerInfoProps> = ({ players, scores }) => {
                         ]}
                     >
                         <View style={styles.playerInfo}>
-                            <Avatar user={player} size={36} imageUrl={player.avatarUrl} />
                             <Text style={[
                                 styles.username,
                                 player.id === currentUser?.id && styles.currentPlayerText
@@ -153,7 +151,6 @@ const styles = StyleSheet.create({
     playerInfo: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 8,
     },
     currentPlayerCard: {
         backgroundColor: '#8B0000',
@@ -186,4 +183,4 @@ const styles = StyleSheet.create({
         marginLeft: 2,
         fontFamily: 'Times New Roman',
     },
-}); 
+});

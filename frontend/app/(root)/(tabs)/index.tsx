@@ -31,10 +31,6 @@ export default function Home() {
     const { data: pendingRooms, isLoading: isLoadingPendingRooms } = usePendingRooms();
     const { data: user, isLoading: isLoadingUser } = useUser();
 
-    const calenders = useCalendars();
-
-    console.log('Calendars: ',calenders);
-
     const isBottomSheetOpen = useSharedValue(false);
     const [selectedGameMode, setSelectedGameMode] = React.useState<GameMode | null>(null);
 

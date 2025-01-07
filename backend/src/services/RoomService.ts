@@ -1,4 +1,10 @@
-import { DataSource, FindOperator, In, LessThan, LessThanOrEqual } from "typeorm";
+import {
+  DataSource,
+  FindOperator,
+  In,
+  LessThan,
+  LessThanOrEqual,
+} from "typeorm";
 import { Room } from "../entities/Room";
 import { User } from "../entities/User";
 import { CrosswordService } from "./CrosswordService";
@@ -18,7 +24,7 @@ export class RoomService {
     this.crosswordService = new CrosswordService(ormConnection);
     this.eloService = new EloService(
       ormConnection.getRepository(User),
-      ormConnection.getRepository(Room)
+      ormConnection.getRepository(Room),
     );
   }
 
@@ -28,7 +34,11 @@ export class RoomService {
       .findOne({ where: { id: roomId } });
   }
 
-  async joinRoom(userId: number, difficulty: string, type: '1v1' | '2v2' | 'free4all' = '1v1'): Promise<Room> {
+  async joinRoom(
+    userId: number,
+    difficulty: string,
+    type: "1v1" | "2v2" | "free4all" = "1v1",
+  ): Promise<Room> {
     let room = await this.findEmptyRoomByDifficulty(difficulty, type);
 
     if (room) {
@@ -45,27 +55,31 @@ export class RoomService {
     const player = await this.ormConnection
       .getRepository(User)
       .findOneBy({ id: userId });
-    
+
     if (!player) throw new Error("User not found");
-    
+
     room.players.push(player);
     room.markModified();
-    
+
     // If room is full based on game type, change status to playing
     const maxPlayers = config.game.maxPlayers[room.type];
     if (room.players.length >= maxPlayers) {
-      room.status = 'playing';
+      room.status = "playing";
       // Emit game_started event through fastify.io
       fastify.io.to(room.id.toString()).emit("game_started", {
         message: "All players have joined! Game is starting.",
-        room: room.toView()
+        room: room.toView(),
       });
     }
 
     await this.ormConnection.getRepository(Room).save(room);
   }
 
-  async createRoom(userId: number, difficulty: string, type: '1v1' | '2v2' | 'free4all' = '1v1'): Promise<Room> {
+  async createRoom(
+    userId: number,
+    difficulty: string,
+    type: "1v1" | "2v2" | "free4all" = "1v1",
+  ): Promise<Room> {
     const crossword = await this.crosswordService.getCrosswordByDifficulty(
       difficulty,
     );
@@ -89,14 +103,17 @@ export class RoomService {
 
     return await this.ormConnection.getRepository(Room).save(room);
   }
-  
-  private async findEmptyRoomByDifficulty(difficulty: string, type: '1v1' | '2v2' | 'free4all'): Promise<Room> {
+
+  private async findEmptyRoomByDifficulty(
+    difficulty: string,
+    type: "1v1" | "2v2" | "free4all",
+  ): Promise<Room> {
     return this.ormConnection.getRepository(Room).findOne({
-      where: { 
+      where: {
         difficulty,
-        status: 'pending',
+        status: "pending",
         type,
-        players: LessThan(config.game.maxPlayers[type])
+        players: LessThan(config.game.maxPlayers[type]),
       },
       order: { created_at: "ASC" },
     });
@@ -105,11 +122,11 @@ export class RoomService {
   async getActiveRoomsForUser(userId: number): Promise<Room[]> {
     return this.ormConnection
       .getRepository(Room)
-      .createQueryBuilder('room')
-      .leftJoinAndSelect('room.players', 'players')
-      .leftJoinAndSelect('room.crossword', 'crossword')
-      .where('players.id = :userId', { userId })
-      .andWhere('room.status = :status', { status: 'playing' })
+      .createQueryBuilder("room")
+      .leftJoinAndSelect("room.players", "players")
+      .leftJoinAndSelect("room.crossword", "crossword")
+      .where("players.id = :userId", { userId })
+      .andWhere("room.status = :status", { status: "playing" })
       .getMany();
   }
 
@@ -117,33 +134,36 @@ export class RoomService {
     const room = await this.getRoomById(roomId);
 
     fastify.log.info(`Forfeiting game with id: ${roomId} by user: ${userId}`);
-    
+
     if (!room) {
-        throw new Error("Room not found");
+      throw new Error("Room not found");
     }
 
-    if (!room.players.some(player => player.id === userId)) {
-        throw new Error("User is not a participant in this room");
+    if (!room.players.some((player) => player.id === userId)) {
+      throw new Error("User is not a participant in this room");
     }
 
     // Set the game as finished
-    room.status = 'finished';
+    room.status = "finished";
     room.markModified();
 
     await this.ormConnection.getRepository(Room).save(room);
     return room;
   }
 
-  async getRoomsByUserAndStatus(userId: number, status?: 'playing' | 'pending' | 'finished' | 'cancelled'): Promise<Room[]> {
+  async getRoomsByUserAndStatus(
+    userId: number,
+    status?: "playing" | "pending" | "finished" | "cancelled",
+  ): Promise<Room[]> {
     const query = this.ormConnection
-        .getRepository(Room)
-        .createQueryBuilder('room')
-        .leftJoinAndSelect('room.players', 'players')
-        .leftJoinAndSelect('room.crossword', 'crossword')
-        .where('players.id = :userId', { userId });
+      .getRepository(Room)
+      .createQueryBuilder("room")
+      .leftJoinAndSelect("room.players", "players")
+      .leftJoinAndSelect("room.crossword", "crossword")
+      .where("players.id = :userId", { userId });
 
     if (status) {
-        query.andWhere('room.status = :status', { status });
+      query.andWhere("room.status = :status", { status });
     }
 
     return query.getMany();
@@ -151,130 +171,86 @@ export class RoomService {
 
   private isGameFinished(room: Room): boolean {
     // If room is not in playing state, it can't be won
-    if (room.status !== 'playing') return false;
+    if (room.status !== "playing") return false;
 
     // Check if all letters have been found
     // found_letters is a string array where '*' represents unfound letters
-    return !room.found_letters.includes('*');
+    return !room.found_letters.includes("*");
   }
 
-  async handleGuess(roomId: number, userId: number, x: number, y: number, guess: string): Promise<Room> {
+  async handleGuess(
+    roomId: number,
+    userId: number,
+    x: number,
+    y: number,
+    guess: string,
+  ): Promise<Room> {
     const room = await this.getRoomById(roomId);
     if (!room) throw new NotFoundError("Room not found");
 
-    const isCorrect = await this.crosswordService.checkGuess(room, { x, y }, guess);
+    const isCorrect = await this.crosswordService.checkGuess(
+      room,
+      { x, y },
+      guess,
+    );
 
     // Get or create game stats for this user and room
     let gameStats = await this.ormConnection.getRepository(GameStats).findOne({
-      where: { userId, roomId }
+      where: { userId, roomId },
     });
 
     if (!gameStats) {
-        const user = await this.ormConnection.getRepository(User).findOneBy({ id: userId });
-        if (!user) throw new NotFoundError("User not found");
+      const user = await this.ormConnection.getRepository(User).findOneBy({
+        id: userId,
+      });
+      if (!user) throw new NotFoundError("User not found");
 
-        gameStats = new GameStats();
-        gameStats.user = user;
-        gameStats.room = room;
-        gameStats.userId = userId;
-        gameStats.roomId = roomId;
-        gameStats.eloAtGame = user.eloRating;
-        gameStats.correctGuesses = 0;
-        gameStats.incorrectGuesses = 0;
-        gameStats.correctGuessDetails = [];
-        gameStats.winStreak = 0;
+      gameStats = new GameStats();
+      gameStats.user = user;
+      gameStats.room = room;
+      gameStats.userId = userId;
+      gameStats.roomId = roomId;
+      gameStats.eloAtGame = user.eloRating;
+      gameStats.correctGuesses = 0;
+      gameStats.incorrectGuesses = 0;
+      gameStats.correctGuessDetails = [];
+      gameStats.winStreak = 0;
     }
 
     // Update stats based on guess result
     if (isCorrect) {
-        gameStats.correctGuesses++;
-        gameStats.correctGuessDetails = [
-            ...(gameStats.correctGuessDetails || []),
-            {
-                row: x,
-                col: y,
-                letter: guess,
-                timestamp: new Date()
-            }
-        ];
+      gameStats.correctGuesses++;
+      gameStats.correctGuessDetails = [
+        ...(gameStats.correctGuessDetails || []),
+        {
+          row: x,
+          col: y,
+          letter: guess,
+          timestamp: new Date(),
+        },
+      ];
 
-        // Update room state
-        room.found_letters[x * room.crossword.col_size + y] = guess;
-        room.scores[userId] = (room.scores[userId] || 0) + config.game.points.correct;
-        room.markModified();
+      // Update room state
+      room.found_letters[x * room.crossword.col_size + y] = guess;
+      room.scores[userId] = (room.scores[userId] || 0) +
+        config.game.points.correct;
+      room.markModified();
     } else {
-        gameStats.incorrectGuesses++;
-        room.scores[userId] = (room.scores[userId] || 0) + config.game.points.incorrect;
-        room.markModified();
+      gameStats.incorrectGuesses++;
+      room.scores[userId] = (room.scores[userId] || 0) +
+        config.game.points.incorrect;
+      room.markModified();
     }
 
     // Check if game is won
     if (this.isGameFinished(room)) {
-        room.status = 'finished';
-        
-        // Find player with highest score
-        const highestScore = Math.max(...Object.values(room.scores));
-        const winnerIds = Object.entries(room.scores)
-            .filter(([_, score]) => score === highestScore)
-            .map(([userId]) => parseInt(userId));
-            
-        // Get all game stats for players in this room
-        const gameStatsRepo = this.ormConnection.getRepository(GameStats);
-        const allGameStats = await gameStatsRepo.find({
-            where: {
-                roomId: room.id,
-            }
-        });
-
-        // Update win streaks and winner status
-        for (const stats of allGameStats) {
-            const isWinner = winnerIds.includes(stats.userId);
-            if (isWinner) {
-                // Get the player's stats from their last completed game
-                const previousStats = await gameStatsRepo
-                    .createQueryBuilder('stats')
-                    .innerJoinAndSelect('stats.room', 'room')
-                    .where('stats.userId = :userId', { userId: stats.userId })
-                    .andWhere('stats.roomId != :roomId', { roomId: room.id })
-                    .andWhere('room.status = :status', { status: 'finished' })
-                    .orderBy('stats.createdAt', 'DESC')
-                    .take(1)
-                    .getOne();
-
-                stats.isWinner = true;
-                stats.winStreak = (previousStats?.winStreak || 0) + 1;
-            } else {
-                stats.isWinner = false;
-                stats.winStreak = 0; // Reset win streak for losers
-            }
-            await gameStatsRepo.save(stats);
-        }
-
-        // Update ELO ratings for all players
-        try {
-            const newRatings = await this.eloService.updateEloRatings(room);
-            
-            // Emit rating changes to all players
-            for (const [playerId, newRating] of newRatings.entries()) {
-                const oldRating = room.players.find(p => p.id === playerId)?.eloRating || 0;
-                const ratingChange = newRating - oldRating;
-                
-                fastify.io.to(playerId.toString()).emit("rating_change", {
-                    oldRating,
-                    newRating,
-                    change: ratingChange
-                });
-            }
-        } catch (error) {
-            fastify.log.error("Failed to update ELO ratings:", error);
-        }
+      await this.onGameEnd(room);
+    } else {
+      // Save both game stats and room
+      await this.ormConnection.getRepository(Room).save(room);
+      await this.ormConnection.getRepository(GameStats).save(gameStats);
     }
 
-    // Save both game stats and room
-    await Promise.all([
-        this.ormConnection.getRepository(GameStats).save(gameStats),
-        this.ormConnection.getRepository(Room).save(room)
-    ]);
     room.markModified();
     return room;
   }
@@ -284,39 +260,45 @@ export class RoomService {
     stats: GameStats;
   }[]> {
     const gameStats = await this.ormConnection
-        .getRepository(GameStats)
-        .createQueryBuilder('stats')
-        .leftJoinAndSelect('stats.room', 'room')
-        .leftJoinAndSelect('room.crossword', 'crossword')
-        .where('stats.userId = :userId', { userId })
-        .orderBy('stats.createdAt', 'DESC')
-        .take(limit)
-        .getMany();
+      .getRepository(GameStats)
+      .createQueryBuilder("stats")
+      .leftJoinAndSelect("stats.room", "room")
+      .leftJoinAndSelect("room.crossword", "crossword")
+      .where("stats.userId = :userId", { userId })
+      .orderBy("stats.createdAt", "DESC")
+      .take(limit)
+      .getMany();
 
-    return gameStats.map(stats => ({
-        room: stats.room,
-        stats: stats
+    return gameStats.map((stats) => ({
+      room: stats.room,
+      stats: stats,
     }));
   }
 
-  async createChallengeRoom(challengerId: number, challengedId: number, difficulty: string): Promise<Room> {
+  async createChallengeRoom(
+    challengerId: number,
+    challengedId: number,
+    difficulty: string,
+  ): Promise<Room> {
     const [challenger, challenged] = await Promise.all([
       this.ormConnection.getRepository(User).findOneBy({ id: challengerId }),
-      this.ormConnection.getRepository(User).findOneBy({ id: challengedId })
+      this.ormConnection.getRepository(User).findOneBy({ id: challengedId }),
     ]);
 
     if (!challenger || !challenged) {
       throw new NotFoundError("User not found");
     }
 
-    const crossword = await this.crosswordService.getCrosswordByDifficulty(difficulty);
+    const crossword = await this.crosswordService.getCrosswordByDifficulty(
+      difficulty,
+    );
 
     const room = new Room();
     room.players = [challenger, challenged];
     room.crossword = crossword;
     room.difficulty = difficulty;
-    room.type = '1v1';
-    room.status = 'pending';
+    room.type = "1v1";
+    room.status = "pending";
     room.scores = { [challenger.id]: 0, [challenged.id]: 0 };
 
     room.found_letters = await this.crosswordService.createFoundLettersTemplate(
@@ -330,11 +312,11 @@ export class RoomService {
       room: savedRoom.toView(),
       challenger: {
         id: challenger.id,
-        username: challenger.username
-      }
+        username: challenger.username,
+      },
     });
 
-    return savedRoom ;
+    return savedRoom;
   }
 
   async acceptChallenge(roomId: number, userId: number): Promise<Room> {
@@ -349,9 +331,9 @@ export class RoomService {
     const room = await this.getRoomById(roomId);
     if (!room) throw new NotFoundError("Room not found");
 
-    room.status = 'cancelled';
+    room.status = "cancelled";
     room.markModified();
-    
+
     await this.ormConnection.getRepository(Room).save(room);
     return room;
   }
@@ -359,27 +341,92 @@ export class RoomService {
   async getPendingChallenges(userId: number): Promise<Room[]> {
     const query = this.ormConnection
       .getRepository(Room)
-      .createQueryBuilder('room')
-      .innerJoinAndSelect('room.players', 'players')
-      .leftJoinAndSelect('room.crossword', 'crossword')
-      .where('room.status = :status', { status: 'pending' })
-      .andWhere('room.type = :type', { type: '1v1' })
+      .createQueryBuilder("room")
+      .innerJoinAndSelect("room.players", "players")
+      .leftJoinAndSelect("room.crossword", "crossword")
+      .where("room.status = :status", { status: "pending" })
+      .andWhere("room.type = :type", { type: "1v1" })
       .andWhere((qb) => {
         const subQuery = qb
           .subQuery()
-          .select('r.id')
-          .from(Room, 'r')
-          .innerJoin('r.players', 'p')
-          .where('p.id = :userId')
+          .select("r.id")
+          .from(Room, "r")
+          .innerJoin("r.players", "p")
+          .where("p.id = :userId")
           .getQuery();
-        return 'room.id IN ' + subQuery;
+        return "room.id IN " + subQuery;
       })
       .setParameters({
-        status: 'pending',
-        type: '1v1',
-        userId
+        status: "pending",
+        type: "1v1",
+        userId,
       });
 
     return query.getMany();
+  }
+
+  private async onGameEnd(room: Room): Promise<void> {
+    room.status = "finished";
+
+    // Find player with highest score
+    const highestScore = Math.max(...Object.values(room.scores));
+    const winnerIds = Object.entries(room.scores)
+      .filter(([_, score]) => score === highestScore)
+      .map(([userId]) => parseInt(userId));
+
+    // Get all game stats for players in this room
+    const gameStatsRepo = this.ormConnection.getRepository(GameStats);
+    const allGameStats = await gameStatsRepo.find({
+      where: {
+        roomId: room.id,
+      },
+    });
+
+    // Update win streaks and winner status
+    for (const stats of allGameStats) {
+      const isWinner = winnerIds.includes(stats.userId);
+      if (isWinner) {
+        // Get the player's stats from their last completed game
+        const previousStats = await gameStatsRepo
+          .createQueryBuilder("stats")
+          .innerJoinAndSelect("stats.room", "room")
+          .where("stats.userId = :userId", { userId: stats.userId })
+          .andWhere("stats.roomId != :roomId", { roomId: room.id })
+          .andWhere("room.status = :status", { status: "finished" })
+          .orderBy("stats.createdAt", "DESC")
+          .take(1)
+          .getOne();
+
+        stats.isWinner = true;
+        stats.winStreak = (previousStats?.winStreak || 0) + 1;
+      } else {
+        stats.isWinner = false;
+        stats.winStreak = 0; // Reset win streak for losers
+      }
+      await this.ormConnection.getRepository(GameStats).save(stats);
+    }
+
+    // Update ELO ratings for all players
+    try {
+      const newRatings = await this.eloService.updateEloRatings(room);
+
+      // Emit rating changes to all players
+      for (const [playerId, newRating] of newRatings.entries()) {
+        const oldRating = room.players.find((p) =>
+          p.id === playerId
+        )?.eloRating || 0;
+        const ratingChange = newRating - oldRating;
+
+        fastify.io.to(playerId.toString()).emit("rating_change", {
+          oldRating,
+          newRating,
+          change: ratingChange,
+        });
+      }
+    } catch (error) {
+      fastify.log.error("Failed to update ELO ratings:", error);
+    }
+
+    await this.ormConnection.getRepository(Room).save(room);
   }
 }
