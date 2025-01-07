@@ -8,7 +8,6 @@ import { useUser } from '~/hooks/users';
 export default function AuthLayout() {
   const { data: user } = useUser();
 
-  console.log(user);
 
   // If logged in, redirect to main app
   if (user) {

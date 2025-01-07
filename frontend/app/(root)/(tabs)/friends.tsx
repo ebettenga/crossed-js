@@ -150,8 +150,6 @@ export default function Friends() {
         isLoading: pendingLoading
     } = usePendingRequests();
 
-    console.log(pendingRequests);
-
     const {
         challenges,
         acceptChallenge,
