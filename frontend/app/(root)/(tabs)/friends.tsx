@@ -366,18 +366,22 @@ export default function Friends() {
                             />
                         }
                     >
-                        {challenges.map((room) => (
-                            <ChallengeRow
-                                key={room.id}
-                                room={room}
-                                user={user}
-                                challenger={room.players.find(p => p.id !== user.id)}
-                                onAccept={handleAcceptChallenge}
-                                onReject={handleRejectChallenge}
-                                isAccepting={acceptChallenge.isPending}
-                                isRejecting={rejectChallenge.isPending}
-                            />
-                        ))}
+                        {challenges.map((room) => {
+                            const isChallenger = room.players[0].id === user.id;
+                            const otherUser = room.players.find(p => p.id !== user.id);
+                            return (
+                                <ChallengeRow
+                                    key={room.id}
+                                    room={room}
+                                    challenger={isChallenger}
+                                    username={otherUser?.username || ''}
+                                    onAccept={!isChallenger ? handleAcceptChallenge : undefined}
+                                    onReject={handleRejectChallenge}
+                                    isAccepting={acceptChallenge.isPending}
+                                    isRejecting={rejectChallenge.isPending}
+                                />
+                            );
+                        })}
                     </ScrollView>
                 </View>
             )}
