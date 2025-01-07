@@ -95,7 +95,7 @@ export default function (
       socket.on("join_room_bus", async (data: RoomMessage) => {
         try {
           const room = await roomService.getRoomById(data.roomId);
-          socket.emit("room", room.toView());
+          socket.emit("room", room.toJSON());
           socket.join(room.id.toString());
         } catch (e) {
           if (e instanceof UserNotFoundError) {
@@ -114,7 +114,7 @@ export default function (
             socket.emit("error", "Couldn't find room.");
           } else {
             socket.join(room.id.toString());
-            socket.emit("room", room.toView());
+            socket.emit("room", room.toJSON());
           }
         } catch (e) {
           if (e instanceof UserNotFoundError) {
@@ -135,7 +135,7 @@ export default function (
           }
 
           // Broadcast updated room state to all players
-          fastify.io.to(roomId.toString()).emit("room", room.toView());
+          fastify.io.to(roomId.toString()).emit("room", room.toJSON());
 
         } catch (error) {
           console.error("Error handling guess:", error);
@@ -195,7 +195,7 @@ export default function (
           const { challengedId, difficulty } = JSON.parse(data) as Challenge;
           const room = await roomService.createChallengeRoom(user.id, challengedId, difficulty);
           socket.join(room.id.toString());
-          fastify.io.to(room.id.toString()).emit("room", room.toView());
+          fastify.io.to(room.id.toString()).emit("room", room.toJSON());
         } catch (error) {
           fastify.log.error(error);
           socket.emit("error", { message: "Failed to create challenge" });
@@ -207,7 +207,7 @@ export default function (
           const { roomId } = JSON.parse(data) as { roomId: number };
           const room = await roomService.acceptChallenge(roomId, user.id);
           socket.join(room.id.toString());
-          fastify.io.to(room.id.toString()).emit("room", room.toView());
+          fastify.io.to(room.id.toString()).emit("room", room.toJSON());
         } catch (error) {
           fastify.log.error(error);
           socket.emit("error", { message: "Failed to accept challenge" });
@@ -218,7 +218,7 @@ export default function (
         try {
           const { roomId } = JSON.parse(data) as { roomId: number };
           const room = await roomService.rejectChallenge(roomId);
-          fastify.io.to(room.id.toString()).emit("room", room.toView());
+          fastify.io.to(room.id.toString()).emit("room", room.toJSON());
         } catch (error) {
           fastify.log.error(error);
           socket.emit("error", { message: "Failed to reject challenge" });

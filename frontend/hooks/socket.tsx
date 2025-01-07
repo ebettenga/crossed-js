@@ -2,10 +2,11 @@ import { createContext, ReactNode, useContext, useEffect, useRef, useState } fro
 import io, { Socket } from 'socket.io-client';
 import { config } from "../config/config";
 import { secureStorage } from './storageApi';
-import { useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { Room } from './useRoom';
 import { useUser } from './users';
+import { post } from './api';
 
 // Create a function to get a new socket instance with the current token
 const createSocketInstance = (token: string) => {
@@ -31,7 +32,7 @@ interface RoomContextType {
 
 export const RoomContext = createContext<RoomContextType>({
   room: null,
-  setRoom: () => {},
+  setRoom: () => { },
 });
 
 export const SocketProvider = ({ children }: { children: ReactNode }) => {
@@ -256,7 +257,7 @@ export const useSocket = () => {
 
         setConnectionQuality(
           !isConnected ? 'disconnected' :
-          avgLatency > 200 ? 'poor' : 'good'
+            avgLatency > 200 ? 'poor' : 'good'
         );
       });
     }, 5000);
@@ -376,10 +377,18 @@ export const useRoom = (roomId?: number) => {
     emit("loadRoom", JSON.stringify({ roomId }));
   };
 
+  const cancel = useMutation({
+    mutationFn: async (roomId: number) => {
+      return await post(`/rooms/${roomId}/cancel`, { roomId });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['rooms'] });
+    }
+  });
+
   const forfeit = (roomId: number) => {
     emit("forfeit", JSON.stringify({ roomId }));
-    queryClient.invalidateQueries({ queryKey: ['activeRooms'] });
-    queryClient.invalidateQueries({ queryKey: ['room'] });
+    queryClient.invalidateQueries({ queryKey: ['rooms'] });
   };
 
   return {
@@ -390,5 +399,6 @@ export const useRoom = (roomId?: number) => {
     isConnected,
     error,
     isInitialized,
+    cancel
   };
 };

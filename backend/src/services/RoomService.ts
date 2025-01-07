@@ -68,7 +68,7 @@ export class RoomService {
       // Emit game_started event through fastify.io
       fastify.io.to(room.id.toString()).emit("game_started", {
         message: "All players have joined! Game is starting.",
-        room: room.toView(),
+        room: room.toJSON(),
       });
     }
 
@@ -102,6 +102,15 @@ export class RoomService {
     );
 
     return await this.ormConnection.getRepository(Room).save(room);
+  }
+
+  async cancelRoom(roomId: number): Promise<Room> {
+    const room = await this.getRoomById(roomId);
+    if (!room) throw new NotFoundError("Room not found");
+    room.status = "cancelled";
+    room.markModified();
+    await this.ormConnection.getRepository(Room).save(room);
+    return room;
   }
 
   private async findEmptyRoomByDifficulty(
@@ -309,7 +318,7 @@ export class RoomService {
 
     // Emit a challenge event through socket.io
     fastify.io.to(challenged.id.toString()).emit("challenge_received", {
-      room: savedRoom.toView(),
+      room: savedRoom.toJSON(),
       challenger: {
         id: challenger.id,
         username: challenger.username,

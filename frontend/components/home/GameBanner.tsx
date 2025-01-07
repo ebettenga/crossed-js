@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
-import { ChevronRight, Gamepad2, Clock } from 'lucide-react-native';
-import { useRouter } from 'expo-router';
+import { ChevronRight, Gamepad2, Clock, X } from 'lucide-react-native';
+import { useRoom } from '~/hooks/socket';
 
 interface GameBannerProps {
     gameId: string;
@@ -16,7 +16,7 @@ export const GameBanner: React.FC<GameBannerProps> = ({
     createdAt,
     status = 'playing'
 }) => {
-    const router = useRouter();
+    const { cancel } = useRoom();
     const isPending = status === 'pending';
 
     // Format game type to be more readable
@@ -25,6 +25,10 @@ export const GameBanner: React.FC<GameBannerProps> = ({
         '2v2': '2 vs 2',
         'free4all': 'Free for All'
     }[gameType] || gameType;
+
+    const handleCancel = () => {
+        cancel.mutate(parseInt(gameId));
+    };
 
     return (
         <View
@@ -73,7 +77,17 @@ export const GameBanner: React.FC<GameBannerProps> = ({
                     </Text>
                 </View>
             </View>
-            {!isPending && <ChevronRight size={20} color="#666666" />}
+            {isPending ? (
+                <TouchableOpacity
+                    className="flex-row items-center p-2 rounded-md border border-[#FECACA] dark:border-[#2A3136] bg-[#FEF2F2] dark:bg-[#1A2227] gap-1"
+                    onPress={handleCancel}
+                >
+                    <X size={16} color="#EF4444" />
+                    <Text className="text-xs text-[#EF4444] font-['Times New Roman']">Cancel</Text>
+                </TouchableOpacity>
+            ) : (
+                <ChevronRight size={20} color="#666666" />
+            )}
         </View>
     );
 };

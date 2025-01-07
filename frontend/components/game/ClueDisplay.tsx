@@ -16,7 +16,7 @@ export const ClueDisplay: React.FC<ClueDisplayProps> = ({ selectedSquare, isAcro
   const clueText = clue.split(".")[1];
 
   return (
-    <View className="p-2 pt-4 items-center justify-center min-h-[40px] flex">
+  <View className="p-2 pt-4 items-center justify-center min-h-[40px] flex">
       <Text className="text-base text-[#2B2B2B] dark:text-[#DDE1E5] leading-6 text-center px-4 flex-wrap-none flex-shrink">
         {clueText}
       </Text>

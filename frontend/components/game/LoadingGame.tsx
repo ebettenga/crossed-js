@@ -22,11 +22,11 @@ export const LoadingGame: React.FC = () => {
     });
 
     return (
-        <View className="flex-1 justify-center items-center bg-[#F5F5EB] dark:bg-[#0F1417] gap-4">
+        <View className="flex-1 justify-center items-center bg-[#F6FAFE] dark:bg-[#0F1417] gap-4">
             <Animated.View style={{ transform: [{ rotate: spin }] }}>
-                <Swords size={48} className="text-[#8B0000] dark:text-[#8B0000]" />
+                <Swords size={48} color='#8B0000' />
             </Animated.View>
-            <Text className="text-lg text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman']">
+            <Text className="text-lg text-[#1D2124] dark:text-[#DDE1E5] font-['Times_New_Roman']">
                 Loading game...
             </Text>
         </View>

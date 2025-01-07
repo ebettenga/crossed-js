@@ -41,7 +41,7 @@ export default function Profile() {
                     <ProfileButton
                         label="Settings"
                         icon={<Settings size={24} />}
-                        onPress={() => console.log('Settings')}
+                        onPress={() => router.push('/profile/settings')}
                     />
                     <ProfileButton
                         label="Support"

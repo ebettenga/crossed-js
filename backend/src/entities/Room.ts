@@ -115,7 +115,7 @@ export class Room {
     return this.players.length;
   }
 
-  toView() {
+  toJSON() {
     // If cache exists and room hasn't been modified, return cached view
     if (this.viewCache && this.lastModified === this.lastViewUpdate) {
       return this.viewCache;
