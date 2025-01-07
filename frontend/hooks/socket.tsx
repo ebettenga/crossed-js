@@ -65,6 +65,7 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
 
         newSocket.on("connect_error", async (error) => {
           console.error("Socket connection error:", error);
+          newSocket.connect();
           // On auth error, try to get a fresh token
           if (error.message?.includes("auth")) {
             const newToken = await secureStorage.get("token");
@@ -208,8 +209,7 @@ export const useSocket = () => {
 
     const handleConnectError = (error: Error) => {
       console.error("Socket connection error:", error);
-      setIsConnecting(false);
-      setError(error);
+      socket.connect();
     };
 
     const handleReconnecting = (attemptNumber: number) => {

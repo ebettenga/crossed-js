@@ -3,7 +3,6 @@ import { View, Text, SafeAreaView } from 'react-native';
 import { CrosswordBoard } from '../components/game/CrosswordBoard';
 import { Keyboard } from '../components/game/Keyboard';
 import { PlayerInfo } from '../components/game/PlayerInfo';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GameMenu } from '../components/game/GameMenu';
 import { useRouter } from 'expo-router';
 import { ClueDisplay } from '../components/game/ClueDisplay';
@@ -13,20 +12,32 @@ import { LoadingGame } from '~/components/game/LoadingGame';
 import { GameTimer } from '~/components/game/GameTimer';
 import { useUser } from '~/hooks/users';
 import { Avatar } from '~/components/shared/Avatar';
-import { cn } from '~/lib/utils';
 import ConnectionStatus from '~/components/ConnectionStatus';
 
 export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
     const { room, guess, refresh, forfeit } = useRoom(roomId);
     const { data: currentUser } = useUser();
     const router = useRouter();
-    const insets = useSafeAreaInsets();
-    const [showSummary, setShowSummary] = useState(false);
     const [selectedCell, setSelectedCell] = useState<Square | null>(null);
     const [isAcrossMode, setIsAcrossMode] = useState(true);
 
     useEffect(() => {
         refresh(roomId);
+    }, []);
+
+    useEffect(() => {
+        if (room?.board) {
+            // Find the first valid cell in the board
+            for (let x = 0; x < room.board.length; x++) {
+                for (let y = 0; y < room.board[x].length; y++) {
+                    const cell = room.board[x][y];
+                    if (cell.squareType !== SquareType.BLACK && cell.squareType !== SquareType.SOLVED) {
+                        setSelectedCell(cell);
+                        return;
+                    }
+                }
+            }
+        }
     }, []);
 
     if (!room || room.id !== roomId) {
