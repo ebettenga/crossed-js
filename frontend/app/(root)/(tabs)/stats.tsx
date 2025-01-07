@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, ScrollView, ActivityIndicator } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, ScrollView, ActivityIndicator, RefreshControl } from 'react-native';
 import { PageHeader } from '~/components/Header';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useUser } from '~/hooks/users';
@@ -81,7 +81,7 @@ const GameRow: React.FC<GameRowProps> = ({ game, userId }) => {
 
 export default function Stats() {
     const insets = useSafeAreaInsets();
-    const { data: user, isLoading: userLoading } = useUser();
+    const { data: user, isLoading: userLoading, refetch: refetchUser } = useUser();
     const { isEloVisible } = useEloVisibility();
 
     const oneMonthAgo = React.useMemo(() => {
@@ -90,7 +90,22 @@ export default function Stats() {
         return date;
     }, []);
 
-    const { data: recentGames, isLoading: gamesLoading } = useRecentGames(oneMonthAgo);
+    const {
+        data: recentGames,
+        isLoading: gamesLoading,
+        refetch: refetchGames
+    } = useRecentGames(oneMonthAgo);
+
+    const onRefresh = React.useCallback(async () => {
+        try {
+            await Promise.all([
+                refetchUser(),
+                refetchGames()
+            ]);
+        } catch (error) {
+            console.error('Error refreshing stats:', error);
+        }
+    }, [refetchUser, refetchGames]);
 
     if (userLoading || !user) {
         return (
@@ -107,7 +122,17 @@ export default function Stats() {
         <View className="flex-1 bg-[#F6FAFE] dark:bg-[#0F1417]" style={{ paddingBottom: insets.bottom }}>
             <PageHeader />
 
-            <ScrollView className="flex-1 px-4">
+            <ScrollView
+                className="flex-1 px-4"
+                refreshControl={
+                    <RefreshControl
+                        refreshing={userLoading || gamesLoading}
+                        onRefresh={onRefresh}
+                        tintColor="#8B0000"
+                        colors={["#8B0000"]}
+                    />
+                }
+            >
                 <View className="flex-row flex-wrap gap-3 mt-6">
                     {isEloVisible && (
                         <StatCard
