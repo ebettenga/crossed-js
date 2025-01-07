@@ -13,6 +13,7 @@ import { useRoom } from '~/hooks/socket';
 import { Link } from 'expo-router';
 import { useActiveRooms, usePendingRooms } from '~/hooks/useActiveRooms';
 import { useUser } from '~/hooks/users';
+import {useCalendars} from 'expo-localization'
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const PADDING = 6;

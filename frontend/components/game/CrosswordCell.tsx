@@ -4,17 +4,30 @@ import { SquareType } from '~/hooks/useRoom';
 import { config } from '~/config/config';
 import { ArrowRight, ArrowDown } from 'lucide-react-native';
 
-// Calculate cell size based on screen width
+// Calculate cell size based on screen width and height
 const SCREEN_WIDTH = Dimensions.get('window').width;
+const SCREEN_HEIGHT = Dimensions.get('window').height;
 const GRID_SIZE = config.game.crossword.gridSize;
 const BORDER_WIDTH = config.game.crossword.borderWidth;
-const CELL_SIZE = Math.floor((SCREEN_WIDTH) / GRID_SIZE);
+const KEYBOARD_HEIGHT = 250; // Approximate height of keyboard + clue display
+const HEADER_HEIGHT = 120; // Approximate height of header section
+
+// Calculate the maximum available space for the board
+const AVAILABLE_HEIGHT = SCREEN_HEIGHT - KEYBOARD_HEIGHT - HEADER_HEIGHT;
+const AVAILABLE_WIDTH = SCREEN_WIDTH - (BORDER_WIDTH * 2);
+
+// Use the smaller of width or height to ensure square cells that fit the screen
+const CELL_SIZE = Math.floor(Math.min(
+    AVAILABLE_WIDTH / GRID_SIZE,
+    AVAILABLE_HEIGHT / GRID_SIZE
+));
+
 const CORNER_RADIUS = config.game.crossword.cornerRadius;
 
 // Colors from config
-const PAPER_COLOR = config.game.crossword.colors.paper;
-const SELECTED_COLOR = config.game.crossword.colors.selected;
-const BORDER_COLOR = config.game.crossword.colors.border;
+const PAPER_COLOR = config.theme.colors.background.paper
+const SELECTED_COLOR = config.theme.colors.primary.DEFAULT
+const BORDER_COLOR = "#000000"
 
 interface CrosswordCellProps {
     letter: string;
@@ -65,19 +78,28 @@ export const CrosswordCell: React.FC<CrosswordCellProps> = ({
                 ]}
             >
                 {gridNumber && gridNumber > 0 && (
-                    <Text style={styles.gridNumber}>{gridNumber}</Text>
+                    <Text style={[
+                        styles.gridNumber,
+                        isSelected && !isDisabled && styles.selectedText
+                    ]}>
+                        {gridNumber}
+                    </Text>
                 )}
                 {!isBlackSquare && (
-                    <Text style={[styles.letter, !isSolved && styles.hiddenText]}>
+                    <Text style={[
+                        styles.letter,
+                        !isSolved && styles.hiddenText,
+                        isSelected && !isDisabled && styles.selectedText
+                    ]}>
                         {letter}
                     </Text>
                 )}
                 {isSelected && !isDisabled && (
                     <View style={styles.directionIndicator}>
                         {isAcrossMode ? (
-                            <ArrowRight size={12} color={BORDER_COLOR} />
+                            <ArrowRight size={12} color={"#FFFFFF"} />
                         ) : (
-                            <ArrowDown size={12} color={BORDER_COLOR} />
+                            <ArrowDown size={12} color={"#FFFFFF"} />
                         )}
                     </View>
                 )}
@@ -104,7 +126,7 @@ const styles = StyleSheet.create({
         fontSize: CELL_SIZE * 0.5,
         fontWeight: '600',
         color: BORDER_COLOR,
-        fontFamily: 'Times New Roman', // More newspaper-like font
+        fontFamily: 'Times New Roman',
     },
     gridNumber: {
         position: 'absolute',
@@ -122,4 +144,7 @@ const styles = StyleSheet.create({
         bottom: 2,
         right: 2,
     },
-}); 
+    selectedText: {
+        color: '#FFFFFF',
+    },
+});

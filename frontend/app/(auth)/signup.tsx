@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, TextInput, TouchableOpacity } from 'react-native';
+import { View, TextInput, TouchableOpacity, Image, ScrollView } from 'react-native';
 import { Redirect, useRouter } from 'expo-router';
 import { Text } from '~/components/ui/text';
 import { useSignUp, useUser } from '~/hooks/users';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export default function SignUp() {
     const router = useRouter();
@@ -11,8 +12,8 @@ export default function SignUp() {
     const [password, setPassword] = useState('');
     const [username, setUsername] = useState('');
     const [error, setError] = useState('');
-    const { data: user } = useUser();  
-    
+    const { data: user } = useUser();
+
     const signUpMutation = useSignUp();
 
     const handleSignUp = () => {
@@ -30,152 +31,107 @@ export default function SignUp() {
     }
 
     return (
-        <SafeAreaView style={styles.container}>
-            <View style={styles.content}>
-                <View style={styles.header}>
-                    <Text style={styles.title}>Create Account</Text>
-                    <Text style={styles.subtitle}>Sign up to start playing</Text>
+        <SafeAreaView className="flex-1 bg-[#F6FAFE] dark:bg-[#0F1417]">
+            <View className="relative h-[40%]">
+                <Image
+                    source={require('~/assets/images/signin-background.jpg')}
+                    className="absolute w-full h-full"
+                    resizeMode="cover"
+                />
+                <LinearGradient
+                    colors={['transparent', '#F6FAFE']}
+                    className="absolute bottom-0 w-full h-1/2 dark:hidden"
+                />
+                <LinearGradient
+                    colors={['transparent', '#0F1417']}
+                    className="absolute bottom-0 w-full h-1/2 hidden dark:flex"
+                />
+                <Image
+                    source={require('~/assets/images/icon-clean.png')}
+                    className="absolute bottom-5 w-20 h-20 self-center"
+                    resizeMode="contain"
+                />
+            </View>
+
+            <View className="flex-1 px-6 pt-8 pb-12">
+                <View className="mb-8">
+                    <Text className="text-2xl font-bold mb-2 text-[#1D2124] dark:text-[#DDE1E5]">
+                        Create Account
+                    </Text>
+                    <Text className="text-base text-[#1D2124]/70 dark:text-[#DDE1E5]/70">
+                        Sign up to start playing
+                    </Text>
                 </View>
 
-                <View style={styles.form}>
-                    <View style={styles.inputContainer}>
-                        <Text style={styles.label}>Username</Text>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Choose a username"
-                            value={username}
-                            onChangeText={setUsername}
-                            autoCapitalize="none"
-                        />
+                <ScrollView className="flex-1" showsVerticalScrollIndicator={false} contentContainerStyle={{ flexGrow: 1 }}>
+                    <View>
+                        <View>
+                            <Text className="text-sm font-semibold mb-2 text-[#1D2124] dark:text-[#DDE1E5]">
+                                Username
+                            </Text>
+                            <TextInput
+                                className="p-4 border placeholder:text-[#1D2124]/50 dark:placeholder:text-[#DDE1E5]/50 bg-white border-[#E5E5E5] text-[#1D2124] dark:bg-[#1A2227] dark:border-[#2A3136] dark:text-[#DDE1E5]"
+                                placeholder="Choose a username"
+                                value={username}
+                                onChangeText={setUsername}
+                                autoCapitalize="none"
+                            />
+                        </View>
+
+                        <View className="mt-4">
+                            <Text className="text-sm font-semibold mb-2 text-[#1D2124] dark:text-[#DDE1E5]">
+                                Email
+                            </Text>
+                            <TextInput
+                                className="p-4 border placeholder:text-[#1D2124]/50 dark:placeholder:text-[#DDE1E5]/50 bg-white border-[#E5E5E5] text-[#1D2124] dark:bg-[#1A2227] dark:border-[#2A3136] dark:text-[#DDE1E5]"
+                                placeholder="Enter your email"
+                                value={email}
+                                onChangeText={setEmail}
+                                autoCapitalize="none"
+                                keyboardType="email-address"
+                            />
+                        </View>
+
+                        <View className="mt-4">
+                            <Text className="text-sm font-semibold mb-2 text-[#1D2124] dark:text-[#DDE1E5]">
+                                Password
+                            </Text>
+                            <TextInput
+                                className="p-4 border placeholder:text-[#1D2124]/50 dark:placeholder:text-[#DDE1E5]/50 bg-white border-[#E5E5E5] text-[#1D2124] dark:bg-[#1A2227] dark:border-[#2A3136] dark:text-[#DDE1E5]"
+                                placeholder="Choose a password"
+                                value={password}
+                                onChangeText={setPassword}
+                                secureTextEntry
+                            />
+                        </View>
+
+                        {error ? (
+                            <Text className="text-red-500 text-center mt-4">
+                                {error}
+                            </Text>
+                        ) : null}
+
+                        <TouchableOpacity
+                            className="bg-[#8B0000] p-4 mt-12"
+                            onPress={handleSignUp}
+                            disabled={signUpMutation.isPending}
+                        >
+                            <Text className="text-white text-center font-semibold text-base">
+                                {signUpMutation.isPending ? 'Creating Account...' : 'Create Account'}
+                            </Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            className="p-3"
+                            onPress={() => router.push('/')}
+                        >
+                            <Text className="text-[#8B0000] text-center text-sm">
+                                Already have an account? Sign in
+                            </Text>
+                        </TouchableOpacity>
                     </View>
-
-                    <View style={styles.inputContainer}>
-                        <Text style={styles.label}>Email</Text>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Enter your email"
-                            value={email}
-                            onChangeText={setEmail}
-                            autoCapitalize="none"
-                            keyboardType="email-address"
-                        />
-                    </View>
-
-                    <View style={styles.inputContainer}>
-                        <Text style={styles.label}>Password</Text>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Choose a password"
-                            value={password}
-                            onChangeText={setPassword}
-                            secureTextEntry
-                        />
-                    </View>
-
-                    {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
-                    <TouchableOpacity 
-                        style={styles.signUpButton}
-                        onPress={handleSignUp}
-                        disabled={signUpMutation.isPending}
-                    >
-                        <Text style={styles.signUpButtonText}>
-                            {signUpMutation.isPending ? 'Creating Account...' : 'Create Account'}
-                        </Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity 
-                        style={styles.signInButton}
-                        onPress={() => router.push('/')}
-                    >
-                        <Text style={styles.signInText}>
-                            Already have an account? Sign in
-                        </Text>
-                    </TouchableOpacity>
-                </View>
+                </ScrollView>
             </View>
         </SafeAreaView>
     );
 }
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#FDFDFD',
-    },
-    content: {
-        flex: 1,
-        padding: 20,
-        justifyContent: 'center',
-    },
-    header: {
-        alignItems: 'center',
-        marginBottom: 40,
-    },
-    title: {
-        fontSize: 28,
-        fontWeight: '700',
-        color: '#2B2B2B',
-        paddingTop: 12,
-        marginBottom: 8,
-        fontFamily: 'Times New Roman',
-    },
-    subtitle: {
-        fontSize: 16,
-        color: '#666666',
-        fontFamily: 'Times New Roman',
-    },
-    form: {
-        gap: 20,
-    },
-    inputContainer: {
-        gap: 8,
-    },
-    label: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: '#2B2B2B',
-        fontFamily: 'Times New Roman',
-    },
-    input: {
-        borderWidth: 1,
-        borderColor: '#E5E5E5',
-        borderRadius: 8,
-        padding: 12,
-        fontSize: 16,
-        backgroundColor: 'white',
-    },
-    errorText: {
-        color: '#DC2626',
-        fontSize: 14,
-        textAlign: 'center',
-    },
-    signUpButton: {
-        backgroundColor: '#8B0000',
-        padding: 16,
-        borderRadius: 8,
-        alignItems: 'center',
-        shadowColor: '#000',
-        shadowOffset: {
-            width: 0,
-            height: 2,
-        },
-        shadowOpacity: 0.1,
-        shadowRadius: 3,
-        elevation: 2,
-    },
-    signUpButtonText: {
-        color: 'white',
-        fontSize: 16,
-        fontWeight: '600',
-    },
-    signInButton: {
-        padding: 12,
-        alignItems: 'center',
-    },
-    signInText: {
-        color: '#8B0000',
-        fontSize: 14,
-        fontWeight: '500',
-    },
-}); 

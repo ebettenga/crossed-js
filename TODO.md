@@ -49,8 +49,7 @@ Have Avatar photos show up in the game screen visable others
 Get Superwall(i.e. Paywall) integrated into the app
 Create a design system for the App
 Getting Socal Media Pages up and running
-Have user set timezone in Profile(Should Auto lookup)
-Get tests written and working
+Get tests written and working(Have AI write them)
 Configure Backend so it can run schedulable Jobs(async)
 Be able to send Emails(reset password,marketingemails,etc.)
 Be able to make a custom game(i.e. set number of players)
@@ -58,3 +57,6 @@ Add Audio sound effects to the game
 Create Mapping service so we don't send confidential data(i.e. don't send user password, don't send game answers)
 Add loading indicators to the frontend
 Deploy the backend to external provider(Railway)
+Get iOS working
+Match People based on Elo ranking
+Add Animations for correct and incorrect guesses

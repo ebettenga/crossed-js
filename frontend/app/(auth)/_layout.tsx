@@ -1,15 +1,18 @@
 import React from 'react';
 import { Slot } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useGlobalContext } from "@/lib/global-provider";
 import { Redirect } from "expo-router";
+import { useUser } from '~/hooks/users';
+
 
 export default function AuthLayout() {
-  const { isLoggedIn, user } = useGlobalContext();
+  const { data: user } = useUser();
+
+  console.log(user);
 
   // If logged in, redirect to main app
-  if (isLoggedIn && user) {
-    return <Redirect href="/(root)" />;
+  if (user) {
+    return <Redirect href="/(root)/(tabs)" />;
   }
 
   return (
@@ -17,4 +20,4 @@ export default function AuthLayout() {
       <Slot />
     </SafeAreaView>
   );
-} 
+}

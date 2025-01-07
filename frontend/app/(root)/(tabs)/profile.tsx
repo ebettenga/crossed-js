@@ -43,11 +43,6 @@ export default function Profile() {
                         icon={<Settings size={24} color="#2B2B2B" />}
                         onPress={() => console.log('Settings')}
                     />
-                    <ProfileButton
-                        label="Payment Options"
-                        icon={<CreditCard size={24} color="#2B2B2B" />}
-                        onPress={() => console.log('Payment')}
-                    />
                 </View>
 
                 <View style={styles.bottomSection}>

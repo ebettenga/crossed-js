@@ -43,14 +43,22 @@ export const useUser = () => {
   return useQuery<User>({
     queryKey: ['me'],
     queryFn: async () => {
-      const response = await get<User>('/me');
-      if (response.photo && response.photoContentType) {
-        // Convert the base64 string to a data URL
-        response.photo = `data:${response.photoContentType};base64,${response.photo}`;
+      try {
+        const response = await get<User>('/me');
+        if (response.photo && response.photoContentType) {
+          // Convert the base64 string to a data URL
+          response.photo = `data:${response.photoContentType};base64,${response.photo}`;
+        }
+        return response;
+      } catch (error: any) {
+        if (error.message === 'Forbidden' || error.message === 'Unauthorized') {
+          await secureStorage.remove('token');
+        }
+        throw error;
       }
-      return response;
     },
     retry: 1,
+
   });
 };
 
@@ -167,4 +175,4 @@ export const useUpdatePhoto = () => {
       queryClient.setQueryData(['me'], updatedUser);
     },
   });
-}; 
+};

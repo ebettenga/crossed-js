@@ -3,6 +3,7 @@ export const commonConfig = {
     prefix: '/api',
     port: 3000,
     host: '0.0.0.0',
+    timezone: 'UTC',
   },
   cors: {
     origin: '*',
@@ -26,6 +27,8 @@ export const commonConfig = {
       '2v2': 4,
       'free4all': 5,
     },
+    crossword: {
+      firstCrosswordDate: '2000-01-01',
+    },
   },
-  timezone: 'UTC',
 };

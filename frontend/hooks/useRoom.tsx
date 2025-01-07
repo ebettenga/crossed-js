@@ -72,3 +72,73 @@ export const useJoinRoom = () => {
         },
     });
 };
+
+export const useRoom = (roomId?: number) => {
+    const queryClient = useQueryClient();
+    const { socket, isConnected, error } = useSocket();
+    const router = useRouter();
+    const { room, setRoom } = useContext(RoomContext);
+
+    useEffect(() => {
+        if (!socket || !isConnected) return;
+
+        const handleRoom = (data: Room) => {
+            if (!data) return;
+            setRoom(data);
+        };
+
+        const handleGameStarted = (data: { message: string, room: Room }) => {
+            console.log("Game started:", data.message);
+            router.push(`/game?roomId=${data.room.id}`);
+            setRoom(data.room);
+        };
+
+        socket.on("room", handleRoom);
+        socket.on("game_started", handleGameStarted);
+
+        if (!room && roomId) {
+            refresh(roomId);
+        }
+
+        return () => {
+            socket.off("room", handleRoom);
+            socket.off("game_started", handleGameStarted);
+        };
+    }, [socket, isConnected, roomId]);
+
+    const guess = (roomId: number, coordinates: { x: number; y: number }, guess: string) => {
+        if (!socket || !isConnected) {
+            console.error("Socket not connected");
+            return;
+        }
+        socket.emit("guess", JSON.stringify({ roomId, x: coordinates.x, y: coordinates.y, guess }));
+    };
+
+    const refresh = (roomId: number) => {
+        if (!socket || !isConnected) {
+            console.error("Socket not connected");
+            return;
+        }
+        socket.emit("loadRoom", JSON.stringify({ roomId }));
+    };
+
+    const forfeit = (roomId: number) => {
+        if (!socket || !isConnected) {
+            console.error("Socket not connected");
+            return;
+        }
+        socket.emit("forfeit", JSON.stringify({ roomId }));
+        queryClient.invalidateQueries({ queryKey: ['activeRooms'] });
+        queryClient.invalidateQueries({ queryKey: ['room'] });
+    };
+
+    return { 
+        room, 
+        guess, 
+        refresh, 
+        forfeit,
+        isConnected,
+        error
+    };
+};
+

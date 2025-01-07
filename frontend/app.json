@@ -31,7 +31,7 @@
         {
           "image": "./assets/images/splash-icon.png",
           "resizeMode": "cover",
-          "backgroundColor": "#92979b",
+          "backgroundColor": "#000000",
           "enableFullScreenImage_legacy": true
         }
       ],
@@ -48,7 +48,16 @@
           ]
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 26
+          }
+        }
+      ],
+      "expo-localization"
     ],
     "experiments": {
       "typedRoutes": true

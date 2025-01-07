@@ -7,6 +7,7 @@ import { useRecentGames, RecentGame } from '~/hooks/useRecentGames';
 import { Trophy, Target, TrendingUp, Crown, X } from 'lucide-react-native';
 import { formatDistanceToNow } from 'date-fns';
 import { EloChart } from '~/components/stats/EloChart';
+import { AccuracyChart } from '~/components/stats/AccuracyChart';
 
 interface StatCardProps {
     title: string;
@@ -121,6 +122,11 @@ export default function Stats() {
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>ELO History</Text>
                     <EloChart startDate={oneMonthAgo} />
+                </View>
+
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>Guess Accuracy History</Text>
+                    <AccuracyChart startDate={oneMonthAgo} />
                 </View>
 
                 <View style={styles.section}>

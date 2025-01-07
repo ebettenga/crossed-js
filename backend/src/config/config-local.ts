@@ -1,7 +1,6 @@
 import { PostgresConnectionOptions } from "typeorm/driver/postgres/PostgresConnectionOptions";
 
 export const config = {
-  timezone: 'America/Chicago',
   logger: {
     transport: {
       target: "pino-pretty",
