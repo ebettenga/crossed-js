@@ -1,7 +1,8 @@
 import React from 'react';
-import { View, StyleSheet, Text } from 'react-native';
+import { View } from 'react-native';
 import { LineChart, YAxis } from 'react-native-svg-charts';
 import { useUserGameStats, useUser } from '~/hooks/users';
+import { useColorScheme } from 'react-native';
 
 interface EloChartProps {
     startDate?: Date;
@@ -10,6 +11,7 @@ interface EloChartProps {
 export const EloChart: React.FC<EloChartProps> = ({ startDate }) => {
     const { data: gameStats } = useUserGameStats(startDate);
     const { data: user } = useUser();
+    const colorScheme = useColorScheme();
 
     if (!gameStats?.length || !user) return null;
 
@@ -17,7 +19,7 @@ export const EloChart: React.FC<EloChartProps> = ({ startDate }) => {
     const data = [...gameStats]
         .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
         .map(stat => stat.eloAtGame);
-    
+
     // Append current ELO if it's different from the last ELO in the stats
     if (data[data.length - 1] !== user.eloRating) {
         data.push(user.eloRating);
@@ -32,19 +34,23 @@ export const EloChart: React.FC<EloChartProps> = ({ startDate }) => {
     const maxElo = Math.max(...data);
 
     return (
-        <View style={styles.container}>
-            <View style={styles.chartRow}>
+        <View className="bg-neutral-50 dark:bg-neutral-800 p-4 rounded-xl border border-neutral-200 dark:border-neutral-700">
+            <View className="flex-row h-[200px]">
                 <YAxisComponent
                     data={data}
                     contentInset={contentInset}
-                    svg={{ fontSize: 12, fill: '#666666', fontFamily: 'Times New Roman' }}
+                    svg={{
+                        fontSize: 12,
+                        fill: colorScheme === 'dark' ? '#9CA3AF' : '#666666',
+                        fontFamily: 'Times New Roman'
+                    }}
                     numberOfTicks={2}
                     formatLabel={(value: number) => Math.round(value)}
-                    style={styles.yAxis}
+                    style={{ marginRight: 10, width: 40 }}
                 />
-                <View style={styles.chartContainer}>
+                <View className="flex-1">
                     <Chart
-                        style={styles.chart}
+                        style={{ flex: 1 }}
                         data={data}
                         svg={{ stroke: '#8B0000', strokeWidth: 2 }}
                         contentInset={{ ...contentInset, left: 10, right: 10 }}
@@ -56,27 +62,3 @@ export const EloChart: React.FC<EloChartProps> = ({ startDate }) => {
         </View>
     );
 };
-
-const styles = StyleSheet.create({
-    container: {
-        backgroundColor: '#F8F8F5',
-        padding: 16,
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: '#E5E5E5',
-    },
-    chartRow: {
-        flexDirection: 'row',
-        height: 200,
-    },
-    yAxis: {
-        marginRight: 10,
-        width: 40,
-    },
-    chartContainer: {
-        flex: 1,
-    },
-    chart: {
-        flex: 1,
-    },
-}); 

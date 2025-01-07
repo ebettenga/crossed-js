@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, Dimensions, ScrollView, ActivityIndicator } from 'react-native';
+import { View, ScrollView, ActivityIndicator, Dimensions } from 'react-native';
 import { Users, Swords, Group } from 'lucide-react-native';
 import { HomeSquareButton } from '~/components/home/HomeSquareButton';
 import { PageHeader } from '~/components/Header';
@@ -13,7 +13,7 @@ import { useRoom } from '~/hooks/socket';
 import { Link } from 'expo-router';
 import { useActiveRooms, usePendingRooms } from '~/hooks/useActiveRooms';
 import { useUser } from '~/hooks/users';
-import {useCalendars} from 'expo-localization'
+import { cn } from '~/lib/utils';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const PADDING = 6;
@@ -58,7 +58,7 @@ export default function Home() {
     const isLoading = isLoadingUser || isLoadingRooms || isLoadingPendingRooms;
     if (isLoading || !user) {
         return (
-            <View style={[styles.container, styles.loadingContainer]}>
+            <View className="flex-1 justify-center items-center bg-[#F6FAFE] dark:bg-[#0F1417]">
                 <ActivityIndicator size="large" color="#8B0000" />
             </View>
         );
@@ -68,27 +68,26 @@ export default function Home() {
     const pendingRoomsArray = pendingRooms as Room[] || [];
 
     return (
-        <View style={[
-            styles.container,
-            {
-                paddingTop: insets.top,
-                paddingBottom: insets.bottom,
-                paddingLeft: insets.left,
-                paddingRight: insets.right,
-            }
-        ]}>
-            <View style={styles.content}>
+        <View
+            className={cn(
+                "flex-1 bg-[#F6FAFE] dark:bg-[#0F1417]",
+                "pt-[${insets.top}px] pb-[${insets.bottom}px]",
+                "pl-[${insets.left}px] pr-[${insets.right}px]"
+            )}
+        >
+            <View className="flex-1">
                 <PageHeader />
                 {activeRoomsArray.length > 0 && (
-                    <View style={styles.gameBannersScroll}>
+                    <View className="w-full h-[100px]">
                         <ScrollView
                             horizontal
                             pagingEnabled
                             showsHorizontalScrollIndicator={activeRoomsArray.length > 10}
+                            className="flex-1"
                         >
                             {activeRoomsArray.map((activeRoom) => (
                                 <Link key={activeRoom.id} href={`/game?roomId=${activeRoom.id}`}>
-                                    <View style={styles.bannerContainer}>
+                                    <View className="w-screen h-[100px] px-[6px]">
                                         <GameBanner
                                             gameId={activeRoom.id.toString()}
                                             gameType={activeRoom.type}
@@ -103,14 +102,15 @@ export default function Home() {
                 )}
 
                 {pendingRoomsArray.length > 0 && (
-                    <View style={styles.gameBannersScroll}>
+                    <View className="w-full h-[100px]">
                         <ScrollView
                             horizontal
                             pagingEnabled
                             showsHorizontalScrollIndicator={pendingRoomsArray.length > 10}
+                            className="flex-1"
                         >
                             {pendingRoomsArray.map((pendingRoom) => (
-                                <View key={pendingRoom.id} style={styles.bannerContainer}>
+                                <View key={pendingRoom.id} className="w-screen h-[100px] px-[6px]">
                                     <GameBanner
                                         gameId={pendingRoom.id.toString()}
                                         gameType={pendingRoom.type}
@@ -123,23 +123,23 @@ export default function Home() {
                     </View>
                 )}
 
-                <View style={styles.grid}>
+                <View className="p-[6px] flex-row flex-wrap gap-[3px] justify-start items-start mt-4">
                     <HomeSquareButton
                         name="1 v 1"
-                        icon={<Users size={24} color="#2B2B2B" />}
+                        icon={<Users size={24} />}
                         onPress={() => handleGameModePress('1v1')}
                         number={1}
                         size={BUTTON_SIZE}
                     />
                     <HomeSquareButton
                         name="2 v 2"
-                        icon={<Group size={24} color="#2B2B2B" />}
+                        icon={<Group size={24} />}
                         onPress={() => handleGameModePress('2v2')}
                         size={BUTTON_SIZE}
                     />
                     <HomeSquareButton
                         name="Free for All"
-                        icon={<Swords size={24} color="#2B2B2B" />}
+                        icon={<Swords size={24} />}
                         onPress={() => handleGameModePress('free4all')}
                         size={BUTTON_SIZE}
                     />
@@ -154,35 +154,3 @@ export default function Home() {
         </View>
     );
 }
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: 'white',
-    },
-    loadingContainer: {
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    content: {
-        flex: 1,
-    },
-    grid: {
-        padding: PADDING,
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: GAP,
-        justifyContent: 'flex-start',
-        alignItems: 'flex-start',
-        marginTop: 16,
-    },
-    gameBannersScroll: {
-        width: SCREEN_WIDTH,
-        height: 100,
-    },
-    bannerContainer: {
-        width: SCREEN_WIDTH,
-        height: 100,
-        paddingHorizontal: PADDING,
-    },
-});

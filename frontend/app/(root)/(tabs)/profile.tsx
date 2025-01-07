@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
+import { View, ScrollView } from 'react-native';
 import { Link, useRouter } from 'expo-router';
 import { Users, Settings, BarChart3, CreditCard, LogOut, UserCog } from 'lucide-react-native';
 import { ProfileButton } from '~/components/profile/ProfileButton';
@@ -18,37 +18,37 @@ export default function Profile() {
     if (!user) return null;
 
     return (
-        <View style={styles.container}>
+        <View className="flex-1 bg-[#F6FAFE] dark:bg-[#0F1417]">
             <PageHeader />
-            <ScrollView style={styles.content}>
-                <View style={styles.section}>
+            <ScrollView className="flex-1">
+                <View className="mt-4">
                     <ProfileButton
                         onPress={() => router.push('/profile/edit')}
                         label="Edit Profile"
-                        icon={<UserCog size={24} color="#2B2B2B" />}
+                        icon={<UserCog size={24} />}
                     />
                     <ProfileButton
                         onPress={() => router.push('/friends')}
                         label="Friends"
-                        icon={<Users size={24} color="#2B2B2B" />}
+                        icon={<Users size={24} />}
                         number={3}
                     />
                     <ProfileButton
                         label="Stats"
-                        icon={<BarChart3 size={24} color="#2B2B2B" />}
+                        icon={<BarChart3 size={24} />}
                         onPress={() => router.push('/stats')}
                     />
                     <ProfileButton
                         label="Settings"
-                        icon={<Settings size={24} color="#2B2B2B" />}
+                        icon={<Settings size={24} />}
                         onPress={() => console.log('Settings')}
                     />
                 </View>
 
-                <View style={styles.bottomSection}>
+                <View className="mt-8">
                     <ProfileButton
                         label="Logout"
-                        icon={<LogOut size={24} color="#8B0000" />}
+                        icon={<LogOut size={24} />}
                         onPress={handleLogout}
                         danger
                     />
@@ -57,19 +57,3 @@ export default function Profile() {
         </View>
     );
 }
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: 'white',
-    },
-    content: {
-        flex: 1,
-    },
-    section: {
-        marginTop: 16,
-    },
-    bottomSection: {
-        marginTop: 32,
-    },
-});

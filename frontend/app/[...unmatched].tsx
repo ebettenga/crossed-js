@@ -1,4 +1,4 @@
-import { View, StyleSheet } from 'react-native';
+import { View } from 'react-native';
 import { Text } from '~/components/ui/text';
 import { useRouter } from 'expo-router';
 import { TouchableOpacity } from 'react-native-gesture-handler';
@@ -8,63 +8,24 @@ export default function NotFoundScreen() {
   const router = useRouter();
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        <Text style={styles.title}>Oops!</Text>
-        <Text style={styles.subtitle}>This page doesn't exist.</Text>
-        
-        <TouchableOpacity 
-          style={styles.button}
-          onPress={() => router.replace('/')}
+    <SafeAreaView className="flex-1 bg-[#F6FAFE] dark:bg-[#0F1417]">
+      <View className="flex-1 p-5 justify-center items-center">
+        <Text className="text-[32px] font-bold text-[#1D2124] dark:text-[#DDE1E5] mb-2 font-['Times_New_Roman']">
+          Oops!
+        </Text>
+        <Text className="text-lg text-[#666666] dark:text-[#DDE1E5]/70 mb-8 font-['Times_New_Roman']">
+          This page doesn't exist.
+        </Text>
+
+        <TouchableOpacity
+          className="bg-[#8B0000] px-6 py-3 shadow-sm"
+          onPress={() => router.replace('/(root)/(tabs)')}
         >
-          <Text style={styles.buttonText}>Go to Home</Text>
+          <Text className="text-white text-base font-semibold">
+            Go to Home
+          </Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#FDFDFD',
-  },
-  content: {
-    flex: 1,
-    padding: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: '#2B2B2B',
-    marginBottom: 8,
-    fontFamily: 'Times New Roman',
-  },
-  subtitle: {
-    fontSize: 18,
-    color: '#666666',
-    marginBottom: 32,
-    fontFamily: 'Times New Roman',
-  },
-  button: {
-    backgroundColor: '#8B0000',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  buttonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-}); 

@@ -1,7 +1,8 @@
 import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, Image } from 'react-native';
+import { View, Text, Image } from 'react-native';
 import { TrendingUp, TrendingDown } from 'lucide-react-native';
 import { useUserGameStats, useUser } from '~/hooks/users';
+import { cn } from '~/lib/utils';
 
 export const PageHeader = React.memo(() => {
     const { data: user } = useUser();
@@ -30,45 +31,58 @@ export const PageHeader = React.memo(() => {
     }, [weeklyStats, user.eloRating, user.gamesWon, user.gamesLost]);
 
     return (
-        <View style={styles.container}>
-            <View style={styles.userInfo}>
-                <View style={styles.leftSection}>
+        <View className="bg-[#F6FAFE] dark:bg-[#0F1417] px-4 py-5 border-b border-neutral-200 dark:border-neutral-800">
+            <View className="flex-row justify-between items-center">
+                <View className="flex-row items-center gap-3">
                     {user.photo && (
                         <Image
                             source={{ uri: user.photo }}
-                            style={styles.avatar}
+                            className="w-14 h-14 rounded-full bg-neutral-100 dark:bg-neutral-800"
                         />
                     )}
-                    <View style={styles.nameSection}>
-                        <Text style={styles.welcomeText}>Welcome back,</Text>
-                        <Text style={styles.username}>{user.username}</Text>
+                    <View className="gap-0.5">
+                        <Text className="text-xs text-[#666666] dark:text-neutral-400 font-['Times_New_Roman']">
+                            Welcome back,
+                        </Text>
+                        <Text className="text-base font-semibold text-[#1D2124] dark:text-[#DDE1E5] font-['Times_New_Roman']">
+                            {user.username}
+                        </Text>
                     </View>
                 </View>
-                <View style={styles.rightSide}>
-                    <View style={styles.stats}>
-                        <View style={styles.statItem}>
-                            <View style={styles.eloContainer}>
-                                <Text style={styles.statValue}>{user.eloRating}</Text>
+                <View className="items-end">
+                    <View className="flex-row items-center gap-3 bg-neutral-50 dark:bg-neutral-800 px-3 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700">
+                        <View className="items-center gap-0.5">
+                            <View className="flex-row items-center gap-1">
+                                <Text className="text-base font-semibold text-[#1D2124] dark:text-[#DDE1E5] font-['Times_New_Roman']">
+                                    {user.eloRating}
+                                </Text>
                                 {eloChange !== 0 && (
-                                    <View style={styles.eloChange}>
+                                    <View className="flex-row items-center gap-0.5">
                                         {isEloUp ? (
                                             <TrendingUp size={12} color={eloChangeColor} />
                                         ) : (
                                             <TrendingDown size={12} color={eloChangeColor} />
                                         )}
-                                        <Text style={[styles.eloChangeText, { color: eloChangeColor }]}>
+                                        <Text className="text-xs font-['Times_New_Roman']" style={{ color: eloChangeColor }}>
                                             {isEloUp ? '+' : ''}{eloChange}
                                         </Text>
                                     </View>
                                 )}
                             </View>
-                            <Text style={styles.statLabel}>ELO</Text>
+                            <Text className="text-xs text-[#666666] dark:text-neutral-400 font-['Times_New_Roman']">
+                                ELO
+                            </Text>
                         </View>
 
-                        <View style={styles.divider} />
-                        <View style={styles.statItem}>
-                            <Text style={styles.statValue}>{gamesPlayed}</Text>
-                            <Text style={styles.statLabel}>Games</Text>
+                        <View className="w-px h-6 bg-neutral-200 dark:bg-neutral-700" />
+
+                        <View className="items-center gap-0.5">
+                            <Text className="text-base font-semibold text-[#1D2124] dark:text-[#DDE1E5] font-['Times_New_Roman']">
+                                {gamesPlayed}
+                            </Text>
+                            <Text className="text-xs text-[#666666] dark:text-neutral-400 font-['Times_New_Roman']">
+                                Games
+                            </Text>
                         </View>
                     </View>
                 </View>
@@ -76,91 +90,3 @@ export const PageHeader = React.memo(() => {
         </View>
     );
 });
-
-const styles = StyleSheet.create({
-    container: {
-        backgroundColor: '#FFFFFF',
-        paddingHorizontal: 16,
-        paddingVertical: 20,
-        borderBottomWidth: 1,
-        borderBottomColor: '#E5E5E5',
-    },
-    userInfo: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-    },
-    leftSection: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 12,
-    },
-    avatar: {
-        width: 56,
-        height: 56,
-        borderRadius: 28,
-        backgroundColor: '#F5F5EB',
-    },
-    nameSection: {
-        gap: 2,
-    },
-    welcomeText: {
-        fontSize: 12,
-        color: '#666666',
-        fontFamily: 'Times New Roman',
-    },
-    username: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: '#2B2B2B',
-        fontFamily: 'Times New Roman',
-    },
-    rightSide: {
-        alignItems: 'flex-end',
-    },
-    stats: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 12,
-        backgroundColor: '#F8F8F5',
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        borderRadius: 8,
-        borderWidth: 1,
-        borderColor: '#E5E5E5',
-    },
-    statItem: {
-        alignItems: 'center',
-        gap: 2,
-    },
-    eloContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 4,
-    },
-    statValue: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: '#2B2B2B',
-        fontFamily: 'Times New Roman',
-    },
-    statLabel: {
-        fontSize: 12,
-        color: '#666666',
-        fontFamily: 'Times New Roman',
-    },
-    divider: {
-        width: 1,
-        height: 24,
-        backgroundColor: '#E5E5E5',
-    },
-    eloChange: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 2,
-    },
-    eloChangeText: {
-        fontSize: 12,
-        fontFamily: 'Times New Roman',
-    }
-}); 

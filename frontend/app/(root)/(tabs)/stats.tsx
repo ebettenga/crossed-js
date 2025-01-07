@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, ActivityIndicator } from 'react-native';
 import { PageHeader } from '~/components/Header';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useUser } from '~/hooks/users';
@@ -8,6 +8,7 @@ import { Trophy, Target, TrendingUp, Crown, X } from 'lucide-react-native';
 import { formatDistanceToNow } from 'date-fns';
 import { EloChart } from '~/components/stats/EloChart';
 import { AccuracyChart } from '~/components/stats/AccuracyChart';
+import { cn } from '~/lib/utils';
 
 interface StatCardProps {
     title: string;
@@ -17,12 +18,14 @@ interface StatCardProps {
 }
 
 const StatCard: React.FC<StatCardProps> = ({ title, value, icon, suffix }) => (
-    <View style={styles.statCard}>
-        <View style={styles.statHeader}>
-            <Text style={styles.statTitle}>{title}</Text>
+    <View className="flex-1 min-w-[45%] bg-neutral-50 dark:bg-neutral-800 p-4 rounded-xl border border-neutral-200 dark:border-neutral-700">
+        <View className="flex-row justify-between items-center mb-2">
+            <Text className="text-sm text-[#666666] dark:text-neutral-400 font-['Times_New_Roman']">
+                {title}
+            </Text>
             {icon}
         </View>
-        <Text style={styles.statValue}>
+        <Text className="text-2xl font-semibold text-[#1D2124] dark:text-[#DDE1E5] font-['Times_New_Roman']">
             {value}{suffix}
         </Text>
     </View>
@@ -35,20 +38,20 @@ interface GameRowProps {
 
 const GameRow: React.FC<GameRowProps> = ({ game, userId }) => {
     const userScore = game.room.scores[userId] || 0;
-    
+
     return (
-        <View style={styles.gameRow}>
-            <View style={styles.gameInfo}>
-                <View style={styles.gameHeader}>
-                    <Text style={styles.gameType}>
+        <View className="bg-neutral-50 dark:bg-neutral-800 rounded-xl p-4 border border-neutral-200 dark:border-neutral-700">
+            <View className="gap-2">
+                <View className="flex-row justify-between items-center">
+                    <Text className="text-sm text-[#666666] dark:text-neutral-400 font-['Times_New_Roman'] font-semibold">
                         {game.room.type.toUpperCase()} • {game.room.difficulty}
                     </Text>
-                    <Text style={styles.gameTime}>
+                    <Text className="text-xs text-[#666666] dark:text-neutral-400 font-['Times_New_Roman']">
                         {formatDistanceToNow(new Date(game.room.created_at), { addSuffix: true })}
                     </Text>
                 </View>
-                <View style={styles.scoreRow}>
-                    <Text style={styles.score}>
+                <View className="flex-row items-center gap-2">
+                    <Text className="text-xl font-semibold text-[#1D2124] dark:text-[#DDE1E5] font-['Times_New_Roman']">
                         {userScore} pts
                     </Text>
                     {game.stats.isWinner ? (
@@ -57,11 +60,11 @@ const GameRow: React.FC<GameRowProps> = ({ game, userId }) => {
                         <X size={20} color="#EF4444" />
                     )}
                 </View>
-                <View style={styles.statsRow}>
-                    <Text style={styles.statText}>
+                <View className="flex-row justify-between items-center">
+                    <Text className="text-sm text-[#666666] dark:text-neutral-400 font-['Times_New_Roman']">
                         {game.stats.correctGuesses} correct • {game.stats.incorrectGuesses} incorrect
                     </Text>
-                    <Text style={styles.eloText}>
+                    <Text className="text-sm text-[#666666] dark:text-neutral-400 font-['Times_New_Roman']">
                         {game.stats.eloAtGame} ELO
                     </Text>
                 </View>
@@ -85,16 +88,16 @@ export default function Stats() {
     if (!user) return null;
 
     return (
-        <View style={styles.container}>
+        <View className="flex-1 bg-[#F6FAFE] dark:bg-[#0F1417]">
             <PageHeader />
-            <ScrollView 
-                style={styles.content}
-                contentContainerStyle={[
-                    styles.contentContainer,
-                    { paddingBottom: insets.bottom + 90 }
-                ]}
+            <ScrollView
+                className="flex-1"
+                contentContainerStyle={{
+                    padding: 16,
+                    paddingBottom: insets.bottom + 90
+                }}
             >
-                <View style={styles.statsGrid}>
+                <View className="flex-row flex-wrap gap-4 mb-6">
                     <StatCard
                         title="Games Won"
                         value={user.gamesWon}
@@ -119,27 +122,35 @@ export default function Stats() {
                     />
                 </View>
 
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>ELO History</Text>
+                <View className="mb-6">
+                    <Text className="text-lg font-semibold text-[#1D2124] dark:text-[#DDE1E5] mb-3 font-['Times_New_Roman']">
+                        ELO History
+                    </Text>
                     <EloChart startDate={oneMonthAgo} />
                 </View>
 
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Guess Accuracy History</Text>
+                <View className="mb-6">
+                    <Text className="text-lg font-semibold text-[#1D2124] dark:text-[#DDE1E5] mb-3 font-['Times_New_Roman']">
+                        Guess Accuracy History
+                    </Text>
                     <AccuracyChart startDate={oneMonthAgo} />
                 </View>
 
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Recent Games</Text>
+                <View className="mb-6">
+                    <Text className="text-lg font-semibold text-[#1D2124] dark:text-[#DDE1E5] mb-3 font-['Times_New_Roman']">
+                        Recent Games
+                    </Text>
                     {gamesLoading ? (
                         <ActivityIndicator size="large" color="#8B0000" />
                     ) : recentGames?.length === 0 ? (
-                        <Text style={styles.emptyText}>No games played yet</Text>
+                        <Text className="text-center text-[#666666] dark:text-neutral-400 font-['Times_New_Roman'] text-base py-6">
+                            No games played yet
+                        </Text>
                     ) : (
-                        <View style={styles.gamesList}>
+                        <View className="gap-3">
                             {recentGames?.map(game => (
-                                <GameRow 
-                                    key={game.room.id} 
+                                <GameRow
+                                    key={game.room.id}
                                     game={game}
                                     userId={user.id}
                                 />
@@ -151,120 +162,3 @@ export default function Stats() {
         </View>
     );
 }
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: 'white',
-    },
-    content: {
-        flex: 1,
-    },
-    contentContainer: {
-        padding: 16,
-    },
-    statsGrid: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 16,
-        marginBottom: 24,
-    },
-    statCard: {
-        flex: 1,
-        minWidth: '45%',
-        backgroundColor: '#F8F8F5',
-        padding: 16,
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: '#E5E5E5',
-    },
-    statHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 8,
-    },
-    statTitle: {
-        fontSize: 14,
-        color: '#666666',
-        fontFamily: 'Times New Roman',
-    },
-    statValue: {
-        fontSize: 24,
-        fontWeight: '600',
-        color: '#2B2B2B',
-        fontFamily: 'Times New Roman',
-    },
-    section: {
-        marginBottom: 24,
-    },
-    sectionTitle: {
-        fontSize: 18,
-        fontWeight: '600',
-        color: '#2B2B2B',
-        marginBottom: 12,
-        fontFamily: 'Times New Roman',
-    },
-    gamesList: {
-        gap: 12,
-    },
-    gameRow: {
-        backgroundColor: '#F8F8F5',
-        borderRadius: 12,
-        padding: 16,
-        borderWidth: 1,
-        borderColor: '#E5E5E5',
-    },
-    gameInfo: {
-        gap: 8,
-    },
-    gameHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-    },
-    gameType: {
-        fontSize: 14,
-        color: '#666666',
-        fontFamily: 'Times New Roman',
-        fontWeight: '600',
-    },
-    gameTime: {
-        fontSize: 12,
-        color: '#666666',
-        fontFamily: 'Times New Roman',
-    },
-    scoreRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-    },
-    score: {
-        fontSize: 20,
-        fontWeight: '600',
-        color: '#2B2B2B',
-        fontFamily: 'Times New Roman',
-    },
-    statsRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-    },
-    statText: {
-        fontSize: 14,
-        color: '#666666',
-        fontFamily: 'Times New Roman',
-    },
-    eloText: {
-        fontSize: 14,
-        color: '#666666',
-        fontFamily: 'Times New Roman',
-    },
-    emptyText: {
-        textAlign: 'center',
-        color: '#666666',
-        fontFamily: 'Times New Roman',
-        fontSize: 16,
-        paddingVertical: 24,
-    },
-});

@@ -26,37 +26,38 @@ export const SocialSquare: React.FC<SocialSquareProps> = ({ size }) => {
             <View style={[styles.container, { width: size, height: size }]}>
                 <View style={styles.grid}>
                     <HomeSquareButton
-                        icon={<Swords size={16} color="#FFFFFF" />}
+                        icon={<Swords size={16} />}
                         onPress={() => setModalVisible(true)}
                         size={miniSquareSize}
+                        iconColor="#FFFFFF"
+                        darkIconColor="#FFFFFF"
                         customStyle={{
-                            wrapper: {
-                                backgroundColor: '#000000',
-                                borderColor: '#000000',
-                            },
-                            container: {
-                                backgroundColor: '#000000',
-                            },
-                            pressed: {
-                                backgroundColor: '#333333',
-                            }
+                            wrapper: "bg-black dark:bg-black border-black dark:border-black",
+                            container: "bg-black dark:bg-black",
+                            pressed: "bg-neutral-800 dark:bg-neutral-800"
                         }}
                     />
                     <HomeSquareButton
-                        icon={<Twitter size={16} color={TWITTER_BLUE} />}
+                        icon={<Twitter size={16} />}
                         onPress={() => openUrl('https://twitter.com')}
                         size={miniSquareSize}
+                        iconColor={TWITTER_BLUE}
+                        darkIconColor={TWITTER_BLUE}
                     />
                     <HomeSquareButton
                         number={13}
-                        icon={<Youtube size={16} color={YOUTUBE_RED} />}
+                        icon={<Youtube size={16} />}
                         onPress={() => openUrl('https://youtube.com')}
                         size={miniSquareSize}
+                        iconColor={YOUTUBE_RED}
+                        darkIconColor={YOUTUBE_RED}
                     />
                     <HomeSquareButton
-                        icon={<Facebook size={16} color={FACEBOOK_BLUE} />}
+                        icon={<Facebook size={16} />}
                         onPress={() => openUrl('https://facebook.com')}
                         size={miniSquareSize}
+                        iconColor={FACEBOOK_BLUE}
+                        darkIconColor={FACEBOOK_BLUE}
                     />
                 </View>
             </View>
@@ -70,7 +71,6 @@ export const SocialSquare: React.FC<SocialSquareProps> = ({ size }) => {
 
 const styles = StyleSheet.create({
     container: {
-
     },
     grid: {
         flex: 1,
@@ -80,4 +80,4 @@ const styles = StyleSheet.create({
         justifyContent: 'flex-start',
         alignItems: 'flex-start',
     },
-}); 
+});

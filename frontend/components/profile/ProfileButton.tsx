@@ -1,6 +1,7 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, useColorScheme } from 'react-native';
 import { ChevronRight } from 'lucide-react-native';
+import { cn } from '~/lib/utils';
 
 interface ProfileButtonProps {
     label: string;
@@ -17,73 +18,45 @@ export const ProfileButton: React.FC<ProfileButtonProps> = ({
     number,
     danger = false
 }) => {
+    const colorScheme = useColorScheme();
+    const isDark = colorScheme === 'dark';
+
     return (
-        <TouchableOpacity 
-            style={[
-                styles.container,
-                danger && styles.dangerButton
-            ]}
+        <TouchableOpacity
+            className={cn(
+                "w-full h-14 bg-neutral-50 dark:bg-neutral-800 flex-row items-center justify-between px-4",
+                "border-b border-neutral-200 dark:border-neutral-700",
+                danger && "bg-red-50 dark:bg-red-900/20"
+            )}
             onPress={onPress}
         >
-            <View style={styles.content}>
+            <View className="flex-row items-center gap-3">
                 {number !== undefined && (
-                    <Text style={[
-                        styles.number,
-                        danger && styles.dangerText
-                    ]}>{number}</Text>
+                    <Text className={cn(
+                        "absolute -top-2 -left-2 text-xs font-['Times_New_Roman']",
+                        danger ? "text-[#8B0000] dark:text-red-400" : "text-[#666666] dark:text-neutral-400"
+                    )}>
+                        {number}
+                    </Text>
                 )}
-                <View style={styles.iconContainer}>
-                    {icon}
+                <View className="w-6 items-center">
+                    {React.cloneElement(icon as React.ReactElement, {
+                        color: danger
+                            ? (isDark ? '#EF4444' : '#8B0000')
+                            : (isDark ? '#DDE1E5' : '#1D2124')
+                    })}
                 </View>
-                <Text style={[
-                    styles.label,
-                    danger && styles.dangerText
-                ]}>{label}</Text>
+                <Text className={cn(
+                    "text-base font-['Times_New_Roman']",
+                    danger ? "text-[#8B0000] dark:text-red-400" : "text-[#1D2124] dark:text-[#DDE1E5]"
+                )}>
+                    {label}
+                </Text>
             </View>
-            <ChevronRight size={20} color={danger ? '#8B0000' : '#666666'} />
+            <ChevronRight
+                size={20}
+                color={isDark ? '#9CA3AF' : '#666666'}
+            />
         </TouchableOpacity>
     );
 };
-
-const styles = StyleSheet.create({
-    container: {
-        width: '100%',
-        height: 56,
-        backgroundColor: 'white',
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: 16,
-        borderBottomWidth: 1,
-        borderBottomColor: '#E5E5E5',
-    },
-    dangerButton: {
-        backgroundColor: '#FFF5F5',
-    },
-    content: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 12,
-    },
-    iconContainer: {
-        width: 24,
-        alignItems: 'center',
-    },
-    label: {
-        fontSize: 16,
-        color: '#2B2B2B',
-        fontFamily: 'Times New Roman',
-    },
-    dangerText: {
-        color: '#8B0000',
-    },
-    number: {
-        position: 'absolute',
-        top: -8,
-        left: -8,
-        fontSize: 12,
-        fontFamily: 'Times New Roman',
-        color: '#666666',
-        fontWeight: '500',
-    },
-}); 

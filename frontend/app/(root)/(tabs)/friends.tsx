@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ActivityIndicator, TextInput, Pressable } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Image, ActivityIndicator, TextInput } from 'react-native';
 import { Swords, X, UserPlus } from 'lucide-react-native';
 import { PageHeader } from '~/components/Header';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { 
+import {
     Friend,
     useFriendsList,
     useRemoveFriend,
@@ -14,6 +14,7 @@ import { useUser } from '~/hooks/users';
 import { ChallengeDialog } from '~/components/ChallengeDialog';
 import { useChallenge } from '~/hooks/useChallenge';
 import { ChallengeRow } from '~/components/ChallengeRow';
+import { cn } from '~/lib/utils';
 
 interface FriendRowProps {
     friend: Friend;
@@ -26,10 +27,10 @@ interface FriendRowProps {
     roomId?: number;
 }
 
-const FriendRow: React.FC<FriendRowProps> = ({ 
-    friend, 
+const FriendRow: React.FC<FriendRowProps> = ({
+    friend,
     currentUserId,
-    onChallenge, 
+    onChallenge,
     onRemove,
     onAccept,
     onReject,
@@ -40,32 +41,34 @@ const FriendRow: React.FC<FriendRowProps> = ({
     const isReceiver = friend.receiver.id === currentUserId;
 
     return (
-        <View style={styles.friendRow}>
-            <View style={styles.leftSection}>
-                <View style={styles.avatarContainer}>
-                    <Image 
-                        source={{ uri: otherUser.avatarUrl || 'https://i.pravatar.cc/150' }} 
-                        style={styles.avatar}
+        <View className="flex-row items-center justify-between bg-neutral-50 dark:bg-neutral-800 p-3 rounded-xl border border-neutral-200 dark:border-neutral-700 mb-2">
+            <View className="flex-1 flex-row items-center gap-3">
+                <View className="relative">
+                    <Image
+                        source={{ uri: otherUser.avatarUrl || 'https://i.pravatar.cc/150' }}
+                        className="w-10 h-10 rounded-full bg-neutral-100 dark:bg-neutral-700"
                     />
                 </View>
-                <View style={styles.userInfo}>
-                    <Text style={styles.name}>{otherUser.username}</Text>
+                <View className="flex-1">
+                    <Text className="text-base text-[#1D2124] dark:text-[#DDE1E5] font-['Times_New_Roman']">
+                        {otherUser.username}
+                    </Text>
                     {isChallenge && (
-                        <Text style={styles.challengeText}>
+                        <Text className="text-xs text-[#666666] dark:text-neutral-400 font-['Times_New_Roman']">
                             wants to play a game!
                         </Text>
                     )}
                 </View>
                 {!isChallenge && (
-                    <View style={styles.actions}>
-                        <TouchableOpacity 
-                            style={[styles.actionButton, styles.challengeButton]}
+                    <View className="flex-row items-center gap-1.5 ml-auto pl-3">
+                        <TouchableOpacity
+                            className="flex-row items-center p-2 rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900"
                             onPress={() => onChallenge(friend)}
                         >
                             <Swords size={16} color="#8B0000" />
                         </TouchableOpacity>
-                        <TouchableOpacity 
-                            style={[styles.actionButton, styles.removeButton]}
+                        <TouchableOpacity
+                            className="flex-row items-center p-2 rounded-md bg-neutral-100 dark:bg-neutral-700 border border-neutral-200 dark:border-neutral-600"
                             onPress={() => onRemove(friend.id)}
                         >
                             <X size={16} color="#666666" />
@@ -73,22 +76,22 @@ const FriendRow: React.FC<FriendRowProps> = ({
                     </View>
                 )}
             </View>
-            
+
             {isChallenge && isReceiver && roomId && (
-                <View style={styles.challengeActions}>
-                    <TouchableOpacity 
-                        style={[styles.actionButton, styles.acceptButton]}
+                <View className="flex-row items-center gap-1.5 ml-auto pl-3">
+                    <TouchableOpacity
+                        className="flex-row items-center p-2 gap-1 rounded-md bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-900"
                         onPress={() => onAccept?.(roomId)}
                     >
                         <Swords size={16} color="#34D399" />
-                        <Text style={styles.buttonText}>Accept</Text>
+                        <Text className="text-xs font-['Times_New_Roman']">Accept</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity 
-                        style={[styles.actionButton, styles.rejectButton]}
+                    <TouchableOpacity
+                        className="flex-row items-center p-2 gap-1 rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900"
                         onPress={() => onReject?.(roomId)}
                     >
                         <X size={16} color="#EF4444" />
-                        <Text style={styles.buttonText}>Decline</Text>
+                        <Text className="text-xs font-['Times_New_Roman']">Decline</Text>
                     </TouchableOpacity>
                 </View>
             )}
@@ -104,8 +107,8 @@ export default function Friends() {
     const [activeTab, setActiveTab] = useState<'friends' | 'challenges'>('friends');
     const [selectedFriend, setSelectedFriend] = useState<Friend | null>(null);
 
-    const { 
-        data: friends = [], 
+    const {
+        data: friends = [],
         isLoading: friendsLoading,
         error: friendsError
     } = useFriendsList();
@@ -149,7 +152,7 @@ export default function Friends() {
 
     const handleAddFriend = async () => {
         if (!username.trim()) return;
-        
+
         try {
             await addFriend(username.trim());
             setUsername(''); // Clear input on success
@@ -163,41 +166,66 @@ export default function Friends() {
     const isLoading = friendsLoading;
     const error = friendsError;
 
-    const otherUser = selectedFriend ? 
-        (selectedFriend.sender.id === user.id ? selectedFriend.receiver : selectedFriend.sender) : 
+    const otherUser = selectedFriend ?
+        (selectedFriend.sender.id === user.id ? selectedFriend.receiver : selectedFriend.sender) :
         null;
 
     return (
-        <View style={[styles.container, { paddingTop: insets.top }]}>
+        <View className="flex-1 bg-[#F6FAFE] dark:bg-[#0F1417]" style={{ paddingTop: insets.top }}>
             <PageHeader />
-            
-            <View style={styles.tabContainer}>
-                <TouchableOpacity 
-                    style={[styles.tab, activeTab === 'friends' && styles.activeTab]}
+
+            <View className="flex-row px-4 mb-4">
+                <TouchableOpacity
+                    className={cn(
+                        "flex-1 py-4 items-center border-b-2",
+                        activeTab === 'friends'
+                            ? "border-[#8B0000]"
+                            : "border-transparent"
+                    )}
                     onPress={() => setActiveTab('friends')}
                 >
-                    <Text style={[styles.tabText, activeTab === 'friends' && styles.activeTabText]}>Friends</Text>
+                    <Text className={cn(
+                        "text-base font-['Times_New_Roman']",
+                        activeTab === 'friends'
+                            ? "text-[#8B0000]"
+                            : "text-[#666666] dark:text-neutral-400"
+                    )}>
+                        Friends
+                    </Text>
                 </TouchableOpacity>
-                <TouchableOpacity 
-                    style={[styles.tab, activeTab === 'challenges' && styles.activeTab]}
+                <TouchableOpacity
+                    className={cn(
+                        "flex-1 py-4 items-center border-b-2",
+                        activeTab === 'challenges'
+                            ? "border-[#8B0000]"
+                            : "border-transparent"
+                    )}
                     onPress={() => setActiveTab('challenges')}
                 >
-                    <Text style={[styles.tabText, activeTab === 'challenges' && styles.activeTabText]}>Challenges</Text>
+                    <Text className={cn(
+                        "text-base font-['Times_New_Roman']",
+                        activeTab === 'challenges'
+                            ? "text-[#8B0000]"
+                            : "text-[#666666] dark:text-neutral-400"
+                    )}>
+                        Challenges
+                    </Text>
                 </TouchableOpacity>
             </View>
 
             {activeTab === 'friends' ? (
-                <View style={styles.content}>
-                    <View style={styles.addFriendContainer}>
+                <View className="flex-1 px-4">
+                    <View className="flex-row gap-2 mb-4">
                         <TextInput
-                            style={styles.input}
+                            className="flex-1 h-[46px] border border-neutral-200 dark:border-neutral-700 rounded-lg px-3 bg-neutral-50 dark:bg-neutral-800 text-[#1D2124] dark:text-[#DDE1E5] font-['Times_New_Roman']"
                             placeholder="Enter username"
+                            placeholderTextColor="#666666"
                             value={username}
                             onChangeText={setUsername}
                             autoCapitalize="none"
                         />
-                        <TouchableOpacity 
-                            style={styles.addButton}
+                        <TouchableOpacity
+                            className="flex-row items-center bg-[#8B0000] px-4 rounded-lg gap-1"
                             onPress={handleAddFriend}
                             disabled={isAddingFriend}
                         >
@@ -206,18 +234,20 @@ export default function Friends() {
                             ) : (
                                 <>
                                     <UserPlus size={16} color="#FFFFFF" />
-                                    <Text style={styles.addButtonText}>Add</Text>
+                                    <Text className="text-white text-sm font-['Times_New_Roman']">Add</Text>
                                 </>
                             )}
                         </TouchableOpacity>
                     </View>
 
                     {isLoading ? (
-                        <ActivityIndicator style={styles.loader} />
+                        <ActivityIndicator className="mt-5" size="large" color="#8B0000" />
                     ) : error ? (
-                        <Text style={styles.errorText}>Failed to load friends</Text>
+                        <Text className="text-red-500 dark:text-red-400 text-center mt-5 font-['Times_New_Roman']">
+                            Failed to load friends
+                        </Text>
                     ) : (
-                        <ScrollView style={styles.list}>
+                        <ScrollView className="flex-1">
                             {friends.map((friend) => (
                                 <FriendRow
                                     key={friend.id}
@@ -231,8 +261,8 @@ export default function Friends() {
                     )}
                 </View>
             ) : (
-                <View style={styles.content}>
-                    <ScrollView style={styles.list}>
+                <View className="flex-1 px-4">
+                    <ScrollView className="flex-1">
                         {challenges.map((room) => (
                             <ChallengeRow
                                 key={room.id}
@@ -258,159 +288,3 @@ export default function Friends() {
         </View>
     );
 }
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#FFFFFF',
-    },
-    tabContainer: {
-        flexDirection: 'row',
-        paddingHorizontal: 16,
-        marginBottom: 16,
-    },
-    tab: {
-        flex: 1,
-        paddingVertical: 16,
-        alignItems: 'center',
-        borderBottomWidth: 2,
-        borderBottomColor: 'transparent',
-    },
-    activeTab: {
-        borderBottomColor: '#8B0000',
-    },
-    tabText: {
-        fontSize: 16,
-        color: '#666666',
-        fontFamily: 'Times New Roman',
-    },
-    activeTabText: {
-        color: '#8B0000',
-    },
-    content: {
-        flex: 1,
-        paddingHorizontal: 16,
-    },
-    addFriendContainer: {
-        flexDirection: 'row',
-        gap: 8,
-        marginBottom: 16,
-    },
-    input: {
-        flex: 1,
-        height: 46,
-        borderWidth: 1,
-        borderColor: '#E5E5E5',
-        borderRadius: 8,
-        paddingHorizontal: 12,
-        backgroundColor: '#F8F8F5',
-        fontFamily: 'Times New Roman',
-    },
-    addButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#8B0000',
-        paddingHorizontal: 16,
-        borderRadius: 8,
-        gap: 4,
-    },
-    addButtonText: {
-        color: '#FFFFFF',
-        fontSize: 14,
-        fontFamily: 'Times New Roman',
-    },
-    list: {
-        flex: 1,
-    },
-    loader: {
-        marginTop: 20,
-    },
-    errorText: {
-        color: '#EF4444',
-        textAlign: 'center',
-        marginTop: 20,
-        fontFamily: 'Times New Roman',
-    },
-    friendRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        backgroundColor: '#F8F8F5',
-        padding: 12,
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: '#E5E5E5',
-        marginBottom: 8,
-    },
-    leftSection: {
-        flex: 1,
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 12,
-    },
-    avatarContainer: {
-        position: 'relative',
-    },
-    avatar: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: '#F5F5EB',
-    },
-    userInfo: {
-        flex: 1,
-    },
-    name: {
-        fontSize: 16,
-        color: '#2B2B2B',
-        fontFamily: 'Times New Roman',
-    },
-    challengeText: {
-        fontSize: 12,
-        color: '#666666',
-        fontFamily: 'Times New Roman',
-    },
-    actions: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 6,
-        marginLeft: 'auto',
-        paddingLeft: 12,
-    },
-    challengeActions: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 6,
-        marginLeft: 'auto',
-        paddingLeft: 12,
-    },
-    actionButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: 8,
-        borderRadius: 6,
-        borderWidth: 1,
-        gap: 4,
-    },
-    challengeButton: {
-        backgroundColor: '#FEF2F2',
-        borderColor: '#FECACA',
-    },
-    removeButton: {
-        backgroundColor: '#F3F4F6',
-        borderColor: '#E5E7EB',
-    },
-    acceptButton: {
-        backgroundColor: '#F0FDF4',
-        borderColor: '#BBF7D0',
-    },
-    rejectButton: {
-        backgroundColor: '#FEF2F2',
-        borderColor: '#FECACA',
-    },
-    buttonText: {
-        fontSize: 12,
-        fontFamily: 'Times New Roman',
-    },
-});
-

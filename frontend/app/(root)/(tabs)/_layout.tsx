@@ -1,21 +1,23 @@
-import { View, Text, Image, StatusBar } from 'react-native'
+import { View, Text, Image, StatusBar, useColorScheme } from 'react-native'
 import React, { useEffect } from 'react'
 import { Tabs } from "expo-router";
 import { usePathname } from 'expo-router';
+import { cn } from '~/lib/utils';
 
 import icons from '@/constants/icons'
-import { useSocket } from '~/hooks/socket';
 
 const TabIcon = ({ focused, icon, title }: { focused: boolean; icon: any; title: string }) => (
-    <View className="flex-1 mt-3 flex flex-col items-center">
-        <Image 
-            source={icon} 
-            tintColor={focused ? '#8B0000' : '#666876'} 
-            resizeMode="contain" 
-            className="size-6" 
+    <View className="flex-1 mt-3 flex-col items-center">
+        <Image
+            source={icon}
+            tintColor={focused ? '#8B0000' : '#666876'}
+            resizeMode="contain"
+            className="h-6 w-6"
         />
-        <Text className={`${focused ? 
-            'text-[#666666] font-rubik-medium' : 'text-black-200 font-rubik'} text-xs w-full text-center mt-1`}>
+        <Text className={cn(
+            "text-xs w-full text-center mt-1 font-rubik",
+            focused ? "text-[#8B0000] dark:text-[#8B0000] font-rubik-medium" : "text-[#666876] dark:text-neutral-400"
+        )}>
             {title}
         </Text>
     </View>
@@ -24,23 +26,31 @@ const TabIcon = ({ focused, icon, title }: { focused: boolean; icon: any; title:
 const TabsLayout = () => {
     const pathname = usePathname();
     const hideTabBar = pathname === '/game';
+    const colorScheme = useColorScheme();
 
     useEffect(() => {
-        StatusBar.setBackgroundColor('white');
-        StatusBar.setBarStyle('dark-content');
-    }, []);
+        StatusBar.setBackgroundColor(colorScheme === 'dark' ? '#0F1417' : '#F6FAFE');
+        StatusBar.setBarStyle(colorScheme === 'dark' ? 'light-content' : 'dark-content');
+    }, [colorScheme]);
 
     return (
         <Tabs
             screenOptions={{
                 tabBarShowLabel: false,
                 tabBarStyle: {
-                    backgroundColor: 'white',
+                    backgroundColor: colorScheme === 'dark' ? '#0F1417' : '#F6FAFE',
                     position: 'absolute',
-                    borderTopColor: '#0061FF1A',
                     borderTopWidth: 1,
                     minHeight: 70,
                     display: hideTabBar ? 'none' : 'flex',
+                    shadowColor: '#000',
+                    shadowOffset: {
+                        width: 0,
+                        height: -2,
+                    },
+                    shadowOpacity: colorScheme === 'dark' ? 0.3 : 0.1,
+                    shadowRadius: 3,
+                    elevation: 5,
                 }
             }}
         >
