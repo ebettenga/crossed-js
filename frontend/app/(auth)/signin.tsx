@@ -44,7 +44,7 @@ export default function SignIn() {
                 />
                 <Image
                     source={require('~/assets/images/icon-clean.png')}
-                    className="absolute bottom-5 w-20 h-20 self-center"
+                    className="absolute bottom-5 w-36 h-36 self-center"
                     resizeMode="contain"
                 />
             </View>
