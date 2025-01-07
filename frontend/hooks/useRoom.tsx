@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { post } from "./api";
 import { useSocket } from "./socket";
 import { useRouter } from "expo-router";
-import { useContext, useEffect } from "react";
+import { useContext, useEffect, useRef, useCallback, useState } from "react";
 import { RoomContext } from "./socket";
 
 export enum SquareType {
@@ -76,16 +76,36 @@ export const useJoinRoom = () => {
 
 export const useRoom = (roomId?: number) => {
     const queryClient = useQueryClient();
-    const { socket, isConnected, error } = useSocket();
+    const { socket, isConnected, error, isConnecting } = useSocket();
     const router = useRouter();
     const { room, setRoom } = useContext(RoomContext);
+    const [isInitialized, setIsInitialized] = useState(false);
+    const lastRoomRef = useRef<Room | null>(null);
+    const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
+
+    // Keep track of the last known room state
+    useEffect(() => {
+        if (room) {
+            lastRoomRef.current = room;
+        }
+    }, [room]);
 
     useEffect(() => {
-        if (!socket || !isConnected) return;
+        if (!socket) return;
 
-        const handleRoom = (data: Room) => {
+        const handleRoom = (data: Room | null) => {
             if (!data) return;
+
+            // Check if room status changed to finished
+            if (data.status === 'finished' && room?.status !== 'finished') {
+                // Invalidate user stats and data
+                queryClient.invalidateQueries({ queryKey: ['me'] });
+                queryClient.invalidateQueries({ queryKey: ['userGameStats'] });
+                queryClient.invalidateQueries({ queryKey: ['recentGames'] });
+            }
+
             setRoom(data);
+            setIsInitialized(true);
         };
 
         const handleGameStarted = (data: { message: string, room: Room }) => {
@@ -97,48 +117,65 @@ export const useRoom = (roomId?: number) => {
         socket.on("room", handleRoom);
         socket.on("game_started", handleGameStarted);
 
-        if (!room && roomId) {
-            refresh(roomId);
-        }
-
         return () => {
             socket.off("room", handleRoom);
             socket.off("game_started", handleGameStarted);
+            if (reconnectTimeoutRef.current) {
+                clearTimeout(reconnectTimeoutRef.current);
+            }
         };
-    }, [socket, isConnected, roomId]);
+    }, [socket]);
 
+    // Handle reconnection
     useEffect(() => {
-        if (isConnected && roomId && !room) {
-            console.log("Attempting to rejoin room after reconnection:", roomId);
-            refresh(roomId);
-        }
-    }, [isConnected, roomId, room]);
+        if (!roomId) return;
 
-    const guess = (roomId: number, coordinates: { x: number; y: number }, guess: string) => {
+        // Clear any existing reconnection timeout
+        if (reconnectTimeoutRef.current) {
+            clearTimeout(reconnectTimeoutRef.current);
+        }
+
+        if (isConnected && !isConnecting) {
+            // If we're connected but don't have room data, try to rejoin
+            if (!room || room.id !== roomId) {
+                console.log("Attempting to rejoin room after connection:", roomId);
+                reconnectTimeoutRef.current = setTimeout(() => {
+                    refresh(roomId);
+                }, 500); // Small delay to ensure socket is ready
+            }
+        } else if (!isConnected && lastRoomRef.current) {
+            // Reset room state when disconnected
+            setRoom(null);
+            setIsInitialized(false);
+        }
+    }, [isConnected, isConnecting, roomId, room]);
+
+    const refresh = useCallback((roomId: number) => {
         if (!socket || !isConnected) {
-            console.error("Socket not connected");
+            console.error("Socket not connected, cannot refresh room");
+            return;
+        }
+        console.log("Refreshing room:", roomId);
+        socket.emit("loadRoom", JSON.stringify({ roomId }));
+    }, [socket, isConnected]);
+
+    const guess = useCallback((roomId: number, coordinates: { x: number; y: number }, guess: string) => {
+        if (!socket || !isConnected) {
+            console.error("Socket not connected, cannot make guess");
             return;
         }
         socket.emit("guess", JSON.stringify({ roomId, x: coordinates.x, y: coordinates.y, guess }));
-    };
+    }, [socket, isConnected]);
 
-    const refresh = (roomId: number) => {
+    const forfeit = useCallback((roomId: number) => {
         if (!socket || !isConnected) {
-            console.error("Socket not connected");
-            return;
-        }
-        socket.emit("loadRoom", JSON.stringify({ roomId }));
-    };
-
-    const forfeit = (roomId: number) => {
-        if (!socket || !isConnected) {
-            console.error("Socket not connected");
+            console.error("Socket not connected, cannot forfeit");
             return;
         }
         socket.emit("forfeit", JSON.stringify({ roomId }));
         queryClient.invalidateQueries({ queryKey: ['activeRooms'] });
         queryClient.invalidateQueries({ queryKey: ['room'] });
-    };
+    }, [socket, isConnected, queryClient]);
 
     return {
         room,
@@ -146,6 +183,8 @@ export const useRoom = (roomId?: number) => {
         refresh,
         forfeit,
         isConnected,
-        error
+        isConnecting,
+        error,
+        isInitialized
     };
 };

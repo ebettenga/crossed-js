@@ -1,4 +1,4 @@
-import { createContext, ReactNode, useContext, useEffect, useRef, useState } from 'react';
+import { createContext, ReactNode, useContext, useEffect, useRef, useState, useCallback } from 'react';
 import io, { Socket } from 'socket.io-client';
 import { config } from "../config/config";
 import { secureStorage } from './storageApi';
@@ -14,11 +14,12 @@ const createSocketInstance = (token: string) => {
     auth: { authToken: token },
     reconnection: true,
     reconnectionAttempts: Infinity,
-    reconnectionDelay: 1000,
-    reconnectionDelayMax: 5000,
-    timeout: 20000,
+    reconnectionDelay: 500,
+    reconnectionDelayMax: 10000,
+    timeout: 10000,
     transports: ['websocket'],
     forceNew: true,
+    autoConnect: false,
   });
   return socket;
 };
@@ -156,10 +157,36 @@ export const useSocket = () => {
   const [error, setError] = useState<Error | null>(null);
   const messageQueue = useRef<Array<{ event: string; data: any }>>([]);
   const reconnectAttempts = useRef(0);
-  const reconnectionDelay = useRef(1000);
-  const maxReconnectionDelay = 30000;
+  const reconnectionDelay = useRef(500);
+  const maxReconnectionDelay = 10000;
+  const maxReconnectAttempts = 50;
   const [connectionQuality, setConnectionQuality] = useState<'good' | 'poor' | 'disconnected'>('good');
   const latencyHistory = useRef<number[]>([]);
+  const reconnectTimeout = useRef<NodeJS.Timeout>();
+
+  const attemptReconnect = useCallback(() => {
+    if (!socket || reconnectAttempts.current >= maxReconnectAttempts) return;
+
+    setIsConnecting(true);
+    reconnectAttempts.current += 1;
+
+    // Clear any existing timeout
+    if (reconnectTimeout.current) {
+      clearTimeout(reconnectTimeout.current);
+    }
+
+    reconnectTimeout.current = setTimeout(() => {
+      console.log(`Reconnection attempt ${reconnectAttempts.current}`);
+      socket.connect();
+
+      // Exponential backoff with max delay and jitter
+      const jitter = Math.random() * 100;
+      reconnectionDelay.current = Math.min(
+        reconnectionDelay.current * 1.5 + jitter,
+        maxReconnectionDelay
+      );
+    }, reconnectionDelay.current);
+  }, [socket]);
 
   const emitSafely = (event: string, data: any) => {
     if (socket && isConnected) {
@@ -178,6 +205,7 @@ export const useSocket = () => {
       setIsConnecting(false);
       setError(null);
       reconnectAttempts.current = 0;
+      reconnectionDelay.current = 500;
 
       // Process queued messages
       while (messageQueue.current.length > 0) {
@@ -192,35 +220,35 @@ export const useSocket = () => {
       console.log("Socket disconnected:", reason);
       setIsConnected(false);
       setError(new Error(`Disconnected: ${reason}`));
+      setConnectionQuality('disconnected');
 
-      // Attempt to reconnect with exponential backoff
-      if (reason !== "io client disconnect") {
-        setIsConnecting(true);
-        setTimeout(() => {
-          socket.connect();
-          // Exponential backoff with max delay
-          reconnectionDelay.current = Math.min(
-            reconnectionDelay.current * 1.5,
-            maxReconnectionDelay
-          );
-        }, reconnectionDelay.current);
+      // Attempt to reconnect unless explicitly disconnected
+      if (reason !== "io client disconnect" && reconnectAttempts.current < maxReconnectAttempts) {
+        attemptReconnect();
       }
     };
 
     const handleConnectError = (error: Error) => {
       console.error("Socket connection error:", error);
-      socket.connect();
+      setError(error);
+
+      // Attempt to reconnect on connection error
+      if (reconnectAttempts.current < maxReconnectAttempts) {
+        attemptReconnect();
+      }
     };
 
-    const handleReconnecting = (attemptNumber: number) => {
-      console.log(`Reconnecting... Attempt ${attemptNumber}`);
-      setIsConnecting(true);
+    const handleReconnectFailed = () => {
+      console.error("Socket reconnection failed after maximum attempts");
+      setIsConnecting(false);
+      setError(new Error("Reconnection failed after maximum attempts"));
+      setConnectionQuality('disconnected');
     };
 
     socket.on("connect", handleConnect);
     socket.on("disconnect", handleDisconnect);
     socket.on("connect_error", handleConnectError);
-    socket.on("reconnecting", handleReconnecting);
+    socket.on("reconnect_failed", handleReconnectFailed);
 
     // Initial connection
     if (!socket.connected) {
@@ -231,12 +259,15 @@ export const useSocket = () => {
     }
 
     return () => {
+      if (reconnectTimeout.current) {
+        clearTimeout(reconnectTimeout.current);
+      }
       socket.off("connect", handleConnect);
       socket.off("disconnect", handleDisconnect);
       socket.off("connect_error", handleConnectError);
-      socket.off("reconnecting", handleReconnecting);
+      socket.off("reconnect_failed", handleReconnectFailed);
     };
-  }, [socket]);
+  }, [socket, attemptReconnect]);
 
   useEffect(() => {
     if (!socket || !isConnected) return;
