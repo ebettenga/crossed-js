@@ -13,6 +13,7 @@ import { GameTimer } from '~/components/game/GameTimer';
 import { useUser } from '~/hooks/users';
 import { Avatar } from '~/components/shared/Avatar';
 import ConnectionStatus from '~/components/ConnectionStatus';
+import { GameSummaryModal } from '~/components/game/GameSummaryModal';
 
 export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
     const { room, guess, refresh, forfeit } = useRoom(roomId);
@@ -20,10 +21,17 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
     const router = useRouter();
     const [selectedCell, setSelectedCell] = useState<Square | null>(null);
     const [isAcrossMode, setIsAcrossMode] = useState(true);
+    const [showSummary, setShowSummary] = useState(false);
 
     useEffect(() => {
         refresh(roomId);
     }, []);
+
+    useEffect(() => {
+        if (room?.status === 'finished' && !showSummary) {
+            setShowSummary(true);
+        }
+    }, [room?.status]);
 
     useEffect(() => {
         if (room?.board) {
@@ -61,63 +69,55 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
     };
 
     const getNextCell = (currentCell: Square): Square | null => {
-        if (!room?.board) return null;
+        if (!room?.board) {
+            return null;
+        }
+
+        const board = room.board;
+        const { x, y } = currentCell;
 
         if (isAcrossMode) {
-            // Start from next column
-            let nextY = currentCell.y + 1;
-            let currentX = currentCell.x;
-
-            // Keep searching until we find a valid cell or check all positions
-            while (true) {
-                // If we've reached the end of the row, move to the next row
-                if (nextY >= room.board[0].length) {
-                    currentX = (currentX + 1) % room.board.length;
-                    nextY = 0;
+            // Move right
+            for (let newY = y + 1; newY < board[x].length; newY++) {
+                if (board[x][newY].squareType !== SquareType.BLACK && board[x][newY].squareType !== SquareType.SOLVED) {
+                    return board[x][newY];
                 }
-
-                // If we've wrapped around to the starting position, stop searching
-                if (currentX === currentCell.x && nextY === currentCell.y) {
-                    return null;
+            }
+            // Move to next row
+            for (let newX = x + 1; newX < board.length; newX++) {
+                for (let newY = 0; newY < board[newX].length; newY++) {
+                    if (board[newX][newY].squareType !== SquareType.BLACK && board[newX][newY].squareType !== SquareType.SOLVED) {
+                        return board[newX][newY];
+                    }
                 }
-
-                // Check if current position is a valid cell
-                const nextCell = room.board[currentX][nextY];
-                if (nextCell.squareType !== SquareType.BLACK && nextCell.squareType !== SquareType.SOLVED) {
-                    return nextCell;
-                }
-
-                // Move to next column
-                nextY++;
             }
         } else {
-            // Start from next row
-            let nextX = currentCell.x + 1;
-            let currentY = currentCell.y;
-
-            // Keep searching until we find a valid cell or check all positions
-            while (true) {
-                // If we've reached the bottom of the column, move to the next column
-                if (nextX >= room.board.length) {
-                    currentY = (currentY + 1) % room.board[0].length;
-                    nextX = 0;
+            // Move down
+            for (let newX = x + 1; newX < board.length; newX++) {
+                if (board[newX][y].squareType !== SquareType.BLACK && board[newX][y].squareType !== SquareType.SOLVED) {
+                    return board[newX][y];
                 }
-
-                // If we've wrapped around to the starting position, stop searching
-                if (nextX === currentCell.x && currentY === currentCell.y) {
-                    return null;
+            }
+            // Move to next column
+            for (let newY = y + 1; newY < board[0].length; newY++) {
+                for (let newX = 0; newX < board.length; newX++) {
+                    if (board[newX][newY].squareType !== SquareType.BLACK && board[newX][newY].squareType !== SquareType.SOLVED) {
+                        return board[newX][newY];
+                    }
                 }
-
-                // Check if current position is a valid cell
-                const nextCell = room.board[nextX][currentY];
-                if (nextCell.squareType !== SquareType.BLACK && nextCell.squareType !== SquareType.SOLVED) {
-                    return nextCell;
-                }
-
-                // Move to next row
-                nextX++;
             }
         }
+
+        // If no next cell found, try to find any unsolved cell
+        for (let newX = 0; newX < board.length; newX++) {
+            for (let newY = 0; newY < board[newX].length; newY++) {
+                if (board[newX][newY].squareType !== SquareType.BLACK && board[newX][newY].squareType !== SquareType.SOLVED) {
+                    return board[newX][newY];
+                }
+            }
+        }
+
+        return null;
     };
 
     const handleForfeit = () => {
@@ -144,6 +144,10 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
             style: { color: '#8B0000' }
         },
     ];
+
+    // Get the current user's stats for this game
+    const currentUserStats = room.gameStats?.find(stat => stat.userId === currentUser?.id);
+    const isWinner = currentUser && room.scores[currentUser.id] === Math.max(...Object.values(room.scores));
 
     return (
         <SafeAreaView className="flex-1 bg-[#F5F5EB] dark:bg-[#0F1417]">
@@ -186,6 +190,20 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
                 />
             </View>
             <GameMenu options={menuOptions} />
+
+            {currentUserStats && (
+                <GameSummaryModal
+                    visible={showSummary}
+                    onClose={() => setShowSummary(false)}
+                    stats={{
+                        isWinner: isWinner || false,
+                        correctGuesses: currentUserStats.correctGuesses,
+                        incorrectGuesses: currentUserStats.incorrectGuesses,
+                        eloAtGame: currentUserStats.eloAtGame,
+                        eloChange: currentUserStats.eloChange || 0,
+                    }}
+                />
+            )}
         </SafeAreaView>
     );
 };

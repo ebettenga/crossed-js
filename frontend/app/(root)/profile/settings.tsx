@@ -7,15 +7,31 @@ import { useColorMode } from '~/hooks/useColorMode';
 import { useSound } from '~/hooks/useSound';
 import { useEloVisibility } from '~/hooks/useEloVisibility';
 import { useRouter } from 'expo-router';
+import { storage } from '~/hooks/storageApi';
 
 export default function Settings() {
     const { isDark, setColorScheme } = useColorMode();
     const { isSoundEnabled, setSoundEnabled } = useSound();
     const { isEloVisible, setEloVisibility } = useEloVisibility();
     const router = useRouter();
+    const [isSystemTheme, setIsSystemTheme] = React.useState(false);
+
+    React.useEffect(() => {
+        const checkTheme = async () => {
+            const savedScheme = await storage.getString('color-scheme');
+            setIsSystemTheme(savedScheme === 'system');
+        };
+        checkTheme();
+    }, []);
 
     const toggleColorScheme = () => {
         setColorScheme(isDark ? 'light' : 'dark');
+        setIsSystemTheme(false);
+    };
+
+    const resetToSystemTheme = () => {
+        setColorScheme('system');
+        setIsSystemTheme(true);
     };
 
     const toggleSound = () => {
@@ -59,10 +75,18 @@ export default function Settings() {
                                     <Sun size={24} color="#1D2124" />
                                 )}
                                 <Text className="text-base text-[#1D2124] dark:text-[#DDE1E5] font-['Times New Roman']">
-                                    Dark Mode
+                                    Dark Mode {isSystemTheme ? '(System)' : ''}
                                 </Text>
                             </View>
                             <Switch checked={isDark} onCheckedChange={toggleColorScheme} />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            onPress={resetToSystemTheme}
+                            className="mt-2"
+                        >
+                            <Text className="text-sm text-[#666666] dark:text-neutral-400 text-center font-['Times New Roman']">
+                                Reset to System Default
+                            </Text>
                         </TouchableOpacity>
                     </View>
                 </View>

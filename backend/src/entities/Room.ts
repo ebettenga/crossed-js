@@ -133,6 +133,7 @@ export class Room {
         id: player.id,
         username: player.username,
         score: this.scores[player.id] || 0,
+        eloRating: player.eloRating,
       })),
       scores: this.scores,
       crossword: {

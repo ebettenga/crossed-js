@@ -28,6 +28,7 @@ export type Player = {
     id: number;
     username: string;
     score: number;
+    eloRating: number;
 };
 
 export type Room = {
@@ -53,6 +54,14 @@ export type Room = {
     };
     found_letters: string[];
     board: Square[][];
+    gameStats?: {
+        userId: number;
+        correctGuesses: number;
+        incorrectGuesses: number;
+        isWinner: boolean;
+        eloAtGame: number;
+        eloChange?: number;
+    }[];
 };
 
 type JoinRoomParams = {
@@ -64,8 +73,7 @@ export const useJoinRoom = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async (params: JoinRoomParams) => {
-            const { data } = await post('/rooms/join', params);
-            return data;
+            return await post<Room>('/rooms/join', params);
         },
         onSuccess: (data) => {
             queryClient.invalidateQueries({ queryKey: ['rooms', 'playing'] });

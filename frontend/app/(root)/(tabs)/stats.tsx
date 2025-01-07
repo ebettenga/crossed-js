@@ -88,8 +88,8 @@ export default function Stats() {
         );
     }
 
-    const winRate = user.gamesPlayed > 0 ? Math.round((user.gamesWon / user.gamesPlayed) * 100) : 0;
-    const accuracy = user.totalGuesses > 0 ? Math.round((user.correctGuesses / user.totalGuesses) * 100) : 0;
+    const totalGames = user.gamesWon + user.gamesLost;
+    const winRate = totalGames > 0 ? Math.round((user.gamesWon / totalGames) * 100) : 0;
 
     return (
         <View className="flex-1 bg-[#F6FAFE] dark:bg-[#0F1417]" style={{ paddingBottom: insets.bottom }}>
@@ -112,14 +112,24 @@ export default function Stats() {
                     />
                     <StatCard
                         title="Accuracy"
-                        value={accuracy}
+                        value={user.guessAccuracy}
                         suffix="%"
                         icon={<Target size={20} color="#8B0000" />}
                     />
                     <StatCard
                         title="Games Played"
-                        value={user.gamesPlayed}
+                        value={totalGames}
                         icon={<TrendingUp size={20} color="#8B0000" />}
+                    />
+                    <StatCard
+                        title="Games Won"
+                        value={user.gamesWon}
+                        icon={<Trophy size={24} color="#FFD700" />}
+                    />
+                    <StatCard
+                        title="Games Lost"
+                        value={user.gamesLost}
+                        icon={<Trophy size={24} color="#C0C0C0" />}
                     />
                 </View>
 
