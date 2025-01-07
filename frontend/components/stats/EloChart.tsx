@@ -1,7 +1,8 @@
 import React from 'react';
 import { View } from 'react-native';
 import { LineChart, YAxis } from 'react-native-svg-charts';
-import { useUserGameStats, useUser } from '~/hooks/users';
+import { useUser } from '~/hooks/users';
+import { useRecentGames } from '~/hooks/useRecentGames';
 import { useColorScheme } from 'react-native';
 
 interface EloChartProps {
@@ -9,7 +10,7 @@ interface EloChartProps {
 }
 
 export const EloChart: React.FC<EloChartProps> = ({ startDate }) => {
-    const { data: gameStats } = useUserGameStats(startDate);
+    const { data: gameStats } = useRecentGames(startDate);
     const { data: user } = useUser();
     const colorScheme = useColorScheme();
 
@@ -17,8 +18,8 @@ export const EloChart: React.FC<EloChartProps> = ({ startDate }) => {
 
     // Sort by date and map to ELO values, then append current ELO
     const data = [...gameStats]
-        .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
-        .map(stat => stat.eloAtGame);
+        .sort((a, b) => new Date(a.room.created_at).getTime() - new Date(b.room.created_at).getTime())
+        .map(stat => stat.stats.eloAtGame);
 
     // Append current ELO if it's different from the last ELO in the stats
     if (data[data.length - 1] !== user.eloRating) {

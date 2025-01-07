@@ -145,21 +145,6 @@ interface GameStats {
   createdAt: Date;
 }
 
-
-export function useUserGameStats(startTime?: Date, endTime?: Date) {
-
-  return useQuery<GameStats[]>({
-      queryKey: ['userGameStats', startTime?.toISOString(), endTime?.toISOString()],
-      queryFn: async () => {
-          const params: Record<string, string> = {};
-          if (startTime) params.startTime = startTime.toISOString();
-          if (endTime) params.endTime = endTime.toISOString();
-          return await get('/stats/me', { params });
-      },
-      staleTime: 1000 * 60 * 10,
-  });
-}
-
 export const useUpdatePhoto = () => {
   const queryClient = useQueryClient();
   return useMutation<User, Error, FormData>({

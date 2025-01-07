@@ -44,16 +44,28 @@ export default function (
 
         try {
             const stats = await eloService.getUserGameStats(request.user.id, startDate, endDate);
-            const filteredStats = stats.map(stat => {
-                const { correctGuessDetails, ...rest } = stat;
-                return rest;
-            });
-            reply.send(filteredStats);
+
+            // Transform the data to match the frontend's expected format
+            const transformedStats = stats.map(stat => ({
+                id: stat.id,
+                userId: stat.userId,
+                roomId: stat.roomId,
+                correctGuesses: stat.correctGuesses,
+                incorrectGuesses: stat.incorrectGuesses,
+                correctGuessDetails: stat.correctGuessDetails || [],
+                isWinner: stat.isWinner,
+                winStreak: stat.winStreak,
+                eloAtGame: stat.eloAtGame,
+                createdAt: stat.createdAt,
+                room: stat.room.toJSON()
+            }));
+
+            reply.send(transformedStats);
         } catch (error) {
-            fastify.log.info(error);
+            fastify.log.error(error);
             reply.code(500).send({ error: "Failed to fetch user stats" });
         }
     });
 
     next();
-} 
+}

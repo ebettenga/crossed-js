@@ -30,7 +30,7 @@ export class EloService {
             .innerJoin('room_players', 'rp', 'rp.room_id = room.id')
             .where('room.status = :status', { status: 'finished' })
             .andWhere('rp.user_id = :userId', { userId })
-            .getCount();    
+            .getCount();
         return count;
     }
 
@@ -40,10 +40,10 @@ export class EloService {
     private async calculateKFactor(stats: GameStats, userId: number): Promise<number> {
         const gamesPlayed = await this.getGamesPlayed(userId);
         const winStreak = stats?.winStreak || 0;
-        
+
         // Dampen K-factor based on games played
         const gamesDampening = Math.max(1, this.GAMES_PLAYED_DAMPENING / Math.max(1, gamesPlayed));
-        
+
         // Calculate win streak bonus (capped at MAX_WIN_STREAK_BONUS)
         const winStreakBonus = Math.min(
             this.MAX_WIN_STREAK_BONUS,
@@ -60,34 +60,13 @@ export class EloService {
         return teamMembers.reduce((sum, player) => sum + player.eloRating, 0) / teamMembers.length;
     }
 
-    /**
-     * Get user's GameStats for a given time period
-     */
-    async getUserGameStats(userId: number, startDate?: Date, endDate?: Date): Promise<GameStats[]> {
-        const query = this.roomRepository.manager.getRepository(GameStats)
-            .createQueryBuilder('stats')
-            .innerJoinAndSelect('stats.room', 'room')
-            .where('stats.userId = :userId', { userId })
-            .andWhere('room.status = :status', { status: 'finished' })
-            .orderBy('stats.createdAt', 'ASC');
-
-        if (startDate) {
-            query.andWhere('stats.createdAt >= :startDate', { startDate });
-        }
-
-        if (endDate) {
-            query.andWhere('stats.createdAt <= :endDate', { endDate });
-        }
-
-        return query.getMany();
-    }
 
     /**
      * Update ELO ratings for a finished game room
      */
     async updateEloRatings(room: Room): Promise<Map<number, number>> {
         const players = await Promise.all(
-            room.players.map(player => 
+            room.players.map(player =>
                 this.userRepository.findOne({
                     where: { id: player.id },
                     select: ['id', 'eloRating'],
@@ -203,7 +182,7 @@ export class EloService {
      */
     private async updateFreeForAllRatings(room: Room, players: User[]): Promise<Map<number, number>> {
         const newRatings = new Map<number, number>();
-        
+
         // Sort players by score in descending order
         const sortedPlayers = [...players].sort(
             (a, b) => room.scores[b.id] - room.scores[a.id]
@@ -218,10 +197,10 @@ export class EloService {
             // Calculate expected and actual scores against each opponent
             for (let j = 0; j < sortedPlayers.length; j++) {
                 if (i === j) continue;
-                
+
                 const opponent = sortedPlayers[j];
                 expectedScore += this.calculateExpectedScore(player.eloRating, opponent.eloRating);
-                
+
                 // Actual score is 1 if player scored higher, 0.5 if tied, 0 if lower
                 if (room.scores[player.id] > room.scores[opponent.id]) {
                     actualScore += 1;
@@ -253,4 +232,4 @@ export class EloService {
 
         return newRatings;
     }
-} 
+}

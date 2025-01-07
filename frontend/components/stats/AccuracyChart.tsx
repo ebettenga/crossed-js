@@ -1,7 +1,8 @@
 import React from 'react';
 import { View } from 'react-native';
 import { LineChart, YAxis, Grid } from 'react-native-svg-charts';
-import { useUserGameStats, useUser } from '~/hooks/users';
+import { useUser } from '~/hooks/users';
+import { useRecentGames } from '~/hooks/useRecentGames';
 import { useColorScheme } from 'react-native';
 
 interface AccuracyChartProps {
@@ -9,7 +10,7 @@ interface AccuracyChartProps {
 }
 
 export const AccuracyChart: React.FC<AccuracyChartProps> = ({ startDate }) => {
-    const { data: gameStats } = useUserGameStats(startDate);
+    const { data: gameStats } = useRecentGames(startDate);
     const { data: user } = useUser();
     const colorScheme = useColorScheme();
 
@@ -17,10 +18,10 @@ export const AccuracyChart: React.FC<AccuracyChartProps> = ({ startDate }) => {
 
     // Sort by date and calculate accuracy for each game
     const data = [...gameStats]
-        .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+        .sort((a, b) => new Date(a.room.created_at).getTime() - new Date(b.room.created_at).getTime())
         .map(stat => {
-            const total = stat.correctGuesses + stat.incorrectGuesses;
-            return total > 0 ? (stat.correctGuesses / total) * 100 : 0;
+            const total = stat.stats.correctGuesses + stat.stats.incorrectGuesses;
+            return total > 0 ? (stat.stats.correctGuesses / total) * 100 : 0;
         });
 
     // Append current accuracy if we have it

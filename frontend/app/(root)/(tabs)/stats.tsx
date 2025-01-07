@@ -76,7 +76,6 @@ const GameRow: React.FC<GameRowProps> = ({ game, userId }) => {
 export default function Stats() {
     const insets = useSafeAreaInsets();
     const { data: user } = useUser();
-    const { data: recentGames, isLoading: gamesLoading } = useRecentGames();
 
     // Get stats from the last month for the chart
     const oneMonthAgo = React.useMemo(() => {
@@ -84,6 +83,7 @@ export default function Stats() {
         date.setMonth(date.getMonth() - 1);
         return date;
     }, []);
+    const { data: recentGames, isLoading: gamesLoading } = useRecentGames(oneMonthAgo);
 
     if (!user) return null;
 

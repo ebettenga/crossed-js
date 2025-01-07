@@ -1,9 +1,10 @@
 import React, { useMemo } from 'react';
 import { View, Text, Image, TouchableOpacity } from 'react-native';
 import { TrendingUp, TrendingDown } from 'lucide-react-native';
-import { useUserGameStats, useUser } from '~/hooks/users';
 import { useRouter } from 'expo-router';
-import { cn } from '~/lib/utils';
+import { useUser } from '~/hooks/users';
+import { useRecentGames } from '~/hooks/useRecentGames';
+
 
 export const PageHeader = React.memo(() => {
     const router = useRouter();
@@ -17,11 +18,14 @@ export const PageHeader = React.memo(() => {
         return date;
     }, []);
 
-    const { data: weeklyStats } = useUserGameStats(oneWeekAgo);
+    const { data: weeklyStats } = useRecentGames(oneWeekAgo);
+
+
 
     // Calculate ELO difference and games played
     const { eloChange, gamesPlayed, isEloUp, eloChangeColor } = useMemo(() => {
-        const change = weeklyStats?.length ? user.eloRating - weeklyStats[0].eloAtGame : 0;
+        const oldestGame = weeklyStats?.length ? weeklyStats.reduce((min, game) => new Date(game.room.created_at) < new Date(min.room.created_at) ? game : min, weeklyStats[0]) : null;
+        const change = oldestGame ? user.eloRating - oldestGame.stats.eloAtGame : 0;
         const games = user.gamesWon + user.gamesLost;
         const up = change > 0;
         return {
@@ -32,10 +36,11 @@ export const PageHeader = React.memo(() => {
         };
     }, [weeklyStats, user.eloRating, user.gamesWon, user.gamesLost]);
 
+
     return (
         <View className="bg-[#F6FAFE] dark:bg-[#0F1417] px-4 py-5 border-b border-neutral-200 dark:border-neutral-800">
             <View className="flex-row justify-between items-center">
-            <TouchableOpacity
+                <TouchableOpacity
                     className="flex-row items-center gap-3"
                     onPress={() => router.push('/profile/edit')}
                 >

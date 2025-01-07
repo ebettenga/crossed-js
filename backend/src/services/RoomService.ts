@@ -264,23 +264,65 @@ export class RoomService {
     return room;
   }
 
-  async getRecentGamesWithStats(userId: number, limit: number = 10): Promise<{
-    room: Room;
-    stats: GameStats;
+  async getRecentGamesWithStats(
+    userId: number,
+    limit: number = 10,
+    startDate?: Date,
+    endDate?: Date
+  ): Promise<{
+    room: {
+      id: number;
+      difficulty: string;
+      type: string;
+      status: string;
+      created_at: string;
+      scores: Record<string, number>;
+    };
+    stats: {
+      correctGuesses: number;
+      incorrectGuesses: number;
+      isWinner: boolean;
+      eloAtGame: number;
+    };
   }[]> {
-    const gameStats = await this.ormConnection
+    const query = this.ormConnection
       .getRepository(GameStats)
       .createQueryBuilder("stats")
       .leftJoinAndSelect("stats.room", "room")
       .leftJoinAndSelect("room.crossword", "crossword")
       .where("stats.userId = :userId", { userId })
-      .orderBy("stats.createdAt", "DESC")
-      .take(limit)
-      .getMany();
+      .andWhere("room.status = :status", { status: "finished" })
+      .orderBy("stats.createdAt", "DESC");
+
+    if (startDate) {
+      query.andWhere("stats.createdAt >= :startDate", { startDate });
+    }
+
+    if (endDate) {
+      query.andWhere("stats.createdAt <= :endDate", { endDate });
+    }
+
+    if (limit > 0) {
+      query.take(limit);
+    }
+
+    const gameStats = await query.getMany();
 
     return gameStats.map((stats) => ({
-      room: stats.room,
-      stats: stats,
+      room: {
+        id: stats.room.id,
+        difficulty: stats.room.difficulty,
+        type: stats.room.type,
+        status: stats.room.status,
+        created_at: stats.room.created_at.toISOString(),
+        scores: stats.room.scores
+      },
+      stats: {
+        correctGuesses: stats.correctGuesses,
+        incorrectGuesses: stats.incorrectGuesses,
+        isWinner: stats.isWinner,
+        eloAtGame: stats.eloAtGame
+      }
     }));
   }
 

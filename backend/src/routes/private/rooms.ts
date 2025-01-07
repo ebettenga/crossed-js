@@ -60,8 +60,38 @@ export default function (
   });
 
   // Get recent games with stats
-  fastify.get("/rooms/recent", async (request, reply) => {
-    const recentGames = await roomService.getRecentGamesWithStats(request.user.id);
+  fastify.get<{
+    Querystring: {
+      startTime?: string;
+      endTime?: string;
+      limit?: string;
+    }
+  }>("/rooms/recent", async (request, reply) => {
+    const { startTime, endTime, limit } = request.query;
+    const startDate = startTime ? new Date(startTime) : undefined;
+    const endDate = endTime ? new Date(endTime) : undefined;
+    const limitNum = limit ? parseInt(limit) : 10;
+
+    // Validate dates if provided
+    if (startDate && isNaN(startDate.getTime())) {
+      reply.code(400).send({ error: "Invalid startTime format" });
+      return;
+    }
+    if (endDate && isNaN(endDate.getTime())) {
+      reply.code(400).send({ error: "Invalid endTime format" });
+      return;
+    }
+    if (startDate && endDate && startDate > endDate) {
+      reply.code(400).send({ error: "startTime must be before endTime" });
+      return;
+    }
+
+    const recentGames = await roomService.getRecentGamesWithStats(
+      request.user.id,
+      limitNum,
+      startDate,
+      endDate
+    );
     reply.send(recentGames);
   });
 
