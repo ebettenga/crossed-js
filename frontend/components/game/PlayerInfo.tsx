@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { StyleSheet, View, Text, Dimensions, ScrollView } from 'react-native';
+import { View, Text, Dimensions, ScrollView } from 'react-native';
 import { Player } from '~/hooks/useRoom';
 import Animated, {
     useAnimatedStyle,
@@ -41,11 +41,8 @@ const ScoreChange: React.FC<{ value: number }> = ({ value }) => {
 
     return (
         <Animated.Text
-            style={[
-                styles.scoreChange,
-                animatedStyle,
-                { color: value > 0 ? '#34D399' : '#DC2626' }
-            ]}
+            className={`absolute left-full ml-0.5 text-sm font-semibold font-['Times_New_Roman'] ${value > 0 ? 'text-green-500' : 'text-red-600'}`}
+            style={animatedStyle}
         >
             {value > 0 ? `+${value}` : value}
         </Animated.Text>
@@ -90,33 +87,41 @@ export const PlayerInfo: React.FC<PlayerInfoProps> = ({ players, scores }) => {
     });
 
     return (
-        <View style={styles.container}>
+        <View className="px-1.5 pt-4 pb-0">
             <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.scrollContainer}
+                contentContainerStyle={{ gap: 8, paddingRight: 2 }}
             >
                 {sortedPlayers.map((player) => (
                     <View
                         key={player.id}
-                        style={[
-                            styles.playerCard,
-                            player.id === currentUser?.id && styles.currentPlayerCard
-                        ]}
+                        style={{ width: CARD_WIDTH }}
+                        className={`p-3 rounded-lg flex-row items-center justify-between ${
+                            player.id === currentUser?.id
+                                ? 'bg-[#8B0000]'
+                                : 'bg-[#F5F5EB] dark:bg-[#1A2227]'
+                        }`}
                     >
-                        <View style={styles.playerInfo}>
-                            <Text style={[
-                                styles.username,
-                                player.id === currentUser?.id && styles.currentPlayerText
-                            ]}>
+                        <View className="flex-row items-center">
+                            <Text
+                                className={`text-sm font-semibold font-['Times_New_Roman'] ${
+                                    player.id === currentUser?.id
+                                        ? 'text-white'
+                                        : 'text-[#1D2124] dark:text-[#DDE1E5]'
+                                }`}
+                            >
                                 {player.username}
                             </Text>
                         </View>
-                        <View style={styles.scoreContainer}>
-                            <Text style={[
-                                styles.score,
-                                player.id === currentUser?.id && styles.currentPlayerText
-                            ]}>
+                        <View className="flex-row items-center relative">
+                            <Text
+                                className={`text-lg font-semibold font-['Times_New_Roman'] ${
+                                    player.id === currentUser?.id
+                                        ? 'text-white'
+                                        : 'text-[#1D2124] dark:text-[#DDE1E5]'
+                                }`}
+                            >
                                 {scores[player.id] || 0}
                             </Text>
                             <ScoreChange value={scoreChanges[player.id] || 0} />
@@ -127,59 +132,3 @@ export const PlayerInfo: React.FC<PlayerInfoProps> = ({ players, scores }) => {
         </View>
     );
 };
-const styles = StyleSheet.create({
-    container: {
-        paddingHorizontal: 6,
-        paddingTop: 16,
-        paddingBottom: 0,
-    },
-    scrollContainer: {
-        gap: 8,
-        paddingRight: 2,
-    },
-    playerCard: {
-        padding: 12,
-        backgroundColor: '#F5F5EB',
-        borderRadius: 8,
-        width: CARD_WIDTH,
-        minHeight: 60,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-    },
-    playerInfo: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    currentPlayerCard: {
-        backgroundColor: '#8B0000',
-    },
-    username: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: '#2B2B2B',
-        fontFamily: 'Times New Roman',
-    },
-    currentPlayerText: {
-        color: '#FFFFFF',
-    },
-    scoreContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        position: 'relative',
-    },
-    score: {
-        fontSize: 18,
-        fontWeight: '600',
-        color: '#2B2B2B',
-        fontFamily: 'Times New Roman',
-    },
-    scoreChange: {
-        fontSize: 14,
-        fontWeight: '600',
-        position: 'absolute',
-        left: '100%',
-        marginLeft: 2,
-        fontFamily: 'Times New Roman',
-    },
-});
