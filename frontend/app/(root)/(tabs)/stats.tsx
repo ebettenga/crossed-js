@@ -9,6 +9,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { EloChart } from '~/components/stats/EloChart';
 import { AccuracyChart } from '~/components/stats/AccuracyChart';
 import { cn } from '~/lib/utils';
+import { useEloVisibility } from '~/hooks/useEloVisibility';
 
 interface StatCardProps {
     title: string;
@@ -37,36 +38,29 @@ interface GameRowProps {
 }
 
 const GameRow: React.FC<GameRowProps> = ({ game, userId }) => {
-    const userScore = game.room.scores[userId] || 0;
+    const { isEloVisible } = useEloVisibility();
+    const isWinner = game.room.scores[userId] === Math.max(...Object.values(game.room.scores));
 
     return (
-        <View className="bg-neutral-50 dark:bg-neutral-800 rounded-xl p-4 border border-neutral-200 dark:border-neutral-700">
+        <View className="bg-neutral-50 dark:bg-neutral-800 p-4 rounded-xl border border-neutral-200 dark:border-neutral-700">
             <View className="gap-2">
                 <View className="flex-row justify-between items-center">
-                    <Text className="text-sm text-[#666666] dark:text-neutral-400 font-['Times_New_Roman'] font-semibold">
-                        {game.room.type.toUpperCase()} • {game.room.difficulty}
+                    <Text className="text-base font-semibold text-[#1D2124] dark:text-[#DDE1E5] font-['Times_New_Roman']">
+                        {isWinner ? 'Victory' : 'Defeat'}
                     </Text>
-                    <Text className="text-xs text-[#666666] dark:text-neutral-400 font-['Times_New_Roman']">
+                    <Text className="text-sm text-[#666666] dark:text-neutral-400 font-['Times_New_Roman']">
                         {formatDistanceToNow(new Date(game.room.created_at), { addSuffix: true })}
                     </Text>
-                </View>
-                <View className="flex-row items-center gap-2">
-                    <Text className="text-xl font-semibold text-[#1D2124] dark:text-[#DDE1E5] font-['Times_New_Roman']">
-                        {userScore} pts
-                    </Text>
-                    {game.stats.isWinner ? (
-                        <Crown size={20} color="#FFD700" />
-                    ) : (
-                        <X size={20} color="#EF4444" />
-                    )}
                 </View>
                 <View className="flex-row justify-between items-center">
                     <Text className="text-sm text-[#666666] dark:text-neutral-400 font-['Times_New_Roman']">
                         {game.stats.correctGuesses} correct • {game.stats.incorrectGuesses} incorrect
                     </Text>
-                    <Text className="text-sm text-[#666666] dark:text-neutral-400 font-['Times_New_Roman']">
-                        {game.stats.eloAtGame} ELO
-                    </Text>
+                    {isEloVisible && (
+                        <Text className="text-sm text-[#666666] dark:text-neutral-400 font-['Times_New_Roman']">
+                            {game.stats.eloAtGame} ELO
+                        </Text>
+                    )}
                 </View>
             </View>
         </View>
@@ -75,59 +69,68 @@ const GameRow: React.FC<GameRowProps> = ({ game, userId }) => {
 
 export default function Stats() {
     const insets = useSafeAreaInsets();
-    const { data: user } = useUser();
+    const { data: user, isLoading: userLoading } = useUser();
+    const { isEloVisible } = useEloVisibility();
 
-    // Get stats from the last month for the chart
     const oneMonthAgo = React.useMemo(() => {
         const date = new Date();
         date.setMonth(date.getMonth() - 1);
         return date;
     }, []);
+
     const { data: recentGames, isLoading: gamesLoading } = useRecentGames(oneMonthAgo);
 
-    if (!user) return null;
+    if (userLoading || !user) {
+        return (
+            <View className="flex-1 items-center justify-center bg-[#F6FAFE] dark:bg-[#0F1417]">
+                <ActivityIndicator size="large" color="#8B0000" />
+            </View>
+        );
+    }
+
+    const winRate = user.gamesPlayed > 0 ? Math.round((user.gamesWon / user.gamesPlayed) * 100) : 0;
+    const accuracy = user.totalGuesses > 0 ? Math.round((user.correctGuesses / user.totalGuesses) * 100) : 0;
 
     return (
-        <View className="flex-1 bg-[#F6FAFE] dark:bg-[#0F1417]">
+        <View className="flex-1 bg-[#F6FAFE] dark:bg-[#0F1417]" style={{ paddingBottom: insets.bottom }}>
             <PageHeader />
-            <ScrollView
-                className="flex-1"
-                contentContainerStyle={{
-                    padding: 16,
-                    paddingBottom: insets.bottom + 90
-                }}
-            >
-                <View className="flex-row flex-wrap gap-4 mb-6">
-                    <StatCard
-                        title="Games Won"
-                        value={user.gamesWon}
-                        icon={<Trophy size={24} color="#FFD700" />}
-                    />
-                    <StatCard
-                        title="Games Lost"
-                        value={user.gamesLost}
-                        icon={<Trophy size={24} color="#C0C0C0" />}
-                    />
+
+            <ScrollView className="flex-1 px-4">
+                <View className="flex-row flex-wrap gap-3 mt-6">
+                    {isEloVisible && (
+                        <StatCard
+                            title="Current ELO"
+                            value={user.eloRating}
+                            icon={<Crown size={20} color="#8B0000" />}
+                        />
+                    )}
                     <StatCard
                         title="Win Rate"
-                        value={user.winRate}
+                        value={winRate}
                         suffix="%"
-                        icon={<TrendingUp size={24} color="#34D399" />}
+                        icon={<Trophy size={20} color="#8B0000" />}
                     />
                     <StatCard
-                        title="Guess Accuracy"
-                        value={user.guessAccuracy}
+                        title="Accuracy"
+                        value={accuracy}
                         suffix="%"
-                        icon={<Target size={24} color="#8B0000" />}
+                        icon={<Target size={20} color="#8B0000" />}
+                    />
+                    <StatCard
+                        title="Games Played"
+                        value={user.gamesPlayed}
+                        icon={<TrendingUp size={20} color="#8B0000" />}
                     />
                 </View>
 
-                <View className="mb-6">
-                    <Text className="text-lg font-semibold text-[#1D2124] dark:text-[#DDE1E5] mb-3 font-['Times_New_Roman']">
-                        ELO History
-                    </Text>
-                    <EloChart startDate={oneMonthAgo} />
-                </View>
+                {isEloVisible && (
+                    <View className="mb-6">
+                        <Text className="text-lg font-semibold text-[#1D2124] dark:text-[#DDE1E5] mb-3 font-['Times_New_Roman']">
+                            ELO History
+                        </Text>
+                        <EloChart startDate={oneMonthAgo} />
+                    </View>
+                )}
 
                 <View className="mb-6">
                     <Text className="text-lg font-semibold text-[#1D2124] dark:text-[#DDE1E5] mb-3 font-['Times_New_Roman']">

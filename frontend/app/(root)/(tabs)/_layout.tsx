@@ -40,7 +40,6 @@ const TabsLayout = () => {
                 tabBarStyle: {
                     backgroundColor: colorScheme === 'dark' ? '#0F1417' : '#F6FAFE',
                     position: 'absolute',
-                    borderTopWidth: 1,
                     minHeight: 70,
                     display: hideTabBar ? 'none' : 'flex',
                     shadowColor: '#000',

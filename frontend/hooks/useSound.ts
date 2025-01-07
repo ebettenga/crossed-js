@@ -4,7 +4,7 @@ import { storage } from './storageApi';
 
 const SOUND_ENABLED_KEY = 'sound-enabled';
 
-export function useSound(soundSource: AVPlaybackSource) {
+export function useSound(soundSource?: AVPlaybackSource) {
     const [sound, setSound] = useState<Audio.Sound>();
     const [isSoundEnabled, setIsSoundEnabled] = useState(true);
 
@@ -20,6 +20,7 @@ export function useSound(soundSource: AVPlaybackSource) {
 
         // Load the sound
         const loadSound = async () => {
+            if (!soundSource) return;
             const { sound } = await Audio.Sound.createAsync(soundSource);
             setSound(sound);
         };
