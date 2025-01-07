@@ -1,26 +1,20 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, TextInput, TouchableOpacity, Image } from 'react-native';
+import { View, TextInput, TouchableOpacity, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Text } from '~/components/ui/text';
 import { useSignIn } from '~/hooks/users';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useUser } from '~/hooks/users';
-import { Redirect } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export default function SignIn() {
     const router = useRouter();
-
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
-    
+
     const signInMutation = useSignIn();
     const { data: user, isLoading: isLoadingUser } = useUser();
-
-    // If user is already signed in, redirect to home
-    if (user) {
-        return <Redirect href="/(root)/(tabs)" />;
-    }
 
     const handleSignIn = () => {
         try {
@@ -33,18 +27,45 @@ export default function SignIn() {
     };
 
     return (
-        <SafeAreaView style={styles.container}>
-            <View style={styles.content}>
-                <View style={styles.header}>
-                    <Text style={styles.title}>Welcome Back</Text>
-                    <Text style={styles.subtitle}>Sign in to continue playing</Text>
+        <SafeAreaView className="flex-1 bg-[#F6FAFE] dark:bg-[#0F1417]">
+            <View className="relative h-[40%]">
+                <Image
+                    source={require('~/assets/images/signin-background.jpg')}
+                    className="absolute w-full h-full"
+                    resizeMode="cover"
+                />
+                <LinearGradient
+                    colors={['transparent', '#F6FAFE']}
+                    className="absolute bottom-0 w-full h-1/2 dark:hidden"
+                />
+                <LinearGradient
+                    colors={['transparent', '#0F1417']}
+                    className="absolute bottom-0 w-full h-1/2 hidden dark:flex"
+                />
+                <Image
+                    source={require('~/assets/images/icon-clean.png')}
+                    className="absolute bottom-5 w-20 h-20 self-center"
+                    resizeMode="contain"
+                />
+            </View>
+
+            <View className="flex-1 px-6 pt-8">
+                <View className="mb-8">
+                    <Text className="text-2xl font-bold mb-2 text-[#1D2124] dark:text-[#DDE1E5]">
+                        Welcome Back
+                    </Text>
+                    <Text className="text-base text-[#1D2124]/70 dark:text-[#DDE1E5]/70">
+                        Sign in to continue playing
+                    </Text>
                 </View>
 
-                <View style={styles.form}>
-                    <View style={styles.inputContainer}>
-                        <Text style={styles.label}>Email</Text>
+                <View>
+                    <View>
+                        <Text className="text-sm font-semibold mb-2 text-[#1D2124] dark:text-[#DDE1E5]">
+                            Email
+                        </Text>
                         <TextInput
-                            style={styles.input}
+                            className="p-4 border placeholder:text-[#1D2124]/50 dark:placeholder:text-[#DDE1E5]/50 bg-white border-[#E5E5E5] text-[#1D2124] dark:bg-[#1A2227] dark:border-[#2A3136] dark:text-[#DDE1E5]"
                             placeholder="Enter your email"
                             value={email}
                             onChangeText={setEmail}
@@ -53,34 +74,42 @@ export default function SignIn() {
                         />
                     </View>
 
-                    <View style={styles.inputContainer}>
-                        <Text style={styles.label}>Password</Text>
+                    <View className="mt-4">
+                        <Text className="text-sm font-semibold mb-2 text-[#1D2124] dark:text-[#DDE1E5]">
+                            Password
+                        </Text>
                         <TextInput
-                            style={styles.input}
+                            autoCapitalize='none'
+                            className="p-4 border placeholder:text-[#1D2124]/50 dark:placeholder:text-[#DDE1E5]/50 bg-white border-[#E5E5E5] text-[#1D2124] dark:bg-[#1A2227] dark:border-[#2A3136] dark:text-[#DDE1E5]"
                             placeholder="Enter your password"
+                            placeholderTextColor="#1D2124/50 dark:#DDE1E5/50"
                             value={password}
                             onChangeText={setPassword}
                             secureTextEntry
                         />
                     </View>
 
-                    {error ? <Text style={styles.errorText}>{error}</Text> : null}
+                    {error ? (
+                        <Text className="text-red-500 text-center">
+                            {error}
+                        </Text>
+                    ) : null}
 
-                    <TouchableOpacity 
-                        style={styles.signInButton}
+                    <TouchableOpacity
+                        className="bg-[#8B0000] p-4 mt-12"
                         onPress={handleSignIn}
                         disabled={signInMutation.isPending}
                     >
-                        <Text style={styles.signInButtonText}>
+                        <Text className="text-white text-center font-semibold text-base">
                             {signInMutation.isPending || isLoadingUser ? 'Signing in...' : 'Sign In'}
                         </Text>
                     </TouchableOpacity>
 
-                    <TouchableOpacity 
-                        style={styles.createAccountButton}
+                    <TouchableOpacity
+                        className="p-3"
                         onPress={() => router.push('/(auth)/signup')}
                     >
-                        <Text style={styles.createAccountText}>
+                        <Text className="text-[#8B0000] text-center text-sm">
                             Don't have an account? Create one
                         </Text>
                     </TouchableOpacity>
@@ -89,85 +118,3 @@ export default function SignIn() {
         </SafeAreaView>
     );
 }
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#FDFDFD',
-    },
-    content: {
-        flex: 1,
-        padding: 20,
-        justifyContent: 'center',
-    },
-    header: {
-        alignItems: 'center',
-        marginBottom: 40,
-    },
-    title: {
-        fontSize: 28,
-        fontWeight: '700',
-        color: '#2B2B2B',
-        paddingTop: 12,
-        marginBottom: 8,
-        fontFamily: 'Times New Roman',
-    },
-    subtitle: {
-        fontSize: 16,
-        color: '#666666',
-        fontFamily: 'Times New Roman',
-    },
-    form: {
-        gap: 20,
-    },
-    inputContainer: {
-        gap: 8,
-    },
-    label: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: '#2B2B2B',
-        fontFamily: 'Times New Roman',
-    },
-    input: {
-        borderWidth: 1,
-        borderColor: '#E5E5E5',
-        borderRadius: 8,
-        padding: 12,
-        fontSize: 16,
-        backgroundColor: 'white',
-    },
-    errorText: {
-        color: '#DC2626',
-        fontSize: 14,
-        textAlign: 'center',
-    },
-    signInButton: {
-        backgroundColor: '#059669',
-        padding: 16,
-        borderRadius: 8,
-        alignItems: 'center',
-        shadowColor: '#000',
-        shadowOffset: {
-            width: 0,
-            height: 2,
-        },
-        shadowOpacity: 0.1,
-        shadowRadius: 3,
-        elevation: 2,
-    },
-    signInButtonText: {
-        color: 'white',
-        fontSize: 16,
-        fontWeight: '600',
-    },
-    createAccountButton: {
-        padding: 12,
-        alignItems: 'center',
-    },
-    createAccountText: {
-        color: '#059669',
-        fontSize: 14,
-        fontWeight: '500',
-    },
-}); 
