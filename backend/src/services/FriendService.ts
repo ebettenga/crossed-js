@@ -1,4 +1,4 @@
-import { DataSource } from "typeorm";
+import { DataSource, ILike } from "typeorm";
 import { Friend, FriendshipStatus } from "../entities/Friend";
 import { User } from "../entities/User";
 import { NotFoundError } from "../errors/api";
@@ -14,7 +14,7 @@ export class FriendService {
     // Find receiver by username
     const receiver = await this.ormConnection
       .getRepository(User)
-      .findOne({ where: { username: receiverUsername } });
+      .findOne({ where: { username: ILike(receiverUsername) } });
 
     if (!receiver) {
       throw new NotFoundError("User not found");
@@ -25,9 +25,8 @@ export class FriendService {
       .getRepository(Friend)
       .findOne({
         where: [
-          { senderId, receiverId: receiver.id },
-          { senderId: receiver.id, receiverId: senderId }
-        ]
+          { senderId, receiverId: receiver.id }
+        ],
       });
 
     if (existingFriendship) {
@@ -51,7 +50,7 @@ export class FriendService {
       .leftJoinAndSelect("friend.receiver", "receiver")
       .where([
         { senderId: userId, status: FriendshipStatus.ACCEPTED },
-        { receiverId: userId, status: FriendshipStatus.ACCEPTED }
+        { receiverId: userId, status: FriendshipStatus.ACCEPTED },
       ])
       .getMany();
   }
@@ -59,14 +58,15 @@ export class FriendService {
   async getPendingRequests(userId: number): Promise<Friend[]> {
     return this.ormConnection
       .getRepository(Friend)
-      .createQueryBuilder("friend")
-      .leftJoinAndSelect("friend.sender", "sender")
-      .leftJoinAndSelect("friend.receiver", "receiver")
-      .where({ receiverId: userId, status: FriendshipStatus.PENDING })
-      .getMany();
+      .find({
+        where: { receiverId: userId, status: FriendshipStatus.PENDING },
+      });
   }
 
-  async acceptFriendRequest(userId: number, friendshipId: number): Promise<Friend> {
+  async acceptFriendRequest(
+    userId: number,
+    friendshipId: number,
+  ): Promise<Friend> {
     const friendship = await this.ormConnection
       .getRepository(Friend)
       .findOne({ where: { id: friendshipId } });
@@ -89,7 +89,10 @@ export class FriendService {
     return this.ormConnection.getRepository(Friend).save(friendship);
   }
 
-  async rejectFriendRequest(userId: number, friendshipId: number): Promise<Friend> {
+  async rejectFriendRequest(
+    userId: number,
+    friendshipId: number,
+  ): Promise<Friend> {
     const friendship = await this.ormConnection
       .getRepository(Friend)
       .findOne({ where: { id: friendshipId } });
@@ -122,4 +125,4 @@ export class FriendService {
 
     await this.ormConnection.getRepository(Friend).remove(friendship);
   }
-} 
+}

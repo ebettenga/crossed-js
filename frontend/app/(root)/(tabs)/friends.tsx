@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Image, ActivityIndicator, TextInput } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Image, ActivityIndicator, TextInput, RefreshControl } from 'react-native';
 import { Swords, X, UserPlus, Check } from 'lucide-react-native';
 import { PageHeader } from '~/components/Header';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -138,16 +138,19 @@ export default function Friends() {
     const [username, setUsername] = useState('');
     const [activeTab, setActiveTab] = useState<'friends' | 'challenges'>('friends');
     const [selectedFriend, setSelectedFriend] = useState<Friend | null>(null);
+    const [refreshing, setRefreshing] = useState(false);
 
     const {
         data: friends,
         isLoading: friendsLoading,
-        error: friendsError
+        error: friendsError,
+        refetch: refetchFriends
     } = useFriendsList();
 
     const {
         data: pendingRequests,
-        isLoading: pendingLoading
+        isLoading: pendingLoading,
+        refetch: refetchPending
     } = usePendingRequests();
 
     const {
@@ -215,6 +218,19 @@ export default function Friends() {
             console.error('Failed to add friend:', err);
         }
     };
+
+    const onRefresh = React.useCallback(async () => {
+        setRefreshing(true);
+        try {
+            await Promise.all([
+                refetchFriends(),
+                refetchPending()
+            ]);
+        } catch (error) {
+            console.error('Error refreshing:', error);
+        }
+        setRefreshing(false);
+    }, [refetchFriends, refetchPending]);
 
     if (!user) return null;
 
@@ -302,7 +318,17 @@ export default function Friends() {
                             Failed to load friends
                         </Text>
                     ) : (
-                        <ScrollView className="flex-1">
+                        <ScrollView
+                            className="flex-1"
+                            refreshControl={
+                                <RefreshControl
+                                    refreshing={refreshing}
+                                    onRefresh={onRefresh}
+                                    tintColor="#8B0000"
+                                    colors={["#8B0000"]}
+                                />
+                            }
+                        >
                             {pendingRequests?.map((friend) => (
                                 <FriendRow
                                     key={friend.id}
@@ -329,7 +355,17 @@ export default function Friends() {
                 </View>
             ) : (
                 <View className="flex-1 px-4">
-                    <ScrollView className="flex-1">
+                    <ScrollView
+                        className="flex-1"
+                        refreshControl={
+                            <RefreshControl
+                                refreshing={refreshing}
+                                onRefresh={onRefresh}
+                                tintColor="#8B0000"
+                                colors={["#8B0000"]}
+                            />
+                        }
+                    >
                         {challenges.map((room) => (
                             <ChallengeRow
                                 key={room.id}

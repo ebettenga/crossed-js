@@ -177,6 +177,7 @@ export const useSocket = () => {
 
     reconnectTimeout.current = setTimeout(() => {
       console.log(`Reconnection attempt ${reconnectAttempts.current}`);
+      socket?.disconnect();
       socket.connect();
 
       // Exponential backoff with max delay and jitter

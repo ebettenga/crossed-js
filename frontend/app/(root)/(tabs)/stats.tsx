@@ -40,6 +40,7 @@ interface GameRowProps {
 const GameRow: React.FC<GameRowProps> = ({ game, userId }) => {
     const { isEloVisible } = useEloVisibility();
     const isWinner = game.room.scores[userId] === Math.max(...Object.values(game.room.scores));
+    const userScore = game.room.scores[userId];
 
     return (
         <View className="bg-neutral-50 dark:bg-neutral-800 p-4 rounded-xl border border-neutral-200 dark:border-neutral-700">
@@ -52,6 +53,17 @@ const GameRow: React.FC<GameRowProps> = ({ game, userId }) => {
                         {formatDistanceToNow(new Date(game.room.created_at), { addSuffix: true })}
                     </Text>
                 </View>
+                <View className="flex-row items-center gap-2">
+                    <Text className="text-xl font-semibold text-[#1D2124] dark:text-[#DDE1E5] font-['Times_New_Roman']">
+                        {userScore} pts
+                    </Text>
+                    {game.stats.isWinner ? (
+                        <Crown size={20} color="#FFD700" />
+                    ) : (
+                        <X size={20} color="#EF4444" />
+                    )}
+                </View>
+
                 <View className="flex-row justify-between items-center">
                     <Text className="text-sm text-[#666666] dark:text-neutral-400 font-['Times_New_Roman']">
                         {game.stats.correctGuesses} correct • {game.stats.incorrectGuesses} incorrect
@@ -160,7 +172,7 @@ export default function Stats() {
                             No games played yet
                         </Text>
                     ) : (
-                        <View className="gap-3">
+                        <View className="gap-3 pb-20">
                             {recentGames?.map(game => (
                                 <GameRow
                                     key={game.room.id}

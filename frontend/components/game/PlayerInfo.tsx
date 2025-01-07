@@ -8,7 +8,6 @@ import Animated, {
     useSharedValue,
 } from 'react-native-reanimated';
 import { useUser } from '~/hooks/users';
-import { useEloVisibility } from '~/hooks/useEloVisibility';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const CARD_WIDTH = (SCREEN_WIDTH / 2) - 12; // Half screen minus padding
@@ -54,7 +53,6 @@ export const PlayerInfo: React.FC<PlayerInfoProps> = ({ players, scores }) => {
     const prevScores = useRef<{ [key: string]: number }>({});
     const [scoreChanges, setScoreChanges] = React.useState<{ [key: string]: number }>({});
     const { data: currentUser } = useUser();
-    const { isEloVisible } = useEloVisibility();
 
     useEffect(() => {
         // Calculate score changes
@@ -115,17 +113,6 @@ export const PlayerInfo: React.FC<PlayerInfoProps> = ({ players, scores }) => {
                             >
                                 {player.username}
                             </Text>
-                            {isEloVisible && (
-                                <Text
-                                    className={`text-xs font-['Times_New_Roman'] ${
-                                        player.id === currentUser?.id
-                                            ? 'text-white/70'
-                                            : 'text-[#666666] dark:text-[#DDE1E5]/70'
-                                    }`}
-                                >
-                                    {player.eloRating} ELO
-                                </Text>
-                            )}
                         </View>
                         <View className="flex-row items-center relative">
                             <Text
