@@ -1,8 +1,8 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
 import { Swords, X } from 'lucide-react-native';
 import { Player, Room } from '~/hooks/useRoom';
-import { User } from '~/types/user';
+import { User } from '~/hooks/users';
 
 type ChallengeRowProps = {
     room: Room;
@@ -14,7 +14,7 @@ type ChallengeRowProps = {
     isRejecting?: boolean;
 };
 
-export const ChallengeRow = ({ 
+export const ChallengeRow = ({
     room,
     user,
     challenger,
@@ -26,25 +26,27 @@ export const ChallengeRow = ({
     if (!challenger) return null;
 
     return (
-        <View style={styles.friendRow}>
-            <View style={styles.leftSection}>
-                <View style={styles.avatarContainer}>
-                    <Image 
-                        source={{ uri: 'https://i.pravatar.cc/150' }} 
-                        style={styles.avatar}
+        <View className="flex-row items-center justify-between bg-[#F8F8F5] dark:bg-[#1A2227] p-3 rounded-xl border border-[#E5E5E5] dark:border-[#2A3136]">
+            <View className="flex-1 flex-row items-center gap-3">
+                <View className="relative">
+                    <Image
+                        source={{ uri: 'https://i.pravatar.cc/150' }}
+                        className="w-10 h-10 rounded-full bg-[#F5F5EB] dark:bg-[#2A3136]"
                     />
                 </View>
-                <View style={styles.userInfo}>
-                    <Text style={styles.name}>{challenger.username}</Text>
-                    <Text style={styles.challengeText}>
+                <View className="flex-1">
+                    <Text className="text-base text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times New Roman']">
+                        {challenger.username}
+                    </Text>
+                    <Text className="text-xs text-[#666666] dark:text-[#DDE1E5]/70 font-['Times New Roman']">
                         wants to play a {room.difficulty} game!
                     </Text>
                 </View>
             </View>
-            
-            <View style={styles.challengeActions}>
-                <TouchableOpacity 
-                    style={[styles.actionButton, styles.acceptButton]}
+
+            <View className="flex-row items-center gap-1.5 pl-3">
+                <TouchableOpacity
+                    className="flex-row items-center p-2 rounded-md border border-[#BBF7D0] dark:border-[#2A3136] bg-[#F0FDF4] dark:bg-[#1A2227] gap-1"
                     onPress={() => onAccept(room.id)}
                     disabled={isAccepting || isRejecting}
                 >
@@ -53,12 +55,12 @@ export const ChallengeRow = ({
                     ) : (
                         <>
                             <Swords size={16} color="#34D399" />
-                            <Text style={[styles.buttonText, styles.acceptText]}>Accept</Text>
+                            <Text className="text-xs text-[#34D399] font-['Times New Roman']">Accept</Text>
                         </>
                     )}
                 </TouchableOpacity>
-                <TouchableOpacity 
-                    style={[styles.actionButton, styles.rejectButton]}
+                <TouchableOpacity
+                    className="flex-row items-center p-2 rounded-md border border-[#FECACA] dark:border-[#2A3136] bg-[#FEF2F2] dark:bg-[#1A2227] gap-1"
                     onPress={() => onReject(room.id)}
                     disabled={isAccepting || isRejecting}
                 >
@@ -67,7 +69,7 @@ export const ChallengeRow = ({
                     ) : (
                         <>
                             <X size={16} color="#EF4444" />
-                            <Text style={[styles.buttonText, styles.rejectText]}>Decline</Text>
+                            <Text className="text-xs text-[#EF4444] font-['Times New Roman']">Decline</Text>
                         </>
                     )}
                 </TouchableOpacity>
@@ -75,77 +77,3 @@ export const ChallengeRow = ({
         </View>
     );
 };
-
-const styles = StyleSheet.create({
-    friendRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        backgroundColor: '#F8F8F5',
-        padding: 12,
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: '#E5E5E5',
-    },
-    leftSection: {
-        flex: 1,
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 12,
-    },
-    avatarContainer: {
-        position: 'relative',
-    },
-    avatar: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: '#F5F5EB',
-    },
-    userInfo: {
-        flex: 1,
-    },
-    name: {
-        fontSize: 16,
-        color: '#2B2B2B',
-        fontFamily: 'Times New Roman',
-    },
-    challengeText: {
-        fontSize: 12,
-        color: '#666666',
-        fontFamily: 'Times New Roman',
-    },
-    challengeActions: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 6,
-        marginLeft: 'auto',
-        paddingLeft: 12,
-    },
-    actionButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: 8,
-        borderRadius: 6,
-        borderWidth: 1,
-        gap: 4,
-    },
-    acceptButton: {
-        backgroundColor: '#F0FDF4',
-        borderColor: '#BBF7D0',
-    },
-    rejectButton: {
-        backgroundColor: '#FEF2F2',
-        borderColor: '#FECACA',
-    },
-    buttonText: {
-        fontSize: 12,
-        fontFamily: 'Times New Roman',
-    },
-    acceptText: {
-        color: '#34D399',
-    },
-    rejectText: {
-        color: '#EF4444',
-    },
-}); 

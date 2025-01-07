@@ -1,12 +1,12 @@
 import React from 'react';
-import { StyleSheet } from 'react-native';
-import Animated, { 
-  useAnimatedStyle, 
+import Animated, {
+  useAnimatedStyle,
   withSpring,
   useSharedValue,
   withSequence,
 } from 'react-native-reanimated';
 import { TouchableOpacity } from 'react-native-gesture-handler';
+import { cn } from '~/lib/utils';
 
 interface KeyboardKeyProps {
   letter: string;
@@ -37,45 +37,21 @@ export const KeyboardKey: React.FC<KeyboardKeyProps> = ({
 
   return (
     <TouchableOpacity onPress={handlePress}>
-      <Animated.View 
-        style={[
-          styles.key,
-          disabled && styles.disabled,
-          animatedStyle
-        ]}
+      <Animated.View
+        className={cn(
+          "w-8 h-[45px] bg-white dark:bg-neutral-700 justify-center items-center m-0.5 rounded border",
+          "border-neutral-200 dark:border-neutral-600",
+          disabled && "bg-neutral-200 dark:bg-neutral-800"
+        )}
+        style={animatedStyle}
       >
-        <Animated.Text style={[
-          styles.letter,
-          disabled && styles.disabledText
-        ]}>
+        <Animated.Text className={cn(
+          "text-lg font-semibold text-[#333333] dark:text-[#DDE1E5] font-['Times_New_Roman']",
+          disabled && "text-neutral-400 dark:text-neutral-500"
+        )}>
           {letter}
         </Animated.Text>
       </Animated.View>
     </TouchableOpacity>
   );
 };
-
-const styles = StyleSheet.create({
-  key: {
-    width: 32,
-    height: 45,
-    backgroundColor: 'white',
-    justifyContent: 'center',
-    alignItems: 'center',
-    margin: 2,
-    borderRadius: 5,
-    borderWidth: 1,
-    borderColor: '#ccc',
-  },
-  disabled: {
-    backgroundColor: '#e0e0e0',
-  },
-  letter: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-  },
-  disabledText: {
-    color: '#999',
-  },
-}); 

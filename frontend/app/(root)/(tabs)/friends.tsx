@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Image, ActivityIndicator, TextInput } from 'react-native';
-import { Swords, X, UserPlus } from 'lucide-react-native';
+import { Swords, X, UserPlus, Check } from 'lucide-react-native';
 import { PageHeader } from '~/components/Header';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -8,7 +8,10 @@ import {
     Friend,
     useFriendsList,
     useRemoveFriend,
-    useAddFriend
+    useAddFriend,
+    usePendingRequests,
+    useAcceptFriendRequest,
+    useRejectFriendRequest
 } from '~/hooks/useFriends';
 import { useUser } from '~/hooks/users';
 import { ChallengeDialog } from '~/components/ChallengeDialog';
@@ -21,9 +24,10 @@ interface FriendRowProps {
     currentUserId: number;
     onChallenge: (friend: Friend) => void;
     onRemove: (friendId: number) => void;
-    onAccept?: (roomId: number) => void;
-    onReject?: (roomId: number) => void;
+    onAccept?: (friendId: number) => void;
+    onReject?: (friendId: number) => void;
     isChallenge?: boolean;
+    isPending?: boolean;
     roomId?: number;
 }
 
@@ -35,6 +39,7 @@ const FriendRow: React.FC<FriendRowProps> = ({
     onAccept,
     onReject,
     isChallenge = false,
+    isPending = false,
     roomId
 }) => {
     const otherUser = friend.sender.id === currentUserId ? friend.receiver : friend.sender;
@@ -53,29 +58,57 @@ const FriendRow: React.FC<FriendRowProps> = ({
                     <Text className="text-base text-[#1D2124] dark:text-[#DDE1E5] font-['Times_New_Roman']">
                         {otherUser.username}
                     </Text>
+                    {isPending && isReceiver && (
+                        <Text className="text-xs text-[#666666] dark:text-neutral-400 font-['Times_New_Roman']">
+                            sent you a friend request
+                        </Text>
+                    )}
+                    {isPending && !isReceiver && (
+                        <Text className="text-xs text-[#666666] dark:text-neutral-400 font-['Times_New_Roman']">
+                            pending acceptance
+                        </Text>
+                    )}
                     {isChallenge && (
                         <Text className="text-xs text-[#666666] dark:text-neutral-400 font-['Times_New_Roman']">
                             wants to play a game!
                         </Text>
                     )}
                 </View>
-                {!isChallenge && (
-                    <View className="flex-row items-center gap-1.5 ml-auto pl-3">
-                        <TouchableOpacity
-                            className="flex-row items-center p-2 rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900"
-                            onPress={() => onChallenge(friend)}
-                        >
-                            <Swords size={16} color="#8B0000" />
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            className="flex-row items-center p-2 rounded-md bg-neutral-100 dark:bg-neutral-700 border border-neutral-200 dark:border-neutral-600"
-                            onPress={() => onRemove(friend.id)}
-                        >
-                            <X size={16} color="#666666" />
-                        </TouchableOpacity>
-                    </View>
-                )}
             </View>
+
+            {!isChallenge && !isPending && (
+                <View className="flex-row items-center gap-1.5 ml-auto pl-3">
+                    <TouchableOpacity
+                        className="flex-row items-center p-2 rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900"
+                        onPress={() => onChallenge(friend)}
+                    >
+                        <Swords size={16} color="#8B0000" />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        className="flex-row items-center p-2 rounded-md bg-neutral-100 dark:bg-neutral-700 border border-neutral-200 dark:border-neutral-600"
+                        onPress={() => onRemove(friend.id)}
+                    >
+                        <X size={16} color="#666666" />
+                    </TouchableOpacity>
+                </View>
+            )}
+
+            {isPending && isReceiver && (
+                <View className="flex-row items-center gap-1.5 ml-auto pl-3">
+                    <TouchableOpacity
+                        className="flex-row items-center p-2 rounded-md bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-900"
+                        onPress={() => onAccept?.(friend.id)}
+                    >
+                        <Check size={16} color="#34D399" />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        className="flex-row items-center p-2 rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900"
+                        onPress={() => onReject?.(friend.id)}
+                    >
+                        <X size={16} color="#EF4444" />
+                    </TouchableOpacity>
+                </View>
+            )}
 
             {isChallenge && isReceiver && roomId && (
                 <View className="flex-row items-center gap-1.5 ml-auto pl-3">
@@ -101,17 +134,23 @@ const FriendRow: React.FC<FriendRowProps> = ({
 
 export default function Friends() {
     const insets = useSafeAreaInsets();
-    const router = useRouter();
     const { data: user } = useUser();
     const [username, setUsername] = useState('');
     const [activeTab, setActiveTab] = useState<'friends' | 'challenges'>('friends');
     const [selectedFriend, setSelectedFriend] = useState<Friend | null>(null);
 
     const {
-        data: friends = [],
+        data: friends,
         isLoading: friendsLoading,
         error: friendsError
     } = useFriendsList();
+
+    const {
+        data: pendingRequests,
+        isLoading: pendingLoading
+    } = usePendingRequests();
+
+    console.log(pendingRequests);
 
     const {
         challenges,
@@ -121,6 +160,8 @@ export default function Friends() {
 
     const { mutate: removeFriend } = useRemoveFriend();
     const { mutate: addFriend, isPending: isAddingFriend } = useAddFriend();
+    const { mutate: acceptFriend } = useAcceptFriendRequest();
+    const { mutate: rejectFriend } = useRejectFriendRequest();
 
     const handleChallenge = (friend: Friend) => {
         setSelectedFriend(friend);
@@ -131,6 +172,22 @@ export default function Friends() {
             await removeFriend(friendId);
         } catch (err) {
             console.error('Failed to remove friend:', err);
+        }
+    };
+
+    const handleAcceptFriend = async (friendId: number) => {
+        try {
+            await acceptFriend(friendId);
+        } catch (err) {
+            console.error('Failed to accept friend request:', err);
+        }
+    };
+
+    const handleRejectFriend = async (friendId: number) => {
+        try {
+            await rejectFriend(friendId);
+        } catch (err) {
+            console.error('Failed to reject friend request:', err);
         }
     };
 
@@ -163,7 +220,7 @@ export default function Friends() {
 
     if (!user) return null;
 
-    const isLoading = friendsLoading;
+    const isLoading = friendsLoading || pendingLoading;
     const error = friendsError;
 
     const otherUser = selectedFriend ?
@@ -248,7 +305,19 @@ export default function Friends() {
                         </Text>
                     ) : (
                         <ScrollView className="flex-1">
-                            {friends.map((friend) => (
+                            {pendingRequests?.map((friend) => (
+                                <FriendRow
+                                    key={friend.id}
+                                    friend={friend}
+                                    currentUserId={user.id}
+                                    onChallenge={handleChallenge}
+                                    onRemove={handleRemoveFriend}
+                                    onAccept={handleAcceptFriend}
+                                    onReject={handleRejectFriend}
+                                    isPending={true}
+                                />
+                            ))}
+                            {friends?.map((friend) => (
                                 <FriendRow
                                     key={friend.id}
                                     friend={friend}

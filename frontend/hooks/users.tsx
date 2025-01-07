@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { secureStorage } from "./storageApi";
-import { useRouter } from 'expo-router';
+import { router, useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { get, patch, post } from './api';
 
@@ -97,7 +97,6 @@ export const useSignUp = () => {
 };
 
 export const useLogout = () => {
-  const router = useRouter();
   const queryClient = useQueryClient();
 
   return async () => {

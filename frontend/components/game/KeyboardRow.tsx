@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View } from 'react-native';
 import { KeyboardKey } from './KeyboardKey';
 
 interface KeyboardRowProps {
@@ -8,13 +8,13 @@ interface KeyboardRowProps {
   disabledKeys?: string[];
 }
 
-export const KeyboardRow: React.FC<KeyboardRowProps> = ({ 
-  keys, 
+export const KeyboardRow: React.FC<KeyboardRowProps> = ({
+  keys,
   onKeyPress,
   disabledKeys = []
 }) => {
   return (
-    <View style={styles.row}>
+    <View className="flex-row justify-center my-0.5">
       {keys.map((key) => (
         <KeyboardKey
           key={key}
@@ -26,11 +26,3 @@ export const KeyboardRow: React.FC<KeyboardRowProps> = ({
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginVertical: 2,
-  },
-}); 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, View, Text } from 'react-native';
+import { View, Text } from 'react-native';
 import { Square } from '~/hooks/useRoom';
 
 interface ClueDisplayProps {
@@ -17,34 +17,10 @@ export const ClueDisplay: React.FC<ClueDisplayProps> = ({ selectedSquare, isAcro
   const clueText = clue.split(".")[1];
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.clueText}>{clueText}</Text>
+    <View className="p-2 items-center justify-center h-[60px] flex">
+      <Text className="text-base text-[#2B2B2B] dark:text-[#DDE1E5] leading-6 text-center px-4 flex-wrap-none flex-shrink font-['Times_New_Roman']">
+        {clueText}
+      </Text>
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    padding: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: 60,
-    display: 'flex',
-  },
-  direction: {
-    fontSize: 14,
-    color: '#2B2B2B',
-    fontWeight: '600',
-    marginBottom: 4,
-    textAlign: 'center',
-  },
-  clueText: {
-    fontSize: 16,
-    color: '#2B2B2B',
-    lineHeight: 24,
-    textAlign: 'center',
-    paddingHorizontal: 16,
-    flexWrap: 'nowrap',
-    flexShrink: 1
-  },
-});

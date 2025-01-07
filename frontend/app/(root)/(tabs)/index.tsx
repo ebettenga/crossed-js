@@ -78,7 +78,7 @@ export default function Home() {
             <View className="flex-1">
                 <PageHeader />
                 {activeRoomsArray.length > 0 && (
-                    <View className="w-full h-[100px]">
+                    <View className="w-full h-[80px]">
                         <ScrollView
                             horizontal
                             pagingEnabled
@@ -102,7 +102,7 @@ export default function Home() {
                 )}
 
                 {pendingRoomsArray.length > 0 && (
-                    <View className="w-full h-[100px]">
+                    <View className="w-full h-[80px]">
                         <ScrollView
                             horizontal
                             pagingEnabled

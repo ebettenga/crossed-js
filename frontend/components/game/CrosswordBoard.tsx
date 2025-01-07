@@ -1,8 +1,9 @@
 import React, { useMemo } from 'react';
-import { StyleSheet, View, Dimensions } from 'react-native';
+import { View, Dimensions } from 'react-native';
 import { CrosswordCell } from './CrosswordCell';
 import { Square } from '~/hooks/useRoom';
 import { config } from '~/config/config';
+import { cn } from '~/lib/utils';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const SCREEN_HEIGHT = Dimensions.get('window').height;
@@ -47,7 +48,7 @@ export const CrosswordBoard: React.FC<CrosswordBoardProps> = ({
     // Memoize the board rendering to prevent unnecessary re-renders
     const boardContent = useMemo(() => {
         return board.map((row, x) => (
-            <View key={x} style={styles.row}>
+            <View key={x} className="flex-row">
                 {row.map((square, y) => {
                     const isSelected = selectedCell?.id === square.id;
                     return (
@@ -68,36 +69,18 @@ export const CrosswordBoard: React.FC<CrosswordBoardProps> = ({
     }, [board, selectedCell, onCellPress, isAcrossMode]);
 
     return (
-        <View style={styles.container}>
-            <View style={styles.boardWrapper}>
-                <View style={[styles.board, { width: BOARD_SIZE, height: BOARD_SIZE }]}>
+        <View className={cn(
+            "w-full justify-center items-center pt-5",
+            `h-[${AVAILABLE_HEIGHT}px]`
+        )}>
+            <View className="items-center justify-center" style={{ width: BOARD_SIZE, height: BOARD_SIZE }}>
+                <View className={cn(
+                    "bg-white dark:bg-neutral-800 rounded-lg overflow-hidden",
+                    "border border-neutral-200 dark:border-neutral-700"
+                )} style={{ width: BOARD_SIZE, height: BOARD_SIZE }}>
                     {boardContent}
                 </View>
             </View>
         </View>
     );
 };
-
-const styles = StyleSheet.create({
-    container: {
-        width: '100%',
-        height: AVAILABLE_HEIGHT,
-        justifyContent: 'center',
-        alignItems: 'center',
-        paddingTop: 20,
-    },
-    boardWrapper: {
-        width: BOARD_SIZE,
-        height: BOARD_SIZE,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    board: {
-        backgroundColor: config.theme.colors.background.paper,
-        borderRadius: 6,
-        overflow: 'hidden',
-    },
-    row: {
-        flexDirection: 'row',
-    },
-});

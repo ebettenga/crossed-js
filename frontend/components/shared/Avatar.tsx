@@ -1,11 +1,13 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image } from 'react-native';
-import { User } from '~/types/user';
+import { User } from '~/hooks/users';
+
+
 
 interface AvatarProps {
     user: User;
     size?: number;
-    imageUrl?: string;
+    imageUrl?: string | null;
 }
 
 export const Avatar: React.FC<AvatarProps> = ({ user, size = 32, imageUrl }) => {
@@ -66,4 +68,4 @@ const styles = StyleSheet.create({
         fontWeight: '500',
         fontFamily: 'Times New Roman',
     },
-}); 
+});

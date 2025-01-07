@@ -1,10 +1,11 @@
 import { View, Text, Image, StatusBar, useColorScheme } from 'react-native'
 import React, { useEffect } from 'react'
-import { Tabs } from "expo-router";
+import { Redirect, Tabs } from "expo-router";
 import { usePathname } from 'expo-router';
 import { cn } from '~/lib/utils';
 
 import icons from '@/constants/icons'
+import { useUser } from '~/hooks/users';
 
 const TabIcon = ({ focused, icon, title }: { focused: boolean; icon: any; title: string }) => (
     <View className="flex-1 mt-3 flex-col items-center">

@@ -25,7 +25,7 @@ const CELL_SIZE = Math.floor(Math.min(
 const CORNER_RADIUS = config.game.crossword.cornerRadius;
 
 // Colors from config
-const PAPER_COLOR = config.theme.colors.background.paper
+const PAPER_COLOR = "#F6FAFE"
 const SELECTED_COLOR = config.theme.colors.primary.DEFAULT
 const BORDER_COLOR = "#000000"
 
@@ -107,7 +107,6 @@ export const CrosswordCell: React.FC<CrosswordCellProps> = ({
         </Pressable>
     );
 };
-
 const styles = StyleSheet.create({
     cell: {
         width: CELL_SIZE,

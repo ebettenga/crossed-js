@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, Text, StyleProp, ViewStyle, TextStyle } from 'react-native';
-import Animated, { 
-  useAnimatedStyle, 
-  withSpring, 
+import { View, TouchableOpacity, Text, StyleProp, TextStyle, useColorScheme } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  withSpring,
   withTiming,
-  interpolate,
 } from 'react-native-reanimated';
 import { Menu } from 'lucide-react-native';
+import { cn } from '~/lib/utils';
 
 interface MenuOption {
   label: string;
@@ -20,6 +20,7 @@ interface GameMenuProps {
 
 export const GameMenu: React.FC<GameMenuProps> = ({ options }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const isDarkMode = useColorScheme() === 'dark';
 
   const toggleMenu = () => {
     setIsOpen(!isOpen);
@@ -28,98 +29,72 @@ export const GameMenu: React.FC<GameMenuProps> = ({ options }) => {
   const menuItemStyle = useAnimatedStyle(() => {
     return {
       transform: [
-        { 
+        {
           translateY: withSpring(isOpen ? 0 : 100, {
             damping: 12,
             mass: 0.5,
-          }) 
+          })
         },
-        { 
+        {
           scale: withSpring(isOpen ? 1 : 0, {
             damping: 12,
             mass: 0.5,
-          }) 
+          })
         },
       ],
       opacity: withTiming(isOpen ? 1 : 0, { duration: 200 }),
     };
   });
 
+  const isDangerOption = (style: StyleProp<TextStyle>) => {
+    if (typeof style === 'object' && style !== null && 'color' in style) {
+      return style.color === '#8B0000';
+    }
+    return false;
+  };
+
   return (
-    <View style={[styles.container]}>
+    <View className="absolute bottom-5 right-4 items-end">
       {/* Menu Options */}
-      <Animated.View style={[styles.menuItems, menuItemStyle]}>
+      <Animated.View
+        className={cn(
+          "absolute bottom-[45px] right-0 bg-white dark:bg-neutral-800",
+          "rounded-lg p-2 shadow-lg",
+          "border border-neutral-200 dark:border-neutral-700"
+        )}
+        style={menuItemStyle}
+      >
         {options.map((option, index) => (
           <TouchableOpacity
             key={index}
-            style={styles.menuItem}
+            className="py-2 px-4 min-w-[120px]"
             onPress={() => {
               option.onPress();
               setIsOpen(false);
             }}
           >
-            <Text style={[styles.menuText, option.style]}>{option.label}</Text>
+            <Text
+              className={cn(
+                "text-sm text-[#333333] dark:text-[#DDE1E5] font-['Times_New_Roman']",
+                isDangerOption(option.style) && "text-[#8B0000] dark:text-red-400"
+              )}
+            >
+              {option.label}
+            </Text>
           </TouchableOpacity>
         ))}
       </Animated.View>
 
       {/* Menu Button */}
-      <TouchableOpacity 
-        style={styles.menuButton}
+      <TouchableOpacity
+        className={cn(
+          "w-9 h-9 rounded-full bg-neutral-200 dark:bg-neutral-700",
+          "justify-center items-center shadow-md"
+        )}
         onPress={toggleMenu}
       >
-        <Menu size={20} color="#4A4A4A" />
+        <Menu size={20} color={isDarkMode ? '#DDE1E5' : '#4A4A4A'} />
       </TouchableOpacity>
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    position: 'absolute',
-    bottom: 20,
-    right: 16,
-    alignItems: 'flex-end',
-  },
-  menuButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#E0E0E0',
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-  },
-  menuItems: {
-    position: 'absolute',
-    bottom: 45,
-    right: 0,
-    backgroundColor: 'white',
-    borderRadius: 8,
-    padding: 8,
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-  },
-  menuItem: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    minWidth: 120,
-  },
-  menuText: {
-    fontSize: 14,
-    color: '#333',
-  },
-}); 

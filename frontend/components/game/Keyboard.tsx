@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View } from 'react-native';
 import { KeyboardRow } from './KeyboardRow';
 
 const KEYBOARD_LAYOUT = [
@@ -15,11 +15,11 @@ interface KeyboardProps {
 
 export const Keyboard: React.FC<KeyboardProps> = ({ onKeyPress, disabledKeys = [] }) => {
   return (
-    <View style={styles.keyboard}>
+    <View className="w-full p-2.5 bg-neutral-100 dark:bg-neutral-800 border-t border-neutral-200 dark:border-neutral-700 shadow-lg">
       {KEYBOARD_LAYOUT.map((row, index) => (
-        <KeyboardRow 
-          key={index} 
-          keys={row} 
+        <KeyboardRow
+          key={index}
+          keys={row}
           onKeyPress={onKeyPress}
           disabledKeys={disabledKeys}
         />
@@ -27,21 +27,3 @@ export const Keyboard: React.FC<KeyboardProps> = ({ onKeyPress, disabledKeys = [
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  keyboard: {
-    width: '100%',
-    padding: 10,
-    backgroundColor: '#f5f5f5',
-    borderTopWidth: 1,
-    borderTopColor: '#ddd',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: -2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 5,
-  },
-}); 

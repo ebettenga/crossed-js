@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, Alert, Image } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Alert, Image, SafeAreaView, useColorScheme } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useUser, useUpdateUser, useUpdatePhoto } from '~/hooks/users';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -16,6 +16,7 @@ export default function EditProfile() {
     const [username, setUsername] = useState(user?.username || '');
     const [email, setEmail] = useState(user?.email || '');
     const [isLoading, setIsLoading] = useState(false);
+    const isDarkMode = useColorScheme() === 'dark';
 
     const handleSave = async () => {
         setIsLoading(true);
@@ -37,14 +38,12 @@ export default function EditProfile() {
 
     const handlePhotoUpload = async () => {
         try {
-            // Request permissions
             const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
             if (!permissionResult.granted) {
                 Alert.alert('Permission Required', 'Please grant access to your photo library to upload a photo.');
                 return;
             }
 
-            // Pick image
             const result = await ImagePicker.launchImageLibraryAsync({
                 mediaTypes: 'images',
                 allowsEditing: true,
@@ -53,7 +52,6 @@ export default function EditProfile() {
             });
 
             if (!result.canceled) {
-                // Compress the image using the non-deprecated API
                 const manipulateResult = await manipulateAsync(
                     result.assets[0].uri,
                     [{ resize: { width: 800, height: 800 } }],
@@ -91,163 +89,85 @@ export default function EditProfile() {
     if (!user) return null;
 
     return (
-        <View style={[styles.container, { paddingTop: insets.top }]}>
-            <View style={styles.header}>
-                <TouchableOpacity 
-                    style={styles.backButton}
+        <SafeAreaView className="flex-1 bg-white dark:bg-[#0F1417]" style={{ paddingTop: insets.top + 20 }}>
+            <View className="px-4 pb-4 border-b border-[#E5E5E5] dark:border-[#2A3136]">
+                <TouchableOpacity
+                    className="flex-row items-center mb-2"
                     onPress={() => router.back()}
                 >
-                    <ChevronLeft size={24} color="#2B2B2B" />
-                    <Text style={styles.backText}>Back</Text>
+                    <ChevronLeft size={24} color={isDarkMode ? '#DDE1E5' : '#2B2B2B'} />
+                    <Text className="text-base text-[#2B2B2B] dark:text-[#DDE1E5] ml-1 font-['Times New Roman']">
+                        Back
+                    </Text>
                 </TouchableOpacity>
-                <Text style={styles.title}>Edit Profile</Text>
+                <Text className="text-2xl font-semibold text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times New Roman']">
+                    Edit Profile
+                </Text>
             </View>
 
-            <View style={styles.form}>
-                <TouchableOpacity 
-                    style={styles.photoContainer}
+            <View className="p-4 gap-6">
+                <TouchableOpacity
+                    className="items-center gap-2"
                     onPress={handlePhotoUpload}
                 >
                     {user.photo ? (
-                        <Image 
-                            source={{ uri: user.photo }} 
-                            style={styles.photo}
+                        <Image
+                            source={{ uri: user.photo }}
+                            className="w-[120px] h-[120px] rounded-full bg-[#F8F8F5] dark:bg-[#1A2227]"
                         />
                     ) : (
-                        <View style={styles.photoPlaceholder}>
+                        <View className="w-[120px] h-[120px] rounded-full bg-[#F8F8F5] dark:bg-[#1A2227] items-center justify-center border border-dashed border-[#E5E5E5] dark:border-[#2A3136]">
                             <Camera size={32} color="#666666" />
                         </View>
                     )}
-                    <Text style={styles.photoText}>Change Photo</Text>
+                    <Text className="text-base text-[#8B0000] font-['Times New Roman']">
+                        Change Photo
+                    </Text>
                 </TouchableOpacity>
 
-                <View style={styles.inputGroup}>
-                    <Text style={styles.label}>Username</Text>
+                <View className="gap-2">
+                    <Text className="text-base text-[#666666] dark:text-[#DDE1E5]/70 font-['Times New Roman']">
+                        Username
+                    </Text>
                     <TextInput
-                        style={styles.input}
+                        className="h-[46px] border border-[#E5E5E5] dark:border-[#2A3136] rounded-lg px-3 bg-[#F8F8F5] dark:bg-[#1A2227] text-base text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times New Roman']"
                         value={username}
                         onChangeText={setUsername}
                         placeholder="Enter username"
+                        placeholderTextColor="#666666"
                         autoCapitalize="none"
                     />
                 </View>
 
-                <View style={styles.inputGroup}>
-                    <Text style={styles.label}>Email</Text>
+                <View className="gap-2">
+                    <Text className="text-base text-[#666666] dark:text-[#DDE1E5]/70 font-['Times New Roman']">
+                        Email
+                    </Text>
                     <TextInput
-                        style={styles.input}
+                        className="h-[46px] border border-[#E5E5E5] dark:border-[#2A3136] rounded-lg px-3 bg-[#F8F8F5] dark:bg-[#1A2227] text-base text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times New Roman']"
                         value={email}
                         onChangeText={setEmail}
                         placeholder="Enter email"
+                        placeholderTextColor="#666666"
                         autoCapitalize="none"
                         keyboardType="email-address"
                     />
                 </View>
 
-                <TouchableOpacity 
-                    style={styles.saveButton}
+                <TouchableOpacity
+                    className="bg-[#8B0000] h-[46px] rounded-lg items-center justify-center"
                     onPress={handleSave}
                     disabled={isLoading}
                 >
                     {isLoading ? (
                         <ActivityIndicator color="#FFFFFF" />
                     ) : (
-                        <Text style={styles.saveButtonText}>Save Changes</Text>
+                        <Text className="text-white text-base font-semibold font-['Times New Roman']">
+                            Save Changes
+                        </Text>
                     )}
                 </TouchableOpacity>
             </View>
-        </View>
+        </SafeAreaView>
     );
 }
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#FFFFFF',
-    },
-    header: {
-        paddingHorizontal: 16,
-        paddingBottom: 16,
-        borderBottomWidth: 1,
-        borderBottomColor: '#E5E5E5',
-    },
-    backButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 8,
-    },
-    backText: {
-        fontSize: 16,
-        color: '#2B2B2B',
-        marginLeft: 4,
-        fontFamily: 'Times New Roman',
-    },
-    title: {
-        fontSize: 24,
-        fontWeight: '600',
-        color: '#2B2B2B',
-        fontFamily: 'Times New Roman',
-    },
-    form: {
-        padding: 16,
-        gap: 24,
-    },
-    photoContainer: {
-        alignItems: 'center',
-        gap: 8,
-    },
-    photo: {
-        width: 120,
-        height: 120,
-        borderRadius: 60,
-        backgroundColor: '#F8F8F5',
-    },
-    photoPlaceholder: {
-        width: 120,
-        height: 120,
-        borderRadius: 60,
-        backgroundColor: '#F8F8F5',
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderWidth: 1,
-        borderColor: '#E5E5E5',
-        borderStyle: 'dashed',
-    },
-    photoText: {
-        fontSize: 16,
-        color: '#8B0000',
-        fontFamily: 'Times New Roman',
-    },
-    inputGroup: {
-        gap: 8,
-    },
-    label: {
-        fontSize: 16,
-        color: '#666666',
-        fontFamily: 'Times New Roman',
-    },
-    input: {
-        height: 46,
-        borderWidth: 1,
-        borderColor: '#E5E5E5',
-        borderRadius: 8,
-        paddingHorizontal: 12,
-        backgroundColor: '#F8F8F5',
-        fontSize: 16,
-        color: '#2B2B2B',
-        fontFamily: 'Times New Roman',
-    },
-    saveButton: {
-        backgroundColor: '#8B0000',
-        height: 46,
-        borderRadius: 8,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    saveButtonText: {
-        color: '#FFFFFF',
-        fontSize: 16,
-        fontWeight: '600',
-        fontFamily: 'Times New Roman',
-    },
-}); 

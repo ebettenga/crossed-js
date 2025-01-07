@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, Text } from 'react-native';
+import { View, Text, SafeAreaView } from 'react-native';
 import { CrosswordBoard } from '../components/game/CrosswordBoard';
 import { Keyboard } from '../components/game/Keyboard';
 import { PlayerInfo } from '../components/game/PlayerInfo';
@@ -13,6 +13,7 @@ import { LoadingGame } from '~/components/game/LoadingGame';
 import { GameTimer } from '~/components/game/GameTimer';
 import { useUser } from '~/hooks/users';
 import { Avatar } from '~/components/shared/Avatar';
+import { cn } from '~/lib/utils';
 
 export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
     const { room, guess, refresh, forfeit } = useRoom(roomId);
@@ -139,13 +140,15 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
     ];
 
     return (
-        <View style={[styles.container, { paddingBottom: insets.bottom + 70 }]}>
-            <View style={styles.header}>
-                <View style={styles.headerLeft}>
+        <SafeAreaView className="flex-1 bg-[#F5F5EB] dark:bg-[#0F1417]">
+            <View className="flex-row justify-between items-center px-4 mt-6">
+                <View className="flex-row items-center gap-2">
                     {currentUser && (
-                        <Avatar user={currentUser} size={32} imageUrl={currentUser.avatarUrl} />
+                        <Avatar user={currentUser} imageUrl={currentUser.photo} size={32} />
                     )}
-                    <Text style={styles.title}>{room.crossword.title}</Text>
+                    <Text className="text-sm text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman']">
+                        {room.crossword.title}
+                    </Text>
                 </View>
                 <GameTimer startTime={room.created_at} />
             </View>
@@ -153,8 +156,8 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
                 players={room.players}
                 scores={room.scores}
             />
-            <View style={styles.boardContainer}>
-                <View style={[styles.board]}>
+            <View className="flex-1 items-center">
+                <View className="w-full">
                     <CrosswordBoard
                         board={room?.board}
                         onCellPress={handleCellPress}
@@ -165,7 +168,7 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
                     />
                 </View>
             </View>
-            <View style={styles.bottomSection}>
+            <View className="w-full absolute bottom-0 left-0 right-0 bg-[#F5F5EB] dark:bg-[#0F1417]">
                 <ClueDisplay
                     selectedSquare={selectedCell || null}
                     isAcrossMode={isAcrossMode}
@@ -176,49 +179,6 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
                 />
             </View>
             <GameMenu options={menuOptions} />
-        </View>
+        </SafeAreaView>
     );
 };
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#F5F5EB',
-    },
-    header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: 16,
-        paddingTop: 10,
-        marginBottom: -10,
-    },
-    headerLeft: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-    },
-    title: {
-        fontSize: 14,
-        fontFamily: 'Times New Roman',
-        color: '#2B2B2B',
-    },
-    boardContainer: {
-        flex: 1,
-        alignItems: 'center',
-    },
-    board: {
-        width: '100%',
-    },
-    bottomSection: {
-        width: '100%',
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        backgroundColor: '#F5F5EB',
-    },
-    keyboardContainer: {
-        width: '100%',
-    },
-}); 

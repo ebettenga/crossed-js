@@ -127,7 +127,6 @@ export const PlayerInfo: React.FC<PlayerInfoProps> = ({ players, scores }) => {
         </View>
     );
 };
-
 const styles = StyleSheet.create({
     container: {
         paddingHorizontal: 6,
@@ -143,7 +142,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#F5F5EB',
         borderRadius: 8,
         width: CARD_WIDTH,
-        minHeight: 70,
+        minHeight: 60,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',

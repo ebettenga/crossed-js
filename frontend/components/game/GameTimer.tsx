@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text } from 'react-native';
 import { Clock } from 'lucide-react-native';
 
 interface GameTimerProps {
@@ -31,28 +31,11 @@ export const GameTimer: React.FC<GameTimerProps> = ({ startTime }) => {
   }, [startTime]);
 
   return (
-    <View style={styles.container}>
-      <Clock size={16} color="#666666" />
-      <Text style={styles.timerText}>{elapsedTime}</Text>
+    <View className="flex-row items-center gap-1 bg-white dark:bg-neutral-800 px-2.5 py-1 rounded-xl border border-neutral-200 dark:border-neutral-700">
+      <Clock size={16} className="text-[#666666] dark:text-neutral-400" />
+      <Text className="text-sm text-[#666666] dark:text-neutral-400 font-['Times_New_Roman']">
+        {elapsedTime}
+      </Text>
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E5E5',
-  },
-  timerText: {
-    fontSize: 14,
-    fontFamily: 'Times New Roman',
-    color: '#666666',
-  },
-}); 
