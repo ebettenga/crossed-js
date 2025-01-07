@@ -69,7 +69,7 @@ export default function (
   fastify.io.on("connection", async (socket) => {
     try {
       const user = await verifyUser(authService, fastify, socket);
-      
+
       // Join a room for user-specific events
       socket.join(user.id.toString());
 
@@ -223,6 +223,10 @@ export default function (
           fastify.log.error(error);
           socket.emit("error", { message: "Failed to reject challenge" });
         }
+      });
+
+      socket.on("ping", () => {
+        socket.emit("pong");
       });
 
     } catch (error) {

@@ -33,6 +33,7 @@ export type Player = {
 export type Room = {
     id: number;
     created_at: string;
+    completed_at?: string;
     difficulty: string;
     type: '1v1' | '2v2' | 'free4all';
     status: 'playing' | 'pending' | 'finished' | 'cancelled';
@@ -106,6 +107,13 @@ export const useRoom = (roomId?: number) => {
         };
     }, [socket, isConnected, roomId]);
 
+    useEffect(() => {
+        if (isConnected && roomId && !room) {
+            console.log("Attempting to rejoin room after reconnection:", roomId);
+            refresh(roomId);
+        }
+    }, [isConnected, roomId, room]);
+
     const guess = (roomId: number, coordinates: { x: number; y: number }, guess: string) => {
         if (!socket || !isConnected) {
             console.error("Socket not connected");
@@ -132,13 +140,12 @@ export const useRoom = (roomId?: number) => {
         queryClient.invalidateQueries({ queryKey: ['room'] });
     };
 
-    return { 
-        room, 
-        guess, 
-        refresh, 
+    return {
+        room,
+        guess,
+        refresh,
         forfeit,
         isConnected,
         error
     };
 };
-

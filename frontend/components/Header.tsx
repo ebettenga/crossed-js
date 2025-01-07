@@ -1,10 +1,12 @@
 import React, { useMemo } from 'react';
-import { View, Text, Image } from 'react-native';
+import { View, Text, Image, TouchableOpacity } from 'react-native';
 import { TrendingUp, TrendingDown } from 'lucide-react-native';
 import { useUserGameStats, useUser } from '~/hooks/users';
+import { useRouter } from 'expo-router';
 import { cn } from '~/lib/utils';
 
 export const PageHeader = React.memo(() => {
+    const router = useRouter();
     const { data: user } = useUser();
     if (!user) return null;
 
@@ -33,7 +35,10 @@ export const PageHeader = React.memo(() => {
     return (
         <View className="bg-[#F6FAFE] dark:bg-[#0F1417] px-4 py-5 border-b border-neutral-200 dark:border-neutral-800">
             <View className="flex-row justify-between items-center">
-                <View className="flex-row items-center gap-3">
+            <TouchableOpacity
+                    className="flex-row items-center gap-3"
+                    onPress={() => router.push('/profile/edit')}
+                >
                     {user.photo && (
                         <Image
                             source={{ uri: user.photo }}
@@ -48,8 +53,11 @@ export const PageHeader = React.memo(() => {
                             {user.username}
                         </Text>
                     </View>
-                </View>
-                <View className="items-end">
+                </TouchableOpacity>
+                <TouchableOpacity
+                    className="items-end"
+                    onPress={() => router.push('/(root)/(tabs)/stats')}
+                >
                     <View className="flex-row items-center gap-3 bg-neutral-50 dark:bg-neutral-800 px-3 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700">
                         <View className="items-center gap-0.5">
                             <View className="flex-row items-center gap-1">
@@ -85,7 +93,7 @@ export const PageHeader = React.memo(() => {
                             </Text>
                         </View>
                     </View>
-                </View>
+                </TouchableOpacity>
             </View>
         </View>
     );

@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft, Camera } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
+import { PageHeader } from '~/components/Header';
 
 export default function EditProfile() {
     const router = useRouter();
@@ -89,21 +90,18 @@ export default function EditProfile() {
     if (!user) return null;
 
     return (
-        <SafeAreaView className="flex-1 bg-white dark:bg-[#0F1417]" style={{ paddingTop: insets.top + 20 }}>
-            <View className="px-4 pb-4 border-b border-[#E5E5E5] dark:border-[#2A3136]">
-                <TouchableOpacity
-                    className="flex-row items-center mb-2"
-                    onPress={() => router.back()}
-                >
-                    <ChevronLeft size={24} color={isDarkMode ? '#DDE1E5' : '#2B2B2B'} />
-                    <Text className="text-base text-[#2B2B2B] dark:text-[#DDE1E5] ml-1 font-['Times New Roman']">
-                        Back
-                    </Text>
-                </TouchableOpacity>
-                <Text className="text-2xl font-semibold text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times New Roman']">
-                    Edit Profile
+        <SafeAreaView className="flex-1 bg-white dark:bg-[#0F1417]">
+            <PageHeader />
+
+            <TouchableOpacity
+                className="flex-row items-center px-4 py-3"
+                onPress={() => router.back()}
+            >
+                <ChevronLeft size={24} color={isDarkMode ? '#DDE1E5' : '#2B2B2B'} />
+                <Text className="text-base text-[#2B2B2B] dark:text-[#DDE1E5] ml-1 font-['Times New Roman']">
+                    Back
                 </Text>
-            </View>
+            </TouchableOpacity>
 
             <View className="p-4 gap-6">
                 <TouchableOpacity

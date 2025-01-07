@@ -14,6 +14,7 @@ import { GameTimer } from '~/components/game/GameTimer';
 import { useUser } from '~/hooks/users';
 import { Avatar } from '~/components/shared/Avatar';
 import { cn } from '~/lib/utils';
+import ConnectionStatus from '~/components/ConnectionStatus';
 
 export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
     const { room, guess, refresh, forfeit } = useRoom(roomId);
@@ -127,12 +128,6 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
             },
         },
         {
-            label: 'Show Summary',
-            onPress: () => {
-                setShowSummary(true);
-            },
-        },
-        {
             label: 'Forfeit Game',
             onPress: handleForfeit,
             style: { color: '#8B0000' }
@@ -150,7 +145,8 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
                         {room.crossword.title}
                     </Text>
                 </View>
-                <GameTimer startTime={room.created_at} />
+                <ConnectionStatus compact />
+                <GameTimer startTime={room.created_at} completedAt={room.completed_at} />
             </View>
             <PlayerInfo
                 players={room.players}
@@ -167,12 +163,12 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
                         title={room.crossword.title}
                     />
                 </View>
-            </View>
-            <View className="w-full absolute bottom-0 left-0 right-0 bg-[#F5F5EB] dark:bg-[#0F1417]">
                 <ClueDisplay
                     selectedSquare={selectedCell || null}
                     isAcrossMode={isAcrossMode}
                 />
+            </View>
+            <View className="w-full absolute bottom-0 left-0 right-0 bg-[#F5F5EB] dark:bg-[#0F1417]">
                 <Keyboard
                     onKeyPress={handleKeyPress}
                     disabledKeys={[]}

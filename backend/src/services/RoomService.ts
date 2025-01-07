@@ -367,6 +367,7 @@ export class RoomService {
 
   private async onGameEnd(room: Room): Promise<void> {
     room.status = "finished";
+    room.completed_at = new Date();
 
     // Find player with highest score
     const highestScore = Math.max(...Object.values(room.scores));

@@ -12,10 +12,12 @@ const createSocketInstance = (token: string) => {
   const socket = io(config.api.socketURL, {
     auth: { authToken: token },
     reconnection: true,
-    reconnectionAttempts: 5,
+    reconnectionAttempts: Infinity,
     reconnectionDelay: 1000,
     reconnectionDelayMax: 5000,
-    timeout: 10000,
+    timeout: 20000,
+    transports: ['websocket'],
+    forceNew: true,
   });
   return socket;
 };
@@ -36,67 +38,89 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const { data: user } = useUser();
   const queryClient = useQueryClient();
+  const socketRef = useRef<Socket | null>(null);
 
-  // Initialize socket when user is authenticated
+  // Initialize socket immediately and maintain connection
   useEffect(() => {
     const initializeSocket = async () => {
-      const token = await secureStorage.get("token");
-      
-      // Only create socket if we have a token and user
-      if (token && user) {
-        const newSocket = createSocketInstance(token);
+      try {
+        const token = await secureStorage.get("token");
+
+        // If we already have a socket instance, update its auth token
+        if (socketRef.current && token) {
+          socketRef.current.auth = { authToken: token };
+          if (!socketRef.current.connected) {
+            socketRef.current.connect();
+          }
+          return;
+        }
+
+        // Create new socket instance
+        const newSocket = createSocketInstance(token || "");
 
         newSocket.on("connect", () => {
           console.log("Socket connected");
         });
 
-        newSocket.on("connect_error", (error) => {
+        newSocket.on("connect_error", async (error) => {
           console.error("Socket connection error:", error);
+          // On auth error, try to get a fresh token
+          if (error.message?.includes("auth")) {
+            const newToken = await secureStorage.get("token");
+            if (newToken) {
+              newSocket.auth = { authToken: newToken };
+              newSocket.connect();
+            }
+          }
         });
 
         newSocket.on("disconnect", (reason) => {
           console.log("Socket disconnected:", reason);
-          if (reason === "io server disconnect") {
-            // Server initiated disconnect, try to reconnect
+          // Always try to reconnect unless explicitly disconnected
+          if (reason !== "io client disconnect") {
             newSocket.connect();
           }
         });
 
+        socketRef.current = newSocket;
         setSocket(newSocket);
-        return newSocket;
-      } else {
-        // If no token or user, disconnect existing socket
-        if (socket) {
-          socket.disconnect();
-          setSocket(null);
-        }
-        return null;
+      } catch (error) {
+        console.error("Socket initialization error:", error);
       }
     };
 
-    const cleanup = async () => {
-      const currentSocket = await initializeSocket();
-      return () => {
-        if (currentSocket) {
-          currentSocket.disconnect();
+    initializeSocket();
+  }, []); // Empty dependency array - only run once on mount
+
+  // Update socket auth when user/token changes
+  useEffect(() => {
+    const updateSocketAuth = async () => {
+      const token = await secureStorage.get("token");
+      if (socketRef.current && token) {
+        socketRef.current.auth = { authToken: token };
+        if (!socketRef.current.connected) {
+          socketRef.current.connect();
         }
-      };
+      }
     };
 
-    cleanup();
-  }, [user]); // Reinitialize socket when user changes
+    if (user) {
+      updateSocketAuth();
+    }
+  }, [user]);
 
   // Handle token refresh
   useEffect(() => {
     const handleTokenRefresh = async () => {
       const token = await secureStorage.get("token");
-      if (socket && token) {
-        socket.auth = { authToken: token };
-        socket.disconnect().connect();
+      if (socketRef.current && token) {
+        socketRef.current.auth = { authToken: token };
+        if (!socketRef.current.connected) {
+          socketRef.current.connect();
+        }
       }
     };
 
-    // Listen for token changes through React Query cache
     const unsubscribe = queryClient.getQueryCache().subscribe(({ type, query }) => {
       if (type === 'updated' && query.queryKey[0] === 'me') {
         handleTokenRefresh();
@@ -106,7 +130,7 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
     return () => {
       unsubscribe();
     };
-  }, [socket, queryClient]);
+  }, [queryClient]);
 
   return (
     <SocketContext.Provider value={socket}>{children}</SocketContext.Provider>
@@ -115,7 +139,7 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
 
 export const RoomProvider = ({ children }: { children: ReactNode }) => {
   const [room, setRoom] = useState<Room | null>(null);
-  
+
   return (
     <RoomContext.Provider value={{ room, setRoom }}>
       {children}
@@ -130,7 +154,10 @@ export const useSocket = () => {
   const [error, setError] = useState<Error | null>(null);
   const messageQueue = useRef<Array<{ event: string; data: any }>>([]);
   const reconnectAttempts = useRef(0);
-  const maxReconnectAttempts = 5;
+  const reconnectionDelay = useRef(1000);
+  const maxReconnectionDelay = 30000;
+  const [connectionQuality, setConnectionQuality] = useState<'good' | 'poor' | 'disconnected'>('good');
+  const latencyHistory = useRef<number[]>([]);
 
   const emitSafely = (event: string, data: any) => {
     if (socket && isConnected) {
@@ -164,13 +191,17 @@ export const useSocket = () => {
       setIsConnected(false);
       setError(new Error(`Disconnected: ${reason}`));
 
-      // Attempt to reconnect if it wasn't a clean disconnect
-      if (reason !== "io client disconnect" && reconnectAttempts.current < maxReconnectAttempts) {
+      // Attempt to reconnect with exponential backoff
+      if (reason !== "io client disconnect") {
         setIsConnecting(true);
-        reconnectAttempts.current++;
         setTimeout(() => {
           socket.connect();
-        }, Math.min(1000 * reconnectAttempts.current, 5000)); // Exponential backoff
+          // Exponential backoff with max delay
+          reconnectionDelay.current = Math.min(
+            reconnectionDelay.current * 1.5,
+            maxReconnectionDelay
+          );
+        }, reconnectionDelay.current);
       }
     };
 
@@ -206,11 +237,39 @@ export const useSocket = () => {
     };
   }, [socket]);
 
+  useEffect(() => {
+    if (!socket || !isConnected) return;
+
+    const checkLatency = setInterval(() => {
+      const start = Date.now();
+      socket.emit('ping', () => {
+        const latency = Date.now() - start;
+        latencyHistory.current.push(latency);
+
+        // Keep last 10 measurements
+        if (latencyHistory.current.length > 10) {
+          latencyHistory.current.shift();
+        }
+
+        // Calculate average latency
+        const avgLatency = latencyHistory.current.reduce((a, b) => a + b, 0) / latencyHistory.current.length;
+
+        setConnectionQuality(
+          !isConnected ? 'disconnected' :
+          avgLatency > 200 ? 'poor' : 'good'
+        );
+      });
+    }, 5000);
+
+    return () => clearInterval(checkLatency);
+  }, [socket, isConnected]);
+
   return {
     socket,
     isConnected,
     isConnecting,
     error,
+    connectionQuality,
     connect: () => socket?.connect(),
     disconnect: () => socket?.disconnect(),
     emit: emitSafely
@@ -270,15 +329,12 @@ export const useRoom = (roomId?: number) => {
 
   useEffect(() => {
     if (!isConnected) {
-      if (isInitialized) {
-        console.log("Socket disconnected, waiting for reconnection...");
-      }
       return;
     }
 
     const handleRoom = (data: Room) => {
       if (!data) return;
-      
+
       // Check if room status changed to finished
       if (data.status === 'finished' && room?.status !== 'finished') {
         // Invalidate user stats and data
@@ -286,7 +342,7 @@ export const useRoom = (roomId?: number) => {
         queryClient.invalidateQueries({ queryKey: ['userGameStats'] });
         queryClient.invalidateQueries({ queryKey: ['recentGames'] });
       }
-      
+
       setRoom(data);
       setIsInitialized(true);
     };
@@ -326,17 +382,13 @@ export const useRoom = (roomId?: number) => {
     queryClient.invalidateQueries({ queryKey: ['room'] });
   };
 
-  return { 
-    room, 
-    guess, 
-    refresh, 
+  return {
+    room,
+    guess,
+    refresh,
     forfeit,
     isConnected,
     error,
-    isInitialized
+    isInitialized,
   };
 };
-
-
-
-

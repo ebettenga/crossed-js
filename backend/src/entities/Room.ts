@@ -88,6 +88,9 @@ export class Room {
   @CreateDateColumn()
   created_at: Date;
 
+  @Column({ type: 'timestamp', nullable: true })
+  completed_at: Date;
+
   @Column("text")
   difficulty: string;
 
@@ -117,10 +120,11 @@ export class Room {
     if (this.viewCache && this.lastModified === this.lastViewUpdate) {
       return this.viewCache;
     }
- 
+
     const view = {
       id: this.id,
       created_at: this.created_at,
+      completed_at: this.completed_at,
       difficulty: this.difficulty,
       type: this.type,
       status: this.status,
@@ -232,7 +236,7 @@ export class Room {
             break;
           }
         }
-        
+
         if (lastNonBlackSquare) {
         square.acrossQuestion = this.getClueByQuestionNumber(acrossClues, lastNonBlackSquare.gridnumber)?.hint;
         }

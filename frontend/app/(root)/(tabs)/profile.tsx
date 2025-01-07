@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, ScrollView } from 'react-native';
 import { Link, useRouter } from 'expo-router';
-import { Users, Settings, BarChart3, CreditCard, LogOut, UserCog } from 'lucide-react-native';
+import { Users, Settings, BarChart3, CreditCard, LogOut, UserCog, HelpCircle } from 'lucide-react-native';
 import { ProfileButton } from '~/components/profile/ProfileButton';
 import { PageHeader } from '~/components/Header';
 import { useLogout, useUser } from '~/hooks/users';
@@ -21,7 +21,7 @@ export default function Profile() {
         <View className="flex-1 bg-[#F6FAFE] dark:bg-[#0F1417]">
             <PageHeader />
             <ScrollView className="flex-1">
-                <View className="mt-4">
+                <View>
                     <ProfileButton
                         onPress={() => router.push('/profile/edit')}
                         label="Edit Profile"
@@ -42,6 +42,11 @@ export default function Profile() {
                         label="Settings"
                         icon={<Settings size={24} />}
                         onPress={() => console.log('Settings')}
+                    />
+                    <ProfileButton
+                        label="Support"
+                        icon={<HelpCircle size={24} />}
+                        onPress={() => router.push('/profile/support')}
                     />
                 </View>
 
