@@ -18,6 +18,13 @@ services:
       dockerfile: Dockerfile
     environment:
       NODE_ENV: production
+      PGHOST: ${PGHOST}
+      PGUSER: ${PGUSER}
+      PGPASSWORD: ${PGPASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      SECRET_ACCESS_TOKEN: ${SECRET_ACCESS_TOKEN}
+      SECRET_KEY: ${SECRET_KEY}
+      CI: ${CI}
     ports:
       - "3000:3000"
 
