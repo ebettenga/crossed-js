@@ -1,25 +1,19 @@
 import { commonConfig } from './config-common';
 import { config as localConfig } from './config-local';
 import { config as ciConfig } from './config-ci';
-
+import { config as productionConfig } from './config-production';
 export const getConfig = () => {
-  const env = process.env.NODE_ENV || 'local';
+  const env = process.env.NODE_ENV;
 
-  try {
-    let config;
-    if (process.env.CI === 'true') {
-      config = { ...commonConfig, ...ciConfig };
-    } else {
-      config = { ...commonConfig, ...localConfig };
-    }
-
-    // Set timezone from config
-    process.env.TZ = config.api.timezone;
-    
-    return config;
-  } catch (e) {
-    throw Error('Unknown environment, unable to load config');
+  switch (env) {
+    case 'production':
+      return { ...commonConfig, ...productionConfig };
+    case 'ci':
+      return { ...commonConfig, ...ciConfig };
+    default:
+      return { ...commonConfig, ...localConfig };
   }
+
 };
 
 export const config = getConfig();

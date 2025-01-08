@@ -9,11 +9,11 @@ export const config = {
   },
   db: {
     type: "postgres",
-    host: "localhost",
+    host: process.env.PG_HOST,
     port: 5432,
-    username: "postgres",
-    password: "postgres",
-    database: "application",
+    username: process.env.PG_USER,
+    password: process.env.PG_PASSWORD,
+    database: process.env.PG_POSTGRES_DB,
     synchronize: true,
     logging: false,
     entities: ["./src/entities/**/*.ts"],
@@ -21,9 +21,9 @@ export const config = {
     subscribers: ["./src/subscribers/**/*.ts"],
   } as PostgresConnectionOptions,
   auth: {
-    secretAccessToken: "aklwj*$%rngbak4a43",
+    secretAccessToken: process.env.SECRET_ACCESS_TOKEN,
     authRefreshTokenExpiry: "3w",
     authTokenExpiry: "2h",
   },
-  secretKeyPath: "./config/secret-key",
+  secretKeyPath: process.env.SECRET_KEY,
 };
