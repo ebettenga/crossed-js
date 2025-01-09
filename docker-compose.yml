@@ -27,7 +27,7 @@ services:
       SECRET_KEY_PATH: "../src/config/secret-key"
     ports:
       - "3000:3000"
-    command: ["yarn", "dev"]
+    command: ["yarn", "start"]
 
 volumes:
   postgres_data:

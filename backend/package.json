@@ -5,7 +5,7 @@
   "main": "src/index.ts",
   "exports": "./dist/index.mjs",
   "scripts": {
-    "start": "node ./dist/index.mjs",
+    "start": "tsx ./src/index.ts",
     "build": "pkgroll",
     "dev": "tsx --watch ./src/index.ts",
     "commands": "tsx ./src/commands/cli.ts",
