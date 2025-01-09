@@ -17,6 +17,7 @@ import { Server } from "socket.io";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+
 // DB Stuff
 registerDb(fastify);
 

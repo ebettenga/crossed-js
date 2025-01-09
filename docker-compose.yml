@@ -8,7 +8,7 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: crossed
     ports:
-      - "5432:5432"
+      - "5555:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
@@ -19,14 +19,14 @@ services:
     environment:
       NODE_ENV: production
       PGHOST: ${PGHOST}
-      PGUSER: ${PGUSER}
-      PGPASSWORD: ${PGPASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
-      SECRET_ACCESS_TOKEN: ${SECRET_ACCESS_TOKEN}
-      SECRET_KEY: ${SECRET_KEY}
-      CI: ${CI}
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      POSTGRES_DB: crossed
+      SECRET_ACCESS_TOKEN: adfhadfhadfh2j51jk
+      SECRET_KEY_PATH: "../src/config/secret-key"
     ports:
       - "3000:3000"
+    command: ["yarn", "start"]
 
 volumes:
   postgres_data:
