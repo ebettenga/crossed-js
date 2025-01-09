@@ -17,8 +17,6 @@ export const config = {
     synchronize: true,
     logging: false,
     entities: ["./src/entities/**/*.ts"],
-    migrations: ["./src/migrations/**/*.ts"],
-    subscribers: ["./src/subscribers/**/*.ts"],
   } as PostgresConnectionOptions,
   auth: {
     secretAccessToken: process.env.SECRET_ACCESS_TOKEN,

@@ -8,7 +8,7 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: crossed
     ports:
-      - "5555:5432"
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
@@ -18,8 +18,9 @@ services:
       dockerfile: Dockerfile
     environment:
       NODE_ENV: production
-      PGHOST: ${PGHOST}
+      PGHOST: db
       PGUSER: postgres
+      PGPORT: 5432
       PGPASSWORD: postgres
       POSTGRES_DB: crossed
       SECRET_ACCESS_TOKEN: adfhadfhadfh2j51jk
