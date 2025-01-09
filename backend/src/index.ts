@@ -7,6 +7,7 @@ import { config } from "./config/config";
 import fs from "fs";
 import path, { join } from "path";
 import { fastify } from "./fastify";
+import fastifyPrintRoutes from 'fastify-print-routes'
 
 // get the directory name of the current module
 import { fileURLToPath } from "url";
@@ -17,6 +18,7 @@ import { Server } from "socket.io";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+await fastify.register(fastifyPrintRoutes);
 
 // DB Stuff
 registerDb(fastify);

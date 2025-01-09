@@ -13,7 +13,7 @@ export const config = {
     port: 5432,
     username: "postgres",
     password: "postgres",
-    database: "application",
+    database: "crossed",
     synchronize: true,
     logging: false,
     entities: ["./src/entities/**/*.ts"],
