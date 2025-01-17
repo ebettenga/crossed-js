@@ -1,11 +1,11 @@
-import { DataSource } from 'typeorm';
-import { Crossword } from '../entities/Crossword';
-import { Room } from '../entities/Room';
-import { NotFoundError } from '../errors/api';
-import * as fs from 'fs';
-import * as path from 'path';
-import { findDir } from '../scripts/findConfigDir';
-import { config } from '../config/config';
+import { DataSource } from "typeorm";
+import { Crossword } from "../entities/Crossword";
+import { Room } from "../entities/Room";
+import { NotFoundError } from "../errors/api";
+import * as fs from "fs";
+import * as path from "path";
+import { findDir } from "../scripts/findConfigDir";
+import { config } from "../config/config";
 
 export class CrosswordService {
   private ormConnection: DataSource;
@@ -46,13 +46,7 @@ export class CrosswordService {
   }
 
   async loadCrosswords() {
-    const repository = this.ormConnection.getRepository(Crossword);
-    const count = await repository.count();
-
-    if (count > 10) {
-      console.log('Crosswords already loaded');
-      return;
-    }
+    const repository = await this.ormConnection.getRepository(Crossword);
 
     const crosswordsDir = findDir("../../", "crosswords");
     const crosswords = [];
@@ -64,8 +58,16 @@ export class CrosswordService {
         const stat = fs.statSync(filePath);
         if (stat.isDirectory()) {
           loadFiles(filePath);
-        } else if (filePath.endsWith('.json')) {
-          const data = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+        } else if (filePath.endsWith(".json")) {
+          const data = JSON.parse(fs.readFileSync(filePath, "utf-8"));
+
+          if (
+            new Date(data["date"]) <
+              new Date(config.game.crossword.firstCrosswordDate)
+          ) {
+            continue;
+          }
+
           data["col_size"] = data["size"]["cols"];
           data["row_size"] = data["size"]["rows"];
 
@@ -88,7 +90,7 @@ export class CrosswordService {
       await repository.save(crosswordEntity);
     }
 
-    console.log('Crosswords loaded successfully');
+    console.log("Crosswords loaded successfully");
   }
 
   async createFoundLettersTemplate(crosswordId: number): Promise<string[]> {
@@ -96,20 +98,22 @@ export class CrosswordService {
     const crossword = await repository.findOneBy({ id: crosswordId });
 
     if (!crossword) {
-      throw new NotFoundError('Crossword not found');
+      throw new NotFoundError("Crossword not found");
     }
 
-    return crossword.grid.map((value) => value.replace(/[A-Za-z]/g, '*'));
+    return crossword.grid.map((value) => value.replace(/[A-Za-z]/g, "*"));
   }
 
   async getCrosswordByDifficulty(difficulty: string): Promise<Crossword> {
     const days = this.getDaysByDifficulty(difficulty);
     const crossword = await this.ormConnection
       .getRepository(Crossword)
-      .createQueryBuilder('crossword')
-      .where('crossword.dow IN (:...days)', { days })
-      .andWhere('crossword.date >= :firstDate', { firstDate: new Date(config.game.crossword.firstCrosswordDate) })
-      .orderBy('RANDOM()')
+      .createQueryBuilder("crossword")
+      .where("crossword.dow IN (:...days)", { days })
+      .andWhere("crossword.date >= :firstDate", {
+        firstDate: new Date(config.game.crossword.firstCrosswordDate),
+      })
+      .orderBy("RANDOM()")
       .getOne();
 
     return crossword;
@@ -117,14 +121,14 @@ export class CrosswordService {
 
   private getDaysByDifficulty(difficulty: string): string[] {
     switch (difficulty.toLowerCase()) {
-      case 'easy':
-        return ['Monday', 'Tuesday'];
-      case 'medium':
-        return ['Wednesday', 'Thursday'];
-      case 'hard':
-        return ['Friday', 'Saturday'];
+      case "easy":
+        return ["Monday", "Tuesday"];
+      case "medium":
+        return ["Wednesday", "Thursday"];
+      case "hard":
+        return ["Friday", "Saturday"];
       default:
-        throw new NotFoundError('Invalid difficulty');
+        throw new NotFoundError("Invalid difficulty");
     }
   }
 
@@ -140,7 +144,7 @@ export class CrosswordService {
         crossword.grid[guessPosition].toUpperCase() === guess.toUpperCase()
       );
     } catch (e) {
-      throw new NotFoundError('Invalid coordinates');
+      throw new NotFoundError("Invalid coordinates");
     }
   }
 }
