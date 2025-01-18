@@ -1,9 +1,9 @@
 import {
   DataSource,
-  FindOperator,
-  In,
   LessThan,
-  LessThanOrEqual,
+  And,
+  Not,
+  In,
 } from "typeorm";
 import { Room } from "../entities/Room";
 import { User } from "../entities/User";
@@ -34,19 +34,25 @@ export class RoomService {
       .findOne({ where: { id: roomId } });
   }
 
+  async getRoomsByUserId(userId: number): Promise<Room[]> {
+    return this.ormConnection
+      .getRepository(Room)
+      .find({ where: { players: { id: userId } } });
+  }
+
   async joinRoom(
-    userId: number,
+    user: User,
     difficulty: string,
     type: "1v1" | "2v2" | "free4all" = "1v1",
   ): Promise<Room> {
-    let room = await this.findEmptyRoomByDifficulty(difficulty, type);
+    let room = await this.findEmptyRoomByDifficulty(difficulty, type, user);
 
     if (room) {
       fastify.log.info(`Found room with id: ${room.id}`);
-      await this.joinExistingRoom(room, userId);
+      await this.joinExistingRoom(room, user.id);
       return room;
     } else {
-      return await this.createRoom(userId, difficulty, type);
+      return await this.createRoom(user.id, difficulty, type);
     }
   }
 
@@ -116,12 +122,27 @@ export class RoomService {
   private async findEmptyRoomByDifficulty(
     difficulty: string,
     type: "1v1" | "2v2" | "free4all",
+    user: User,
   ): Promise<Room> {
+    let userRoomIds: number[] = [];
+    // First get all rooms this user is in
+    if (!user.roles.includes("admin")) {
+    const userRooms = await this.ormConnection
+      .getRepository(Room)
+      .createQueryBuilder("room")
+      .select("room.id")
+      .innerJoin("room.players", "players")
+      .where("players.id = :userId", { userId: user.id })
+      .getMany();
+    userRoomIds = userRooms.map(room => room.id);
+    }
+
     return this.ormConnection.getRepository(Room).findOne({
       where: {
         difficulty,
         status: "pending",
         type,
+        id: userRoomIds.length > 0 ? Not(In(userRoomIds)) : undefined,
         players: LessThan(config.game.maxPlayers[type]),
       },
       order: { created_at: "ASC" },

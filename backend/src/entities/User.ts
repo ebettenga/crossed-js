@@ -30,7 +30,7 @@ export class User {
   @Column("boolean", { default: false, select: false })
   confirmed_mail: boolean;
 
-  @Column("simple-array", { default: "" })
+  @Column("simple-array", { default: ["user"] })
   roles: string[];
 
   @Column("text", { nullable: true })
@@ -67,9 +67,9 @@ export class User {
     this.gamesLost = totalGames - this.gamesWon;
 
     // Calculate guess accuracy
-    const totalGuesses = this.gameStats.reduce((sum, stat) => 
+    const totalGuesses = this.gameStats.reduce((sum, stat) =>
         sum + stat.correctGuesses + stat.incorrectGuesses, 0);
-    const correctGuesses = this.gameStats.reduce((sum, stat) => 
+    const correctGuesses = this.gameStats.reduce((sum, stat) =>
         sum + stat.correctGuesses, 0);
     this.guessAccuracy = totalGuesses > 0 ? (correctGuesses / totalGuesses) * 100 : 0;
 
