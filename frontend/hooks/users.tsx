@@ -44,6 +44,11 @@ export const useUser = () => {
     queryKey: ['me'],
     queryFn: async () => {
       try {
+        const token = await secureStorage.get("token");
+        if (!token) {
+          throw new Error("No token");
+        }
+
         const response = await get<User>('/me');
         if (response.photo && response.photoContentType) {
           // Convert the base64 string to a data URL
@@ -51,14 +56,16 @@ export const useUser = () => {
         }
         return response;
       } catch (error: any) {
-        if (error.message === 'Forbidden' || error.message === 'Unauthorized') {
+        if (error.message === 'Forbidden' || error.message === 'Unauthorized' || error.message === 'No token') {
           await secureStorage.remove('token');
+          await secureStorage.remove('refresh_token');
+          router.replace('/(auth)/signin');
         }
         throw error;
       }
     },
     retry: 1,
-
+    staleTime: 1000 * 60 * 5, // Consider data fresh for 5 minutes
   });
 };
 

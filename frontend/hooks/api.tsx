@@ -11,6 +11,47 @@ const defaultOptions: RequestOptions = {
   auth: true,
 };
 
+let isRefreshing = false;
+let failedQueue: { resolve: (token: string) => void; reject: (error: any) => void; }[] = [];
+
+const processQueue = (error: any, token: string | null = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token!);
+    }
+  });
+  failedQueue = [];
+};
+
+async function refreshToken(): Promise<string> {
+  try {
+    const refresh_token = await secureStorage.get("refresh_token");
+    if (!refresh_token) throw new Error("No refresh token");
+
+    const response = await fetch(`${config.api.baseURL}/refresh`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ refresh_token }),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to refresh token");
+    }
+
+    const data = await response.json();
+    await secureStorage.set("token", data.access_token);
+    return data.access_token;
+  } catch (error) {
+    await secureStorage.remove("token");
+    await secureStorage.remove("refresh_token");
+    throw error;
+  }
+}
+
 async function request<T>(
   endpoint: string,
   method: string,
@@ -21,7 +62,7 @@ async function request<T>(
 
   // Ensure endpoint starts with a slash
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-  
+
   // Manually construct the full URL to preserve the /api path
   const fullUrl = `${config.api.baseURL}${cleanEndpoint}`;
   const url = new URL(fullUrl);
@@ -36,7 +77,7 @@ async function request<T>(
     ...headers,
   };
 
-  if (!(body instanceof FormData)) {
+  if (["POST", "PATCH"].includes(method)) {
     requestHeaders["Content-Type"] = "application/json";
   }
 
@@ -47,18 +88,48 @@ async function request<T>(
     }
   }
 
-  const response = await fetch(url.toString(), {
-    method,
-    headers: requestHeaders,
-    body: body instanceof FormData ? body : JSON.stringify(body),
-  });
+  try {
+    const response = await fetch(url.toString(), {
+      method,
+      headers: requestHeaders,
+      body: body instanceof FormData ? body : JSON.stringify(body),
+    });
 
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({}));
-    throw new Error(error.error || "An error occurred");
+    // Handle token refresh
+    if (response.status === 403 && auth) {
+      if (isRefreshing) {
+        // Wait for the token to be refreshed
+        const token = await new Promise<string>((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        });
+        requestHeaders["Authorization"] = `Bearer ${token}`;
+        return request<T>(endpoint, method, body, options);
+      }
+
+      isRefreshing = true;
+
+      try {
+        const newToken = await refreshToken();
+        isRefreshing = false;
+        processQueue(null, newToken);
+        requestHeaders["Authorization"] = `Bearer ${newToken}`;
+        return request<T>(endpoint, method, body, options);
+      } catch (error) {
+        isRefreshing = false;
+        processQueue(error);
+        throw error;
+      }
+    }
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.error || "An error occurred");
+    }
+
+    return response.json();
+  } catch (error) {
+    throw error;
   }
-
-  return response.json();
 }
 
 export function get<T>(endpoint: string, options?: RequestOptions): Promise<T> {

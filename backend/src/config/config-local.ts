@@ -23,7 +23,7 @@ export const config = {
   auth: {
     secretAccessToken: "aklwj*$%rngbak4a43",
     authRefreshTokenExpiry: "3w",
-    authTokenExpiry: "2h",
+    authTokenExpiry: "1h",
   },
   secretKeyPath: "./config/secret-key",
 };

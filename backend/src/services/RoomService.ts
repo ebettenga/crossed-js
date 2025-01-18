@@ -41,18 +41,18 @@ export class RoomService {
   }
 
   async joinRoom(
-    userId: number,
+    user: User,
     difficulty: string,
     type: "1v1" | "2v2" | "free4all" = "1v1",
   ): Promise<Room> {
-    let room = await this.findEmptyRoomByDifficulty(difficulty, type, userId);
+    let room = await this.findEmptyRoomByDifficulty(difficulty, type, user);
 
     if (room) {
       fastify.log.info(`Found room with id: ${room.id}`);
-      await this.joinExistingRoom(room, userId);
+      await this.joinExistingRoom(room, user.id);
       return room;
     } else {
-      return await this.createRoom(userId, difficulty, type);
+      return await this.createRoom(user.id, difficulty, type);
     }
   }
 
@@ -122,18 +122,20 @@ export class RoomService {
   private async findEmptyRoomByDifficulty(
     difficulty: string,
     type: "1v1" | "2v2" | "free4all",
-    userId: number,
+    user: User,
   ): Promise<Room> {
+    let userRoomIds: number[] = [];
     // First get all rooms this user is in
+    if (!user.roles.includes("admin")) {
     const userRooms = await this.ormConnection
       .getRepository(Room)
       .createQueryBuilder("room")
       .select("room.id")
       .innerJoin("room.players", "players")
-      .where("players.id = :userId", { userId })
+      .where("players.id = :userId", { userId: user.id })
       .getMany();
-
-    const userRoomIds = userRooms.map(room => room.id);
+    userRoomIds = userRooms.map(room => room.id);
+    }
 
     return this.ormConnection.getRepository(Room).findOne({
       where: {
