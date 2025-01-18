@@ -1,5 +1,5 @@
 import { FastifyInstance } from "fastify";
-import { RoomService } from "../../services/RoomService"; // Assuming room_service is exported from RoomService
+import { RoomService } from "../../services/RoomService";
 import { AuthService } from "../../services/AuthService";
 import { User } from "../../entities/User";
 import { UserNotFoundError } from "../../errors/api";
@@ -69,6 +69,15 @@ export default function (
   fastify.io.on("connection", async (socket) => {
     try {
       const user = await verifyUser(authService, fastify, socket);
+
+      // Add user to all their active rooms
+      const rooms = await roomService.getRoomsByUserId(user.id);
+      for (const room of rooms) {
+        if (room.status === 'playing') {
+          socket.join(room.id.toString());
+          fastify.log.info(`User ${user.id} joined room ${room.id}`);
+        }
+      }
 
       // Join a room for user-specific events
       socket.join(user.id.toString());
