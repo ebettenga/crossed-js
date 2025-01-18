@@ -97,6 +97,7 @@ export default function SignUp() {
                                 Password
                             </Text>
                             <TextInput
+                                autoCapitalize="none"
                                 className="p-4 border placeholder:text-[#1D2124]/50 dark:placeholder:text-[#DDE1E5]/50 bg-white border-[#E5E5E5] text-[#1D2124] dark:bg-[#1A2227] dark:border-[#2A3136] dark:text-[#DDE1E5]"
                                 placeholder="Choose a password"
                                 value={password}
