@@ -1,9 +1,10 @@
 import { DataSource } from "typeorm";
 import { User } from "../entities/User";
-import { NotFoundError } from "../errors/api";
+import { NotFoundError, UniqueConstraintError } from "../errors/api";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import { config } from "../config/config";
+import fastify from "fastify";
 
 export class AuthService {
   private ormConnection: DataSource;
@@ -31,14 +32,36 @@ export class AuthService {
   async signup(app, body) {
     const { email, password, username } = body;
 
-    // Check if the user already exists
-    const existingUser = await this.ormConnection.getRepository(User).findOneBy(
-      { email },
-    );
+  // Checks if the user and emails are unique
+  const uniqueValues = await this.ormConnection.getRepository(User).findOne({
+    select: {
+      id: true,
+      email: true,
+      username: true,
+    },
+    where: [
+      { email: email },
+      { username: username },
+    ],
+  });
 
-    if (existingUser) {
-      throw new Error("auth/already-signed-up");
+
+
+  if (uniqueValues) {
+    let errors = [];
+    if (uniqueValues.email === email) {
+      errors.push("auth/email-already-exists");
+
     }
+    if (uniqueValues.username === username) {
+      errors.push("auth/username-already-exists");
+
+    }
+    throw new UniqueConstraintError(errors.map((error) => error).join(", "));
+
+  }
+
+
 
     const hashedPassword = await bcrypt.hash(password, 10);
 

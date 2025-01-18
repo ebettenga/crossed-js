@@ -13,3 +13,12 @@ export class UserNotFoundError extends Error {
     this.name = "UserNotFoundError";
   }
 }
+
+ export class UniqueConstraintError extends Error {
+  statusCode: number;
+  constructor(message: string) {
+    super(message);
+    this.name = "UniqueConstraintError";
+    this.statusCode = 409;
+  }
+}
