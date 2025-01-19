@@ -4,7 +4,7 @@ import { config } from "../config/config";
 import { secureStorage } from './storageApi';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
-import { Room } from './useRoom';
+import { Room } from './useJoinRoom';
 import { useUser } from './users';
 import { post } from './api';
 
@@ -360,14 +360,7 @@ export const useRoom = (roomId?: number) => {
   const { room, setRoom } = useContext(RoomContext);
   const [isInitialized, setIsInitialized] = useState(false);
   const { data: currentUser } = useUser();
-  const [showGameSummary, setShowGameSummary] = useState(false);
-  const [gameStats, setGameStats] = useState<{
-    isWinner: boolean;
-    correctGuesses: number;
-    incorrectGuesses: number;
-    eloAtGame: number;
-    eloChange: number;
-  } | null>(null);
+  const [showGameSummary, setShowGameSummary] = useState(true);
 
   useEffect(() => {
     if (!isConnected) {
@@ -377,12 +370,12 @@ export const useRoom = (roomId?: number) => {
     const handleRoom = (data: Room) => {
       if (!data) return;
 
-      // Check if room status changed to finished
-      if (data.status === 'finished' && room?.status !== 'finished') {
+      if (data.status === 'finished') {
         // Invalidate user stats and data
         queryClient.invalidateQueries({ queryKey: ['me'] });
         queryClient.invalidateQueries({ queryKey: ['userGameStats'] });
         queryClient.invalidateQueries({ queryKey: ['recentGames'] });
+        setShowGameSummary(true);
       }
 
       setRoom(data);
@@ -413,7 +406,6 @@ export const useRoom = (roomId?: number) => {
           eloAtGame: userStats?.eloRating || 0,
           eloChange: 0,
         };
-        setGameStats(userGameStats);
         setShowGameSummary(true);
       }
 
@@ -425,14 +417,8 @@ export const useRoom = (roomId?: number) => {
     };
 
     const handleRatingChange = (data: { oldRating: number, newRating: number, change: number }) => {
-      console.log("Rating changed:", data);
-
-      if (currentUser && gameStats) {
-        // Update the game stats with the ELO change
-        setGameStats(prev => prev ? {
-          ...prev,
-          eloChange: data.change,
-        } : null);
+      if (currentUser) {
+        setShowGameSummary(true);
       }
     };
 
@@ -453,7 +439,7 @@ export const useRoom = (roomId?: number) => {
       socket?.off("game_forfeited", handleGameForfeited);
       socket?.off("rating_change", handleRatingChange);
     };
-  }, [socket, isConnected, roomId, isInitialized, currentUser, gameStats]);
+  }, [socket, isConnected, roomId, isInitialized, currentUser]);
 
   const handleGameSummaryClose = () => {
     setShowGameSummary(false);
@@ -491,7 +477,6 @@ export const useRoom = (roomId?: number) => {
     isInitialized,
     cancel,
     showGameSummary,
-    gameStats,
     onGameSummaryClose: handleGameSummaryClose,
   };
 };

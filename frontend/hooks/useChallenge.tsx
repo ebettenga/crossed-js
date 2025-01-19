@@ -2,8 +2,8 @@ import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { post, get } from "./api";
 import { useSocket } from "./socket";
 import { useEffect } from "react";
-import { Room } from "./useRoom";
-import { useRouter } from "expo-router";     
+import { Room } from "./useJoinRoom";
+import { useRouter } from "expo-router";
 
 export const useChallenge = () => {
     const queryClient = useQueryClient();
@@ -27,7 +27,7 @@ export const useChallenge = () => {
     const { data: challenges = [] } = useQuery<Room[]>({
         queryKey: ['challenges', 'pending'],
         queryFn: () => get('/rooms/challenges/pending'),
-        refetchInterval: 10000, 
+        refetchInterval: 10000,
     });
 
     const sendChallenge = useMutation({
@@ -71,4 +71,4 @@ export const useChallenge = () => {
         acceptChallenge,
         rejectChallenge,
     };
-}; 
+};

@@ -201,7 +201,7 @@ export default function Friends() {
 
     const handleAcceptChallenge = async (roomId: number) => {
         try {
-            await acceptChallenge.mutateAsync(roomId);
+            acceptChallenge.mutate(roomId);
         } catch (err) {
             console.error('Failed to accept challenge:', err);
         }

@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { get } from './api';
-import { Room } from './useRoom';
+import { Room } from './useJoinRoom';
 
 export const useRooms = (status?: 'playing' | 'pending' | 'finished' | 'cancelled') => useQuery<Room[]>({
     queryKey: ['rooms', status],
