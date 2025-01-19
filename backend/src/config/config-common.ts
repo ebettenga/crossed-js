@@ -36,5 +36,15 @@ export const commonConfig = {
     port: parseInt(process.env.REDIS_PORT || '6379'),
     password: process.env.REDIS_PASSWORD,
   },
+  email: {
+    host: process.env.SMTP_HOST || 'smtp.gmail.com',
+    port: parseInt(process.env.SMTP_PORT || '587'),
+    secure: process.env.SMTP_SECURE === 'true',
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
+    },
+    from: process.env.SMTP_FROM || 'noreply@crossed.com',
+  },
   mode: process.env.SERVER_MODE || 'api', // 'api' or 'worker',
 };

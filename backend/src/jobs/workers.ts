@@ -1,26 +1,29 @@
 import { Worker } from 'bullmq';
 import { config } from '../config/config';
 import { EmailJobData } from './queues';
+import { emailService } from '../services/EmailService';
 
 // Email worker
 const emailWorker = new Worker<EmailJobData>(
   'email',
   async (job) => {
-    // Process email job
     console.log('Processing email job:', job.data);
-    // Add your email sending logic here
+    const { to, subject, body } = job.data;
+    await emailService.sendEmail(to, subject, body);
+    console.log('Email sent successfully');
   },
   {
     connection: config.redis,
+    concurrency: 5, // Process 5 emails at a time
   }
 );
 
 emailWorker.on('completed', (job) => {
-  console.log(`Job ${job.id} completed`);
+  console.log(`Email job ${job.id} completed`);
 });
 
 emailWorker.on('failed', (job, err) => {
-  console.error(`Job ${job?.id} failed:`, err);
+  console.error(`Email job ${job?.id} failed:`, err);
 });
 
 // Export workers for cleanup
