@@ -5,6 +5,8 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import { config } from "../config/config";
 import fastify, { FastifyInstance } from "fastify";
+import { emailService } from "./EmailService";
+import crypto from 'crypto';
 
 export class AuthService {
   private ormConnection: DataSource;
@@ -166,6 +168,63 @@ export class AuthService {
     } catch (err) {
       throw new Error("auth/invalid-refresh-token");
     }
+  }
+
+  async forgotPassword(email: string): Promise<void> {
+    const userRepository = this.ormConnection.getRepository(User);
+    const user = await userRepository.findOne({ where: { email } });
+
+    if (!user) {
+      // Return silently to prevent email enumeration
+      return;
+    }
+
+    // Generate reset token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetTokenExpiry = new Date(Date.now() + 3600000); // 1 hour from now
+
+    // Save reset token to user
+    await userRepository.update(user.id, {
+      attributes: [
+        ...(user.attributes || []).filter(attr => attr.key !== 'resetToken' && attr.key !== 'resetTokenExpiry'),
+        { key: 'resetToken', value: resetToken },
+        { key: 'resetTokenExpiry', value: resetTokenExpiry.toISOString() }
+      ]
+    });
+
+    // Send reset email
+    await emailService.sendPasswordResetEmail(user.email, user.username || 'User', resetToken);
+  }
+
+  async resetPassword(token: string, newPassword: string): Promise<void> {
+    const userRepository = this.ormConnection.getRepository(User);
+    const user = await userRepository.findOne({
+      where: {},
+      select: ['id', 'attributes']
+    });
+
+    if (!user?.attributes) {
+      throw new ForbiddenError("Invalid or expired reset token");
+    }
+
+    const resetToken = user.attributes.find(attr => attr.key === 'resetToken')?.value;
+    const resetTokenExpiry = user.attributes.find(attr => attr.key === 'resetTokenExpiry')?.value;
+
+    if (!resetToken || !resetTokenExpiry || resetToken !== token) {
+      throw new ForbiddenError("Invalid or expired reset token");
+    }
+
+    if (new Date(resetTokenExpiry) < new Date()) {
+      throw new ForbiddenError("Reset token has expired");
+    }
+
+    // Update password and remove reset token
+    await this.updatePassword(user.id, newPassword);
+    await userRepository.update(user.id, {
+      attributes: user.attributes.filter(attr =>
+        attr.key !== 'resetToken' && attr.key !== 'resetTokenExpiry'
+      )
+    });
   }
 
   async updatePassword(userId: number, newPassword: string): Promise<void> {
