@@ -1,5 +1,7 @@
 import nodemailer from 'nodemailer';
 import { config } from '../config/config';
+import { render } from 'jsx-email';
+import Template from '../emails/ResetPassword';
 
 class EmailService {
   private transporter: nodemailer.Transporter;
@@ -26,6 +28,22 @@ class EmailService {
       });
     } catch (error) {
       console.error('Failed to send email:', error);
+      throw error;
+    }
+  }
+
+  async sendPasswordResetEmail(to: string, username: string, resetToken: string): Promise<void> {
+    try {
+      const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${resetToken}`;
+      const emailHtml = await render(Template({ username, resetLink }));
+
+      await this.sendEmail(
+        to,
+        'Reset Your Password',
+        emailHtml
+      );
+    } catch (error) {
+      console.error('Failed to send password reset email:', error);
       throw error;
     }
   }
