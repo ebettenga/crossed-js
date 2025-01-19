@@ -1,9 +1,10 @@
 import fastifyStatic from '@fastify/static';
 import { join } from 'path';
+import fastify, { FastifyInstance } from 'fastify';
 
 // ... existing imports ...
 
-export async function build(opts = {}) {
+export async function build(opts = {}): Promise<FastifyInstance> {
   const app = fastify(opts);
 
   // Register static file serving for uploads
@@ -13,4 +14,6 @@ export async function build(opts = {}) {
   });
 
   // ... rest of the build function ...
-} 
+
+  return app;
+}

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { View, Text, SafeAreaView } from 'react-native';
+import { View, SafeAreaView } from 'react-native';
 import { CrosswordBoard } from '../components/game/CrosswordBoard';
 import { Keyboard } from '../components/game/Keyboard';
 import { PlayerInfo } from '../components/game/PlayerInfo';
@@ -13,7 +13,6 @@ import { useUser } from '~/hooks/users';
 import { Avatar } from '~/components/shared/Avatar';
 import ConnectionStatus from '~/components/ConnectionStatus';
 import { CluesButton } from '../components/game/CluesButton';
-import { GameSummaryModal } from '../components/game/GameSummaryModal';
 
 
 type MenuOption = {

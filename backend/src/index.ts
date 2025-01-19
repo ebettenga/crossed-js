@@ -14,6 +14,9 @@ import { fileURLToPath } from "url";
 import fastifyAutoload from "@fastify/autoload";
 import { User } from "./entities/User";
 import { Server } from "socket.io";
+import { build } from './app';
+import { workers, closeWorkers } from './jobs/workers';
+import { FastifyInstance } from 'fastify';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -51,24 +54,31 @@ fastify.register(fastifyAutoload, {
   options: { prefix: config.api.prefix },
 });
 
-const start = async () => {
-  try {
-    await fastify.listen({
-      port: config.api.port,
-      host: config.api.host,
+async function startServer() {
+  if (config.mode === 'worker') {
+    console.log('Starting in worker mode...');
+    // Workers are automatically started when imported
+
+    // Handle graceful shutdown
+    process.on('SIGTERM', async () => {
+      console.log('Shutting down workers...');
+      await closeWorkers();
+      process.exit(0);
+    });
+  } else {
+    console.log('Starting in API mode...');
+    const server: FastifyInstance = await build({
+      logger: config.logger,
     });
 
-    fastify.log.info(
-      "Running server on http://%s:%d",
-      config.api.host,
-      config.api.port,
-    );
-  } catch (err) {
-    console.error(err);
-    fastify.log.error(err);
-    process.exit(1);
+    try {
+      await server.listen({ port: 3000, host: '0.0.0.0' });
+    } catch (err) {
+      server.log.error(err);
+      process.exit(1);
+    }
   }
-};
+}
 
 declare module "fastify" {
   interface FastifyInstance {
@@ -80,4 +90,7 @@ declare module "fastify" {
   }
 }
 
-start();
+startServer().catch((err) => {
+  console.error('Failed to start server:', err);
+  process.exit(1);
+});

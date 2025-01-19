@@ -31,4 +31,10 @@ export const commonConfig = {
       firstCrosswordDate: '2000-01-01',
     },
   },
+  redis: {
+    host: process.env.REDIS_HOST || 'localhost',
+    port: parseInt(process.env.REDIS_PORT || '6379'),
+    password: process.env.REDIS_PASSWORD,
+  },
+  mode: process.env.SERVER_MODE || 'api', // 'api' or 'worker',
 };
