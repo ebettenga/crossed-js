@@ -1,6 +1,6 @@
 import { DataSource } from "typeorm";
 import { User } from "../entities/User";
-import { NotFoundError, UniqueConstraintError } from "../errors/api";
+import { ForbiddenError, NotFoundError, UniqueConstraintError } from "../errors/api";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import { config } from "../config/config";
@@ -141,7 +141,7 @@ export class AuthService {
       const decoded = jwt.verify(token, config.auth.secretAccessToken);
       return decoded;
     } catch (err) {
-      throw new Error("auth/invalid-token");
+      throw new ForbiddenError("auth/invalid-token");
     }
   }
 

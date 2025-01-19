@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { View, Text, SafeAreaView } from 'react-native';
 import { CrosswordBoard } from '../components/game/CrosswordBoard';
 import { Keyboard } from '../components/game/Keyboard';
@@ -13,7 +13,7 @@ import { GameTimer } from '~/components/game/GameTimer';
 import { useUser } from '~/hooks/users';
 import { Avatar } from '~/components/shared/Avatar';
 import ConnectionStatus from '~/components/ConnectionStatus';
-import { GameSummaryModal } from '~/components/game/GameSummaryModal';
+import { CluesButton } from '../components/game/CluesButton';
 
 export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
     const { room, guess, refresh, forfeit } = useRoom(roomId);
@@ -21,17 +21,10 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
     const router = useRouter();
     const [selectedCell, setSelectedCell] = useState<Square | null>(null);
     const [isAcrossMode, setIsAcrossMode] = useState(true);
-    const [showSummary, setShowSummary] = useState(false);
 
     useEffect(() => {
         refresh(roomId);
     }, []);
-
-    useEffect(() => {
-        if (room?.status === 'finished' && !showSummary) {
-            setShowSummary(true);
-        }
-    }, [room?.status]);
 
     useEffect(() => {
         if (room?.board) {
@@ -47,6 +40,42 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
             }
         }
     }, []);
+
+    // Format clues and firstCellsMap for the CluesModal
+    const formattedClues = useMemo(() => {
+        const cellsMap: {
+            across: Square[];
+            down: Square[];
+        } = {
+            across: [],
+            down: []
+        };
+
+        // Create sets to track unique clues
+        const seenAcrossClues = new Set<string>();
+        const seenDownClues = new Set<string>();
+
+        room?.board.forEach((row, x) => {
+            row.forEach((square, y) => {
+                if (square.gridnumber) {
+                    if (square.acrossQuestion && !seenAcrossClues.has(square.acrossQuestion)) {
+                        seenAcrossClues.add(square.acrossQuestion);
+                        cellsMap.across.push(square);
+                    }
+                    if (square.downQuestion && !seenDownClues.has(square.downQuestion)) {
+                        seenDownClues.add(square.downQuestion);
+                        cellsMap.down.push(square);
+                    }
+                }
+            });
+        });
+
+        // Sort both arrays by gridnumber
+        cellsMap.across.sort((a, b) => (a.gridnumber || 0) - (b.gridnumber || 0));
+        cellsMap.down.sort((a, b) => (a.gridnumber || 0) - (b.gridnumber || 0));
+
+        return cellsMap;
+    }, [room?.board]);
 
     if (!room || room.id !== roomId) {
         return <LoadingGame />;
@@ -145,10 +174,6 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
         },
     ];
 
-    // Get the current user's stats for this game
-    const currentUserStats = room.gameStats?.find(stat => stat.userId === currentUser?.id);
-    const isWinner = currentUser && room.scores[currentUser.id] === Math.max(...Object.values(room.scores));
-
     return (
         <SafeAreaView className="flex-1 bg-[#F5F5EB] dark:bg-[#0F1417]">
             <View className="flex-row justify-between items-center px-4 mt-6">
@@ -190,20 +215,13 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
                 />
             </View>
             <GameMenu options={menuOptions} />
-
-            {currentUserStats && (
-                <GameSummaryModal
-                    visible={showSummary}
-                    onClose={() => setShowSummary(false)}
-                    stats={{
-                        isWinner: isWinner || false,
-                        correctGuesses: currentUserStats.correctGuesses,
-                        incorrectGuesses: currentUserStats.incorrectGuesses,
-                        eloAtGame: currentUserStats.eloAtGame,
-                        eloChange: currentUserStats.eloChange || 0,
-                    }}
-                />
-            )}
+            <CluesButton
+                clues={formattedClues}
+                onCluePress={(square, isAcrossMode) => {
+                    setSelectedCell(square);
+                    setIsAcrossMode(isAcrossMode);
+                }}
+            />
         </SafeAreaView>
     );
 };

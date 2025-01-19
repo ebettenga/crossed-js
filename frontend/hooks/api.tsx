@@ -113,6 +113,7 @@ async function request<T>(
         isRefreshing = false;
         processQueue(null, newToken);
         requestHeaders["Authorization"] = `Bearer ${newToken}`;
+        await secureStorage.set("token", newToken);
         return request<T>(endpoint, method, body, options);
       } catch (error) {
         isRefreshing = false;
