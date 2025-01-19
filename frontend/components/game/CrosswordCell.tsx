@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, Dimensions, Pressable, View, Text } from 'react-native';
-import { SquareType } from '~/hooks/useRoom';
+import { SquareType } from '~/hooks/useJoinRoom';
 import { config } from '~/config/config';
 import { ArrowRight, ArrowDown } from 'lucide-react-native';
 

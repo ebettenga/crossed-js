@@ -39,7 +39,6 @@ export default function (
   fastify.post("/rooms/join", async (request, reply) => {
     const { difficulty, type } = request.body as JoinRoom;
     const room = await roomService.joinRoom(request.user, difficulty, type);
-    fastify.io.sockets.socketsJoin(room.id.toString());
     fastify.io.to(room.id.toString()).emit("room", room.toJSON());
     reply.send(room.toJSON());
   });

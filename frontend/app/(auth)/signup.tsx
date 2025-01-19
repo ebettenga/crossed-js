@@ -12,8 +12,6 @@ export default function SignUp() {
     const [password, setPassword] = useState('');
     const [username, setUsername] = useState('');
     const [error, setError] = useState('');
-    const { data: user } = useUser();
-
     const signUpMutation = useSignUp();
 
     const handleSignUp = () => {
@@ -25,10 +23,6 @@ export default function SignUp() {
             setError('Failed to create account');
         }
     };
-
-    if (user) {
-        return <Redirect href="/(root)/(tabs)" />;
-    }
 
     return (
         <SafeAreaView className="flex-1 bg-[#F6FAFE] dark:bg-[#0F1417]">
@@ -48,7 +42,7 @@ export default function SignUp() {
                 />
                 <Image
                     source={require('~/assets/images/icon-clean.png')}
-                    className="absolute bottom-5 w-20 h-20 self-center"
+                    className="absolute bottom-5 w-36 h-36 self-center"
                     resizeMode="contain"
                 />
             </View>

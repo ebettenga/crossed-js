@@ -12,7 +12,7 @@ const ConnectionStatus = ({ compact = false }: ConnectionStatusProps) => {
 
     if (compact) {
         return (
-            <View className="-mr-12">
+            <View>
                 {isConnected ? (
                     <Wifi
                         size={16}

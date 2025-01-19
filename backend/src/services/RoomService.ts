@@ -160,6 +160,91 @@ export class RoomService {
       .getMany();
   }
 
+  private async onGameEnd(room: Room, forfeitedBy?: number): Promise<void> {
+    room.status = "finished";
+    room.completed_at = new Date();
+
+    // If game was forfeited, adjust scores
+    if (forfeitedBy !== undefined) {
+      const minScore = Math.min(...Object.values(room.scores)) - 100;
+      room.scores[forfeitedBy] = minScore;
+    }
+
+    // Find player with highest score
+    const highestScore = Math.max(...Object.values(room.scores));
+    const winnerIds = Object.entries(room.scores)
+      .filter(([userId, score]) => score === highestScore)
+      .map(([userId]) => parseInt(userId));
+
+    // Get all game stats for players in this room
+    const gameStatsRepo = this.ormConnection.getRepository(GameStats);
+    const allGameStats = await gameStatsRepo.find({
+      where: {
+        roomId: room.id,
+      },
+    });
+
+    // Update win streaks and winner status
+    for (const stats of allGameStats) {
+      // If game was forfeited, non-forfeiting players are winners
+      const isWinner = forfeitedBy !== undefined
+        ? stats.userId !== forfeitedBy
+        : winnerIds.includes(stats.userId);
+
+      if (isWinner) {
+        // Get the player's stats from their last completed game
+        const previousStats = await gameStatsRepo
+          .createQueryBuilder("stats")
+          .innerJoinAndSelect("stats.room", "room")
+          .where("stats.userId = :userId", { userId: stats.userId })
+          .andWhere("stats.roomId != :roomId", { roomId: room.id })
+          .andWhere("room.status = :status", { status: "finished" })
+          .orderBy("stats.createdAt", "DESC")
+          .take(1)
+          .getOne();
+
+        stats.isWinner = true;
+        stats.winStreak = (previousStats?.winStreak || 0) + 1;
+      } else {
+        stats.isWinner = false;
+        stats.winStreak = 0; // Reset win streak for losers
+      }
+      await gameStatsRepo.save(stats);
+    }
+
+    // Update ELO ratings for all players
+    try {
+      const newRatings = await this.eloService.updateEloRatings(room);
+
+      // Emit rating changes to all players
+      for (const [playerId, newRating] of newRatings.entries()) {
+        const oldRating = room.players.find((p) =>
+          p.id === playerId
+        )?.eloRating || 0;
+        const ratingChange = newRating - oldRating;
+
+        fastify.io.to(playerId.toString()).emit("rating_change", {
+          oldRating,
+          newRating,
+          change: ratingChange,
+        });
+      }
+    } catch (error) {
+      fastify.log.error("Failed to update ELO ratings:", error);
+    }
+
+    await this.ormConnection.getRepository(Room).save(room);
+
+    // If game was forfeited, emit forfeit event
+    if (forfeitedBy !== undefined) {
+      fastify.io.to(room.id.toString()).emit("game_forfeited", {
+        message: "A player has forfeited the game",
+        forfeitedBy,
+        room: room.toJSON(),
+      });
+    }
+  }
+
   async forfeitGame(roomId: number, userId: number): Promise<Room> {
     const room = await this.getRoomById(roomId);
 
@@ -173,11 +258,29 @@ export class RoomService {
       throw new Error("User is not a participant in this room");
     }
 
-    // Set the game as finished
-    room.status = "finished";
-    room.markModified();
+    // Create or update game stats for all players if they don't exist
+    const gameStatsRepo = this.ormConnection.getRepository(GameStats);
+    for (const player of room.players) {
+      let gameStats = await gameStatsRepo.findOne({
+        where: { userId: player.id, roomId }
+      });
 
-    await this.ormConnection.getRepository(Room).save(room);
+      if (!gameStats) {
+        gameStats = new GameStats();
+        gameStats.user = player;
+        gameStats.room = room;
+        gameStats.userId = player.id;
+        gameStats.roomId = roomId;
+        gameStats.eloAtGame = player.eloRating;
+        gameStats.correctGuesses = 0;
+        gameStats.incorrectGuesses = 0;
+        gameStats.correctGuessDetails = [];
+        await gameStatsRepo.save(gameStats);
+      }
+    }
+
+    room.markModified();
+    await this.onGameEnd(room, userId);
     return room;
   }
 
@@ -218,6 +321,12 @@ export class RoomService {
     const room = await this.getRoomById(roomId);
     if (!room) throw new NotFoundError("Room not found");
 
+    // Check if letter is already found at this position
+    const letterIndex = x * room.crossword.col_size + y;
+    if (room.found_letters[letterIndex] !== '*') {
+      return room;
+    }
+
     const isCorrect = await this.crosswordService.checkGuess(
       room,
       { x, y },
@@ -244,7 +353,6 @@ export class RoomService {
       gameStats.correctGuesses = 0;
       gameStats.incorrectGuesses = 0;
       gameStats.correctGuessDetails = [];
-      gameStats.winStreak = 0;
     }
 
     // Update stats based on guess result
@@ -272,16 +380,17 @@ export class RoomService {
       room.markModified();
     }
 
+    // Save game stats
+    await this.ormConnection.getRepository(GameStats).save(gameStats);
+
     // Check if game is won
     if (this.isGameFinished(room)) {
       await this.onGameEnd(room);
     } else {
-      // Save both game stats and room
+      // Save room if game is not finished
       await this.ormConnection.getRepository(Room).save(room);
-      await this.ormConnection.getRepository(GameStats).save(gameStats);
     }
 
-    room.markModified();
     return room;
   }
 
@@ -435,71 +544,5 @@ export class RoomService {
       });
 
     return query.getMany();
-  }
-
-  private async onGameEnd(room: Room): Promise<void> {
-    room.status = "finished";
-    room.completed_at = new Date();
-
-    // Find player with highest score
-    const highestScore = Math.max(...Object.values(room.scores));
-    const winnerIds = Object.entries(room.scores)
-      .filter(([_, score]) => score === highestScore)
-      .map(([userId]) => parseInt(userId));
-
-    // Get all game stats for players in this room
-    const gameStatsRepo = this.ormConnection.getRepository(GameStats);
-    const allGameStats = await gameStatsRepo.find({
-      where: {
-        roomId: room.id,
-      },
-    });
-
-    // Update win streaks and winner status
-    for (const stats of allGameStats) {
-      const isWinner = winnerIds.includes(stats.userId);
-      if (isWinner) {
-        // Get the player's stats from their last completed game
-        const previousStats = await gameStatsRepo
-          .createQueryBuilder("stats")
-          .innerJoinAndSelect("stats.room", "room")
-          .where("stats.userId = :userId", { userId: stats.userId })
-          .andWhere("stats.roomId != :roomId", { roomId: room.id })
-          .andWhere("room.status = :status", { status: "finished" })
-          .orderBy("stats.createdAt", "DESC")
-          .take(1)
-          .getOne();
-
-        stats.isWinner = true;
-        stats.winStreak = (previousStats?.winStreak || 0) + 1;
-      } else {
-        stats.isWinner = false;
-        stats.winStreak = 0; // Reset win streak for losers
-      }
-      await this.ormConnection.getRepository(GameStats).save(stats);
-    }
-
-    // Update ELO ratings for all players
-    try {
-      const newRatings = await this.eloService.updateEloRatings(room);
-
-      // Emit rating changes to all players
-      for (const [playerId, newRating] of newRatings.entries()) {
-        const oldRating = room.players.find((p) =>
-          p.id === playerId
-        )?.eloRating || 0;
-        const ratingChange = newRating - oldRating;
-
-        fastify.io.to(playerId.toString()).emit("rating_change", {
-          oldRating,
-          newRating,
-          change: ratingChange,
-        });
-      }
-    } catch (error) {
-      fastify.log.error("Failed to update ELO ratings:", error);
-    }
-
-    await this.ormConnection.getRepository(Room).save(room);
   }
 }

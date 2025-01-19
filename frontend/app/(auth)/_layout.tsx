@@ -8,7 +8,6 @@ import { useUser } from '~/hooks/users';
 export default function AuthLayout() {
   const { data: user } = useUser();
 
-
   // If logged in, redirect to main app
   if (user) {
     return <Redirect href="/(root)/(tabs)" />;

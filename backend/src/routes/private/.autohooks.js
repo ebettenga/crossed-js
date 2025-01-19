@@ -15,7 +15,6 @@ export default async function (fastify, opts) {
           .getRepository(User)
           .findOneById(user.sub);
 
-        fastify.log.info(userRecord);
         if (!userRecord) {
           reply.code(403).send({ error: 'Unauthorized' });
           return;

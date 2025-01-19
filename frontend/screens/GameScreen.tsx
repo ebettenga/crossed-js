@@ -7,16 +7,23 @@ import { GameMenu } from '../components/game/GameMenu';
 import { useRouter } from 'expo-router';
 import { ClueDisplay } from '../components/game/ClueDisplay';
 import { useRoom } from '~/hooks/socket';
-import { Square, SquareType } from "~/hooks/useRoom";
+import { Square, SquareType } from "~/hooks/useJoinRoom";
 import { LoadingGame } from '~/components/game/LoadingGame';
-import { GameTimer } from '~/components/game/GameTimer';
 import { useUser } from '~/hooks/users';
 import { Avatar } from '~/components/shared/Avatar';
 import ConnectionStatus from '~/components/ConnectionStatus';
 import { CluesButton } from '../components/game/CluesButton';
+import { GameSummaryModal } from '../components/game/GameSummaryModal';
+
+
+type MenuOption = {
+    label: string;
+    onPress: () => void;
+    style?: { color: string };
+};
 
 export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
-    const { room, guess, refresh, forfeit } = useRoom(roomId);
+    const { room, guess, refresh, forfeit, showGameSummary, onGameSummaryClose } = useRoom(roomId);
     const { data: currentUser } = useUser();
     const router = useRouter();
     const [selectedCell, setSelectedCell] = useState<Square | null>(null);
@@ -59,12 +66,40 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
             row.forEach((square, y) => {
                 if (square.gridnumber) {
                     if (square.acrossQuestion && !seenAcrossClues.has(square.acrossQuestion)) {
-                        seenAcrossClues.add(square.acrossQuestion);
-                        cellsMap.across.push(square);
+                        // Check if all squares in this across word are solved
+                        let allSolved = true;
+                        let currentY = y;
+                        while (currentY < row.length && room.board[x][currentY].squareType !== SquareType.BLACK) {
+                            if (room.board[x][currentY].squareType !== SquareType.SOLVED) {
+                                allSolved = false;
+                                break;
+                            }
+                            currentY++;
+                        }
+
+                        if (!allSolved) {
+                            seenAcrossClues.add(square.acrossQuestion);
+                            cellsMap.across.push(square);
+                        }
                     }
+
+                    // Check down clue
                     if (square.downQuestion && !seenDownClues.has(square.downQuestion)) {
-                        seenDownClues.add(square.downQuestion);
-                        cellsMap.down.push(square);
+                        // Check if all squares in this down word are solved
+                        let allSolved = true;
+                        let currentX = x;
+                        while (currentX < room.board.length && room.board[currentX][y].squareType !== SquareType.BLACK) {
+                            if (room.board[currentX][y].squareType !== SquareType.SOLVED) {
+                                allSolved = false;
+                                break;
+                            }
+                            currentX++;
+                        }
+
+                        if (!allSolved) {
+                            seenDownClues.add(square.downQuestion);
+                            cellsMap.down.push(square);
+                        }
                     }
                 }
             });
@@ -151,10 +186,11 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
 
     const handleForfeit = () => {
         forfeit(roomId);
-        router.push('/(root)/(tabs)');
     };
 
-    const menuOptions = [
+
+
+    const menuOptions: MenuOption[] = [
         {
             label: 'Home',
             onPress: () => {
@@ -167,12 +203,14 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
                 console.log('Open settings');
             },
         },
-        {
+    ];
+    if (room.status !== 'finished') {
+        menuOptions.push({
             label: 'Forfeit Game',
             onPress: handleForfeit,
             style: { color: '#8B0000' }
-        },
-    ];
+        },);
+    }
 
     return (
         <SafeAreaView className="flex-1 bg-[#F5F5EB] dark:bg-[#0F1417]">
@@ -181,12 +219,8 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
                     {currentUser && (
                         <Avatar user={currentUser} imageUrl={currentUser.photo} size={32} />
                     )}
-                    <Text className="text-sm text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman']">
-                        {room.crossword.title}
-                    </Text>
                 </View>
                 <ConnectionStatus compact />
-                <GameTimer startTime={room.created_at} completedAt={room.completed_at} />
             </View>
             <PlayerInfo
                 players={room.players}

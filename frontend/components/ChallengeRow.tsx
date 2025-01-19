@@ -1,8 +1,7 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Swords, X } from 'lucide-react-native';
-import { Player, Room } from '~/hooks/useRoom';
-import { User } from '~/hooks/users';
+import { Room } from '~/hooks/useJoinRoom';
 
 type ChallengeRowProps = {
     room: Room;
@@ -27,10 +26,11 @@ export const ChallengeRow = ({
         <View className="flex-row items-center justify-between bg-[#F8F8F5] dark:bg-[#1A2227] p-3 rounded-xl border border-[#E5E5E5] dark:border-[#2A3136]">
             <View className="flex-1 flex-row items-center gap-3">
                 <View className="relative">
-                    <Image
-                        source={{ uri: 'https://i.pravatar.cc/150' }}
-                        className="w-10 h-10 rounded-full bg-[#F5F5EB] dark:bg-[#2A3136]"
-                    />
+                    <View className="w-10 h-10 rounded-full bg-[#8B0000] items-center justify-center">
+                        <Text className="text-white text-lg font-bold font-['Times New Roman']">
+                            {username?.charAt(0).toUpperCase()}
+                        </Text>
+                    </View>
                 </View>
                 <View className="flex-1">
                     <Text className="text-base text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times New Roman']">

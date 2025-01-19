@@ -4,7 +4,7 @@ import { config } from "../config/config";
 import { secureStorage } from './storageApi';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
-import { Room } from './useRoom';
+import { Room } from './useJoinRoom';
 import { useUser } from './users';
 import { post } from './api';
 
@@ -359,6 +359,8 @@ export const useRoom = (roomId?: number) => {
   const router = useRouter();
   const { room, setRoom } = useContext(RoomContext);
   const [isInitialized, setIsInitialized] = useState(false);
+  const { data: currentUser } = useUser();
+  const [showGameSummary, setShowGameSummary] = useState(true);
 
   useEffect(() => {
     if (!isConnected) {
@@ -368,12 +370,12 @@ export const useRoom = (roomId?: number) => {
     const handleRoom = (data: Room) => {
       if (!data) return;
 
-      // Check if room status changed to finished
-      if (data.status === 'finished' && room?.status !== 'finished') {
+      if (data.status === 'finished') {
         // Invalidate user stats and data
         queryClient.invalidateQueries({ queryKey: ['me'] });
         queryClient.invalidateQueries({ queryKey: ['userGameStats'] });
         queryClient.invalidateQueries({ queryKey: ['recentGames'] });
+        setShowGameSummary(true);
       }
 
       setRoom(data);
@@ -382,12 +384,48 @@ export const useRoom = (roomId?: number) => {
 
     const handleGameStarted = (data: { message: string, room: Room }) => {
       console.log("Game started:", data.message);
-      router.push(`/game?roomId=${data.room.id}`);
+      // Only redirect if the current user is a player in this game
+      if (currentUser && data.room.players.some(player => player.id === currentUser.id)) {
+        router.push(`/game?roomId=${data.room.id}`);
+        setRoom(data.room);
+      }
+    };
+
+    const handleGameForfeited = (data: { message: string, forfeitedBy: number, room: Room }) => {
+      console.log("Game forfeited:", data.message);
       setRoom(data.room);
+
+      if (currentUser) {
+        // Find the current user's game stats
+        const isWinner = data.forfeitedBy !== currentUser.id;
+        const userStats = data.room.players.find(p => p.id === currentUser.id);
+        const userGameStats = {
+          isWinner,
+          correctGuesses: 0, // These will be updated when we receive rating_change
+          incorrectGuesses: 0,
+          eloAtGame: userStats?.eloRating || 0,
+          eloChange: 0,
+        };
+        setShowGameSummary(true);
+      }
+
+      // If current user is in the game, prepare for redirection
+      if (currentUser && data.room.players.some(player => player.id === currentUser.id)) {
+        // Don't redirect immediately, wait for user to close the game summary
+        // router.push('/(root)/(tabs)');
+      }
+    };
+
+    const handleRatingChange = (data: { oldRating: number, newRating: number, change: number }) => {
+      if (currentUser) {
+        setShowGameSummary(true);
+      }
     };
 
     socket?.on("room", handleRoom);
     socket?.on("game_started", handleGameStarted);
+    socket?.on("game_forfeited", handleGameForfeited);
+    socket?.on("rating_change", handleRatingChange);
 
     // Only refresh if we haven't initialized the room yet
     if (!isInitialized && roomId) {
@@ -398,8 +436,15 @@ export const useRoom = (roomId?: number) => {
     return () => {
       socket?.off("room", handleRoom);
       socket?.off("game_started", handleGameStarted);
+      socket?.off("game_forfeited", handleGameForfeited);
+      socket?.off("rating_change", handleRatingChange);
     };
-  }, [socket, isConnected, roomId, isInitialized]);
+  }, [socket, isConnected, roomId, isInitialized, currentUser]);
+
+  const handleGameSummaryClose = () => {
+    setShowGameSummary(false);
+    router.push('/(root)/(tabs)');
+  };
 
   const guess = (roomId: number, coordinates: { x: number; y: number }, guess: string) => {
     emit("guess", JSON.stringify({ roomId, x: coordinates.x, y: coordinates.y, guess }));
@@ -420,7 +465,6 @@ export const useRoom = (roomId?: number) => {
 
   const forfeit = (roomId: number) => {
     emit("forfeit", JSON.stringify({ roomId }));
-    queryClient.invalidateQueries({ queryKey: ['rooms'] });
   };
 
   return {
@@ -431,6 +475,8 @@ export const useRoom = (roomId?: number) => {
     isConnected,
     error,
     isInitialized,
-    cancel
+    cancel,
+    showGameSummary,
+    onGameSummaryClose: handleGameSummaryClose,
   };
 };

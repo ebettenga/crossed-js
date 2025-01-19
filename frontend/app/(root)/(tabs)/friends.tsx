@@ -44,15 +44,22 @@ const FriendRow: React.FC<FriendRowProps> = ({
 }) => {
     const otherUser = friend.sender.id === currentUserId ? friend.receiver : friend.sender;
     const isReceiver = friend.receiver.id === currentUserId;
-
     return (
         <View className="flex-row items-center justify-between bg-neutral-50 dark:bg-neutral-800 p-3 rounded-xl border border-neutral-200 dark:border-neutral-700 mb-2">
             <View className="flex-1 flex-row items-center gap-3">
                 <View className="relative">
-                    <Image
-                        source={{ uri: otherUser.avatarUrl || 'https://i.pravatar.cc/150' }}
-                        className="w-10 h-10 rounded-full bg-neutral-100 dark:bg-neutral-700"
-                    />
+                    {otherUser.photo ? (
+                        <Image
+                            source={{ uri: otherUser.photo }}
+                            className="w-10 h-10 rounded-full bg-neutral-100 dark:bg-neutral-700"
+                        />
+                    ) : (
+                        <View className="w-10 h-10 rounded-full bg-[#8B0000] items-center justify-center">
+                            <Text className="text-white text-lg font-bold font-['Times_New_Roman']">
+                                {otherUser.username.charAt(0).toUpperCase()}
+                            </Text>
+                        </View>
+                    )}
                 </View>
                 <View className="flex-1">
                     <Text className="text-base text-[#1D2124] dark:text-[#DDE1E5] font-['Times_New_Roman']">
@@ -194,7 +201,7 @@ export default function Friends() {
 
     const handleAcceptChallenge = async (roomId: number) => {
         try {
-            await acceptChallenge.mutateAsync(roomId);
+            acceptChallenge.mutate(roomId);
         } catch (err) {
             console.error('Failed to accept challenge:', err);
         }

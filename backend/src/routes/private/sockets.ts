@@ -158,7 +158,6 @@ export default function (
         async ({ message }: Message) => {
           try {
             socket.emit("message", message);
-            fastify.log.info(message);
           } catch (e) {
             if (e instanceof UserNotFoundError) {
               socket.emit("error", "Authentication failed");
@@ -174,7 +173,6 @@ export default function (
           socket.broadcast
             .to(data.roomId.toString())
             .emit("message", data.roomId);
-          fastify.log.info(data);
         } catch (e) {
           if (e instanceof UserNotFoundError) {
             socket.emit("error", "Authentication failed");

@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, ScrollView, ActivityIndicator, Dimensions } from 'react-native';
+import React, { useState } from 'react';
+import { View, ScrollView, ActivityIndicator, Dimensions, RefreshControl } from 'react-native';
 import { Users, Swords, Group } from 'lucide-react-native';
 import { HomeSquareButton } from '~/components/home/HomeSquareButton';
 import { PageHeader } from '~/components/Header';
@@ -8,7 +8,7 @@ import { GameBanner } from '~/components/home/GameBanner';
 import { DifficultyBottomSheet } from '~/components/game/DifficultyBottomSheet';
 import { useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useJoinRoom, Room } from '~/hooks/useRoom';
+import { useJoinRoom, Room } from '~/hooks/useJoinRoom';
 import { useRoom } from '~/hooks/socket';
 import { Link } from 'expo-router';
 import { useActiveRooms, usePendingRooms } from '~/hooks/useActiveRooms';
@@ -27,12 +27,27 @@ export default function Home() {
     const insets = useSafeAreaInsets();
     const { room } = useRoom();
     const { mutate: join } = useJoinRoom();
-    const { data: activeRooms, isLoading: isLoadingRooms } = useActiveRooms();
-    const { data: pendingRooms, isLoading: isLoadingPendingRooms } = usePendingRooms();
-    const { data: user, isLoading: isLoadingUser } = useUser();
+    const { data: activeRooms, isLoading: isLoadingRooms, refetch: refetchActiveRooms } = useActiveRooms();
+    const { data: pendingRooms, isLoading: isLoadingPendingRooms, refetch: refetchPendingRooms } = usePendingRooms();
+    const { data: user, isLoading: isLoadingUser, refetch: refetchUser } = useUser();
+    const [refreshing, setRefreshing] = useState(false);
 
     const isBottomSheetOpen = useSharedValue(false);
     const [selectedGameMode, setSelectedGameMode] = React.useState<GameMode | null>(null);
+
+    const onRefresh = React.useCallback(async () => {
+        setRefreshing(true);
+        try {
+            await Promise.all([
+                refetchUser(),
+                refetchActiveRooms(),
+                refetchPendingRooms()
+            ]);
+        } catch (error) {
+            console.error('Error refreshing:', error);
+        }
+        setRefreshing(false);
+    }, [refetchUser, refetchActiveRooms, refetchPendingRooms]);
 
     const handleGameModePress = (mode: GameMode) => {
         setSelectedGameMode(mode);
@@ -77,74 +92,86 @@ export default function Home() {
         >
             <View className="flex-1">
                 <PageHeader />
-                {activeRoomsArray.length > 0 && (
-                    <View className="w-full h-[80px]">
-                        <ScrollView
-                            horizontal
-                            pagingEnabled
-                            showsHorizontalScrollIndicator={activeRoomsArray.length > 10}
-                            className="flex-1"
-                        >
-                            {activeRoomsArray.map((activeRoom) => (
-                                <Link key={activeRoom.id} href={`/game?roomId=${activeRoom.id}`}>
-                                    <View className="w-screen h-[100px] px-[6px]">
+                <ScrollView
+                    className="flex-1"
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={refreshing}
+                            onRefresh={onRefresh}
+                            tintColor="#8B0000"
+                            colors={["#8B0000"]}
+                        />
+                    }
+                >
+                    {activeRoomsArray.length > 0 && (
+                        <View className="w-full h-[80px]">
+                            <ScrollView
+                                horizontal
+                                pagingEnabled
+                                showsHorizontalScrollIndicator={activeRoomsArray.length > 10}
+                                className="flex-1"
+                            >
+                                {activeRoomsArray.map((activeRoom) => (
+                                    <Link key={activeRoom.id} href={`/game?roomId=${activeRoom.id}`}>
+                                        <View className="w-screen h-[100px] px-[6px]">
+                                            <GameBanner
+                                                gameId={activeRoom.id.toString()}
+                                                gameType={activeRoom.type}
+                                                createdAt={activeRoom.created_at}
+                                                status="playing"
+                                            />
+                                        </View>
+                                    </Link>
+                                ))}
+                            </ScrollView>
+                        </View>
+                    )}
+
+                    {pendingRoomsArray.length > 0 && (
+                        <View className="w-full h-[80px]">
+                            <ScrollView
+                                horizontal
+                                pagingEnabled
+                                showsHorizontalScrollIndicator={pendingRoomsArray.length > 10}
+                                className="flex-1"
+                            >
+                                {pendingRoomsArray.map((pendingRoom) => (
+                                    <View key={pendingRoom.id} className="w-screen h-[100px] px-[6px]">
                                         <GameBanner
-                                            gameId={activeRoom.id.toString()}
-                                            gameType={activeRoom.type}
-                                            createdAt={activeRoom.created_at}
-                                            status="playing"
+                                            gameId={pendingRoom.id.toString()}
+                                            gameType={pendingRoom.type}
+                                            createdAt={pendingRoom.created_at}
+                                            status="pending"
                                         />
                                     </View>
-                                </Link>
-                            ))}
-                        </ScrollView>
-                    </View>
-                )}
+                                ))}
+                            </ScrollView>
+                        </View>
+                    )}
 
-                {pendingRoomsArray.length > 0 && (
-                    <View className="w-full h-[80px]">
-                        <ScrollView
-                            horizontal
-                            pagingEnabled
-                            showsHorizontalScrollIndicator={pendingRoomsArray.length > 10}
-                            className="flex-1"
-                        >
-                            {pendingRoomsArray.map((pendingRoom) => (
-                                <View key={pendingRoom.id} className="w-screen h-[100px] px-[6px]">
-                                    <GameBanner
-                                        gameId={pendingRoom.id.toString()}
-                                        gameType={pendingRoom.type}
-                                        createdAt={pendingRoom.created_at}
-                                        status="pending"
-                                    />
-                                </View>
-                            ))}
-                        </ScrollView>
+                    <View className="p-[6px] flex-row flex-wrap gap-[3px] justify-start items-start mt-4">
+                        <HomeSquareButton
+                            name="1 v 1"
+                            icon={<Users size={24} />}
+                            onPress={() => handleGameModePress('1v1')}
+                            number={1}
+                            size={BUTTON_SIZE}
+                        />
+                        <HomeSquareButton
+                            name="2 v 2"
+                            icon={<Group size={24} />}
+                            onPress={() => handleGameModePress('2v2')}
+                            size={BUTTON_SIZE}
+                        />
+                        <HomeSquareButton
+                            name="Free for All"
+                            icon={<Swords size={24} />}
+                            onPress={() => handleGameModePress('free4all')}
+                            size={BUTTON_SIZE}
+                        />
+                        <SocialSquare size={BUTTON_SIZE} />
                     </View>
-                )}
-
-                <View className="p-[6px] flex-row flex-wrap gap-[3px] justify-start items-start mt-4">
-                    <HomeSquareButton
-                        name="1 v 1"
-                        icon={<Users size={24} />}
-                        onPress={() => handleGameModePress('1v1')}
-                        number={1}
-                        size={BUTTON_SIZE}
-                    />
-                    <HomeSquareButton
-                        name="2 v 2"
-                        icon={<Group size={24} />}
-                        onPress={() => handleGameModePress('2v2')}
-                        size={BUTTON_SIZE}
-                    />
-                    <HomeSquareButton
-                        name="Free for All"
-                        icon={<Swords size={24} />}
-                        onPress={() => handleGameModePress('free4all')}
-                        size={BUTTON_SIZE}
-                    />
-                    <SocialSquare size={BUTTON_SIZE} />
-                </View>
+                </ScrollView>
             </View>
             <DifficultyBottomSheet
                 isOpen={isBottomSheetOpen}
