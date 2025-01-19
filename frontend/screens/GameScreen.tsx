@@ -14,9 +14,10 @@ import { useUser } from '~/hooks/users';
 import { Avatar } from '~/components/shared/Avatar';
 import ConnectionStatus from '~/components/ConnectionStatus';
 import { CluesButton } from '../components/game/CluesButton';
+import { GameSummaryModal } from '../components/game/GameSummaryModal';
 
 export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
-    const { room, guess, refresh, forfeit } = useRoom(roomId);
+    const { room, guess, refresh, forfeit, showGameSummary, gameStats, onGameSummaryClose } = useRoom(roomId);
     const { data: currentUser } = useUser();
     const router = useRouter();
     const [selectedCell, setSelectedCell] = useState<Square | null>(null);
@@ -151,7 +152,6 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
 
     const handleForfeit = () => {
         forfeit(roomId);
-        router.push('/(root)/(tabs)');
     };
 
     const menuOptions = [
@@ -222,6 +222,13 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
                     setIsAcrossMode(isAcrossMode);
                 }}
             />
+            {showGameSummary && gameStats && (
+                <GameSummaryModal
+                    visible={showGameSummary}
+                    onClose={onGameSummaryClose}
+                    stats={gameStats}
+                />
+            )}
         </SafeAreaView>
     );
 };

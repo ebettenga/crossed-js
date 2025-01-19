@@ -77,7 +77,7 @@ async function request<T>(
     ...headers,
   };
 
-  if (["POST", "PATCH"].includes(method)) {
+  if (["POST", "PATCH"].includes(method) && !(body instanceof FormData)) {
     requestHeaders["Content-Type"] = "application/json";
   }
 

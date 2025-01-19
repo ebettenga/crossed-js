@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Alert, Image, SafeAreaView, useColorScheme } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useUser, useUpdateUser, useUpdatePhoto } from '~/hooks/users';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft, Camera } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
@@ -10,7 +9,6 @@ import { PageHeader } from '~/components/Header';
 
 export default function EditProfile() {
     const router = useRouter();
-    const insets = useSafeAreaInsets();
     const { data: user } = useUser();
     const updateUser = useUpdateUser();
     const updatePhoto = useUpdatePhoto();
@@ -18,14 +16,27 @@ export default function EditProfile() {
     const [email, setEmail] = useState(user?.email || '');
     const [isLoading, setIsLoading] = useState(false);
     const isDarkMode = useColorScheme() === 'dark';
+    const [pendingPhoto, setPendingPhoto] = useState<{ uri: string, formData: FormData } | null>(null);
 
     const handleSave = async () => {
         setIsLoading(true);
         try {
-            await updateUser.mutateAsync({
-                username: username !== user?.username ? username : undefined,
-                email: email !== user?.email ? email : undefined,
-            });
+            // First update photo if there's a pending one
+            if (pendingPhoto) {
+                await updatePhoto.mutateAsync(pendingPhoto.formData);
+            }
+
+            // Then update user details only if there are changes
+            const hasUsernameChange = username !== user?.username;
+            const hasEmailChange = email !== user?.email;
+
+            if (hasUsernameChange || hasEmailChange) {
+                await updateUser.mutateAsync({
+                    username: hasUsernameChange ? username : undefined,
+                    email: hasEmailChange ? email : undefined,
+                });
+            }
+
             router.back();
         } catch (error) {
             Alert.alert(
@@ -66,23 +77,16 @@ export default function EditProfile() {
                     name: 'photo.jpg',
                 } as any);
 
-                try {
-                    await updatePhoto.mutateAsync(formData);
-                } catch (uploadError: any) {
-                    if (uploadError?.message?.includes('File too large')) {
-                        Alert.alert(
-                            'Error',
-                            'The image file is too large. Please choose a smaller image or try again with a more compressed version.'
-                        );
-                    } else {
-                        throw uploadError;
-                    }
-                }
+                // Store the photo data temporarily
+                setPendingPhoto({
+                    uri: manipulateResult.uri,
+                    formData
+                });
             }
         } catch (error) {
             Alert.alert(
                 'Error',
-                error instanceof Error ? error.message : 'Failed to upload photo'
+                error instanceof Error ? error.message : 'Failed to prepare photo'
             );
         }
     };
@@ -108,7 +112,12 @@ export default function EditProfile() {
                     className="items-center gap-2"
                     onPress={handlePhotoUpload}
                 >
-                    {user.photo ? (
+                    {pendingPhoto ? (
+                        <Image
+                            source={{ uri: pendingPhoto.uri }}
+                            className="w-[120px] h-[120px] rounded-full bg-[#F8F8F5] dark:bg-[#1A2227]"
+                        />
+                    ) : user.photo ? (
                         <Image
                             source={{ uri: user.photo }}
                             className="w-[120px] h-[120px] rounded-full bg-[#F8F8F5] dark:bg-[#1A2227]"

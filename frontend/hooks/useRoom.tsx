@@ -105,7 +105,7 @@ export const useRoom = (roomId?: number) => {
             if (!data) return;
 
             // Check if room status changed to finished
-            if (data.status === 'finished' && room?.status !== 'finished') {
+            if (data.status === 'finished') {
                 // Invalidate user stats and data
                 queryClient.invalidateQueries({ queryKey: ['me'] });
                 queryClient.invalidateQueries({ queryKey: ['userGameStats'] });
@@ -117,7 +117,6 @@ export const useRoom = (roomId?: number) => {
         };
 
         const handleGameStarted = (data: { message: string, room: Room }) => {
-            console.log("Game started:", data.message);
             router.push(`/game?roomId=${data.room.id}`);
             setRoom(data.room);
         };

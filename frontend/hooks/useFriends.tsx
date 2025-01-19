@@ -6,12 +6,12 @@ export interface Friend {
   sender: {
     id: number;
     username: string;
-    avatarUrl: string;
+    photo: string;
   };
   receiver: {
     id: number;
     username: string;
-    avatarUrl: string;
+    photo: string;
   };
   status: 'pending' | 'accepted' | 'rejected';
   createdAt: string;
@@ -56,7 +56,7 @@ export function useAcceptFriendRequest() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (friendshipId: number) => 
+    mutationFn: (friendshipId: number) =>
       post(`/friends/${friendshipId}/accept`, {}),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [FRIENDS_KEY] });
@@ -70,7 +70,7 @@ export function useRejectFriendRequest() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (friendshipId: number) => 
+    mutationFn: (friendshipId: number) =>
       post(`/friends/${friendshipId}/reject`, {}),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [PENDING_REQUESTS_KEY] });
@@ -88,4 +88,4 @@ export function useRemoveFriend() {
       queryClient.invalidateQueries({ queryKey: [FRIENDS_KEY] });
     },
   });
-} 
+}
