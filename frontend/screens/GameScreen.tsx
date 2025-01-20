@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { View, SafeAreaView } from 'react-native';
+import { View, SafeAreaView, Text, TouchableOpacity, Linking } from 'react-native';
 import { CrosswordBoard } from '../components/game/CrosswordBoard';
 import { Keyboard } from '../components/game/Keyboard';
 import { PlayerInfo } from '../components/game/PlayerInfo';
@@ -219,7 +219,31 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
                         <Avatar user={currentUser} imageUrl={currentUser.photo} size={32} />
                     )}
                 </View>
-                <ConnectionStatus compact />
+                <View className="flex-row items-center gap-2">
+                    {room.crossword.created_by && (
+                        <View className="mt-1">
+                            <Text className="text-xs text-[#666666] dark:text-[#9CA3AF]">
+                                Created by{' '}
+                            </Text>
+                            <Text className="text-xs text-[#666666] dark:text-[#9CA3AF]">
+                                {room.crossword.creator_link ? (
+                                    <TouchableOpacity
+                                        onPress={() => Linking.openURL(room.crossword.creator_link!)}
+                                    >
+                                        <Text className="text-[#8B0000] dark:text-[#FF6B6B] underline">
+                                            {room.crossword.created_by}
+                                        </Text>
+                                    </TouchableOpacity>
+                                ) : (
+                                    <Text className="text-[#1D2124] dark:text-[#DDE1E5]">
+                                        {room.crossword.created_by}
+                                    </Text>
+                                )}
+                            </Text>
+                        </View>
+                    )}
+                    <ConnectionStatus compact />
+                </View>
             </View>
             <PlayerInfo
                 players={room.players}
@@ -235,6 +259,7 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
                         setIsAcrossMode={setIsAcrossMode}
                         title={room.crossword.title}
                     />
+
                 </View>
                 <ClueDisplay
                     selectedSquare={selectedCell || null}

@@ -48,6 +48,8 @@ export type Room = {
         };
         title: string;
         author: string;
+        created_by?: string;
+        creator_link?: string;
     };
     found_letters: string[];
     board: Square[][];

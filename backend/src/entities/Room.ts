@@ -145,7 +145,9 @@ export class Room {
           down: this.crossword.clues.down
         },
         title: this.crossword.title,
-        author: this.crossword.author
+        author: this.crossword.author,
+        created_by: this.crossword.created_by,
+        creator_link: this.crossword.creator_link
       },
       found_letters: this.found_letters,
       board: this.createBoard(),

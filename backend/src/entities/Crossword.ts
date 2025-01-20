@@ -22,6 +22,12 @@ export class Crossword {
   @Column('text', { nullable: true })
   author: string;
 
+  @Column('text', { nullable: true })
+  created_by: string;
+
+  @Column('text', { nullable: true })
+  creator_link: string;
+
   @Column('simple-array', { nullable: true })
   circles: number[];
 
