@@ -499,7 +499,7 @@ export class RoomService {
     const savedRoom = await this.ormConnection.getRepository(Room).save(room);
 
     // Emit a challenge event through socket.io
-    fastify.io.to(challenged.id.toString()).emit("challenge_received", {
+    fastify.io.to(`user_${challenged.id.toString()}`).emit("challenge_received", {
       room: savedRoom.toJSON(),
       challenger: {
         id: challenger.id,

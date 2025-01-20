@@ -185,7 +185,8 @@ export default function Friends() {
     const {
         challenges,
         acceptChallenge,
-        rejectChallenge
+        rejectChallenge,
+        refetch: refetchChallenges
     } = useChallenge();
 
     const { searchResults: foundUsers, clearSearchResults, mutate: searchUsers } = useSearchUsers();
@@ -273,13 +274,14 @@ export default function Friends() {
         try {
             await Promise.all([
                 refetchFriends(),
-                refetchPending()
+                refetchPending(),
+                refetchChallenges()
             ]);
         } catch (error) {
             console.error('Error refreshing:', error);
         }
         setRefreshing(false);
-    }, [refetchFriends, refetchPending]);
+    }, [refetchFriends, refetchPending, refetchChallenges]);
 
     useUserStatus(); // Add this hook to listen for status changes
 

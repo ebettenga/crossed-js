@@ -8,6 +8,7 @@ import { RoomProvider, SocketProvider } from '~/hooks/socket';
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useUser } from "~/hooks/users";
 import Toast from "react-native-toast-message";
+import { useColorMode } from "~/hooks/useColorMode";
 
 // Prevent the splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
@@ -19,6 +20,11 @@ function AppContent() {
   const router = useRouter();
   const { data: user, isLoading } = useUser();
   const [isReady, setIsReady] = useState(false);
+  const { loadColorScheme } = useColorMode();
+
+  useEffect(() => {
+    loadColorScheme();
+  }, []);
 
   useEffect(() => {
     if (!isLoading) {
@@ -63,12 +69,12 @@ function AppContent() {
 export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
-          <SocketProvider>
-            <RoomProvider>
-              <AppContent />
-              <Toast/>
-            </RoomProvider>
-          </SocketProvider>
+      <SocketProvider>
+        <RoomProvider>
+          <AppContent />
+          <Toast />
+        </RoomProvider>
+      </SocketProvider>
     </QueryClientProvider>
   );
 }

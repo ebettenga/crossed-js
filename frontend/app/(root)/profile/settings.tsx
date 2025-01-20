@@ -9,18 +9,10 @@ import { useEloVisibility } from '~/hooks/useEloVisibility';
 import { useRouter } from 'expo-router';
 
 export default function Settings() {
-    const { isDark, setColorScheme } = useColorMode();
+    const { isDark } = useColorMode();
     const { isSoundEnabled, setSoundEnabled } = useSound();
     const { isEloVisible, setEloVisibility } = useEloVisibility();
     const router = useRouter();
-
-    const toggleColorScheme = () => {
-        setColorScheme(isDark ? 'light' : 'dark');
-    };
-
-    const resetToSystemTheme = () => {
-        setColorScheme('system');
-    };
 
     const toggleSound = () => {
         setSoundEnabled(!isSoundEnabled);
@@ -45,40 +37,6 @@ export default function Settings() {
             </TouchableOpacity>
 
             <ScrollView className="flex-1 px-4">
-                <View className="mt-4">
-                    <Text className="text-lg font-semibold text-[#1D2124] dark:text-[#DDE1E5] font-['Times New Roman']">
-                        Appearance
-                    </Text>
-
-                    <View className="mt-4 bg-white dark:bg-[#1A2227] rounded-lg p-4">
-                        <TouchableOpacity
-                            className="flex-row items-center justify-between"
-                            onPress={toggleColorScheme}
-                            activeOpacity={0.7}
-                        >
-                            <View className="flex-row items-center gap-3">
-                                {isDark ? (
-                                    <Moon size={24} color="#DDE1E5" />
-                                ) : (
-                                    <Sun size={24} color="#1D2124" />
-                                )}
-                                <Text className="text-base text-[#1D2124] dark:text-[#DDE1E5] font-['Times New Roman']">
-                                    Dark Mode
-                                </Text>
-                            </View>
-                            <Switch checked={isDark} onCheckedChange={toggleColorScheme} />
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            onPress={resetToSystemTheme}
-                            className="mt-2"
-                        >
-                            <Text className="text-sm text-[#666666] dark:text-neutral-400 text-center font-['Times New Roman']">
-                                Reset to System Default
-                            </Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
-
                 <View className="mt-8">
                     <Text className="text-lg font-semibold text-[#1D2124] dark:text-[#DDE1E5] font-['Times New Roman']">
                         Game Settings

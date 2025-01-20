@@ -30,7 +30,7 @@ export const useChallenge = () => {
         };
     }, [socket, isConnected]);
 
-    const { data: challenges = [] } = useQuery<Room[]>({
+    const { data: challenges = [], refetch: refetchChallenges } = useQuery<Room[]>({
         queryKey: ['challenges', 'pending'],
         queryFn: () => get('/rooms/challenges/pending'),
         refetchInterval: 10000,
@@ -77,5 +77,6 @@ export const useChallenge = () => {
         sendChallenge,
         acceptChallenge,
         rejectChallenge,
+        refetch: refetchChallenges,
     };
 };
