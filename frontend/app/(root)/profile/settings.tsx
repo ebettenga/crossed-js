@@ -7,7 +7,6 @@ import { useColorMode } from '~/hooks/useColorMode';
 import { useSound } from '~/hooks/useSound';
 import { useEloVisibility } from '~/hooks/useEloVisibility';
 import { useRouter } from 'expo-router';
-import { storage } from '~/hooks/storageApi';
 
 export default function Settings() {
     const { isDark, setColorScheme } = useColorMode();
@@ -15,14 +14,6 @@ export default function Settings() {
     const { isEloVisible, setEloVisibility } = useEloVisibility();
     const router = useRouter();
     const [isSystemTheme, setIsSystemTheme] = React.useState(false);
-
-    React.useEffect(() => {
-        const checkTheme = async () => {
-            const savedScheme = await storage.getString('color-scheme');
-            setIsSystemTheme(savedScheme === 'system');
-        };
-        checkTheme();
-    }, []);
 
     const toggleColorScheme = () => {
         setColorScheme(isDark ? 'light' : 'dark');

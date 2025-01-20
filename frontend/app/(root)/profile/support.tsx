@@ -16,7 +16,7 @@ export default function Support() {
             <PageHeader />
 
             <TouchableOpacity
-                className="flex-row items-center px-4 py-3 bg-[#F5F5EB] dark:bg-[#0F1417]"
+                className="flex-row items-center px-4 py-3 dark:bg-[#0F1417]"
                 onPress={() => router.push('/profile')}
             >
                 <ChevronLeft size={24} color={isDark ? 'white' : 'black'} className="text-foreground" />
