@@ -1,10 +1,4 @@
-import {
-  DataSource,
-  LessThan,
-  And,
-  Not,
-  In,
-} from "typeorm";
+import { And, DataSource, In, LessThan, Not } from "typeorm";
 import { Room } from "../entities/Room";
 import { User } from "../entities/User";
 import { CrosswordService } from "./CrosswordService";
@@ -119,7 +113,7 @@ export class RoomService {
       {
         delay: config.game.timeout.pending,
         jobId: `room-timeout-${savedRoom.id}`,
-      }
+      },
     );
 
     return savedRoom;
@@ -142,14 +136,14 @@ export class RoomService {
     let userRoomIds: number[] = [];
     // First get all rooms this user is in
     if (!user.roles.includes("admin")) {
-    const userRooms = await this.ormConnection
-      .getRepository(Room)
-      .createQueryBuilder("room")
-      .select("room.id")
-      .innerJoin("room.players", "players")
-      .where("players.id = :userId", { userId: user.id })
-      .getMany();
-    userRoomIds = userRooms.map(room => room.id);
+      const userRooms = await this.ormConnection
+        .getRepository(Room)
+        .createQueryBuilder("room")
+        .select("room.id")
+        .innerJoin("room.players", "players")
+        .where("players.id = :userId", { userId: user.id })
+        .getMany();
+      userRoomIds = userRooms.map((room) => room.id);
     }
 
     return this.ormConnection.getRepository(Room).findOne({
@@ -181,7 +175,8 @@ export class RoomService {
 
     // If game was forfeited, adjust scores
     if (forfeitedBy !== undefined) {
-      const minScore = Math.min(...Object.values(room.scores)) - config.game.points.forfeit;
+      const minScore = Math.min(...Object.values(room.scores)) +
+        config.game.points.forfeit;
       room.scores[forfeitedBy] = minScore;
     }
 
@@ -277,7 +272,7 @@ export class RoomService {
     const gameStatsRepo = this.ormConnection.getRepository(GameStats);
     for (const player of room.players) {
       let gameStats = await gameStatsRepo.findOne({
-        where: { userId: player.id, roomId }
+        where: { userId: player.id, roomId },
       });
 
       if (!gameStats) {
@@ -338,7 +333,7 @@ export class RoomService {
 
     // Check if letter is already found at this position
     const letterIndex = x * room.crossword.col_size + y;
-    if (room.found_letters[letterIndex] !== '*') {
+    if (room.found_letters[letterIndex] !== "*") {
       return room;
     }
 
@@ -413,7 +408,7 @@ export class RoomService {
     userId: number,
     limit: number = 10,
     startDate?: Date,
-    endDate?: Date
+    endDate?: Date,
   ): Promise<{
     room: {
       id: number;
@@ -460,14 +455,14 @@ export class RoomService {
         type: stats.room.type,
         status: stats.room.status,
         created_at: stats.room.created_at.toISOString(),
-        scores: stats.room.scores
+        scores: stats.room.scores,
       },
       stats: {
         correctGuesses: stats.correctGuesses,
         incorrectGuesses: stats.incorrectGuesses,
         isWinner: stats.isWinner,
-        eloAtGame: stats.eloAtGame
-      }
+        eloAtGame: stats.eloAtGame,
+      },
     }));
   }
 

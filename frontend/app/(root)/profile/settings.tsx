@@ -13,16 +13,13 @@ export default function Settings() {
     const { isSoundEnabled, setSoundEnabled } = useSound();
     const { isEloVisible, setEloVisibility } = useEloVisibility();
     const router = useRouter();
-    const [isSystemTheme, setIsSystemTheme] = React.useState(false);
 
     const toggleColorScheme = () => {
         setColorScheme(isDark ? 'light' : 'dark');
-        setIsSystemTheme(false);
     };
 
     const resetToSystemTheme = () => {
         setColorScheme('system');
-        setIsSystemTheme(true);
     };
 
     const toggleSound = () => {
@@ -66,7 +63,7 @@ export default function Settings() {
                                     <Sun size={24} color="#1D2124" />
                                 )}
                                 <Text className="text-base text-[#1D2124] dark:text-[#DDE1E5] font-['Times New Roman']">
-                                    Dark Mode {isSystemTheme ? '(System)' : ''}
+                                    Dark Mode
                                 </Text>
                             </View>
                             <Switch checked={isDark} onCheckedChange={toggleColorScheme} />

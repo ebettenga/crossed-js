@@ -1,14 +1,15 @@
 import { useEffect } from "react";
 import { useColorScheme as useNativeWindColorScheme } from "nativewind";
 import { storage } from "./storageApi";
-import { StatusBar, useColorScheme as useSystemColorScheme } from "react-native";
+import { useColorScheme as useSystemColorScheme } from "react-native";
 
 const COLOR_SCHEME_KEY = "color-scheme";
 
 export type ColorScheme = "light" | "dark" | "system";
 
 export function useColorMode() {
-  const { colorScheme, setColorScheme: setNativeWindColorScheme } = useNativeWindColorScheme();
+  const { colorScheme, setColorScheme: setNativeWindColorScheme } =
+    useNativeWindColorScheme();
   const systemColorScheme = useSystemColorScheme();
 
   useEffect(() => {
@@ -16,7 +17,7 @@ export function useColorMode() {
     const loadColorScheme = async () => {
       const savedScheme = await storage.getString(COLOR_SCHEME_KEY);
       if (savedScheme) {
-        if (savedScheme === 'system') {
+        if (savedScheme === "system") {
           setNativeWindColorScheme(systemColorScheme as "light" | "dark");
         } else {
           setNativeWindColorScheme(savedScheme as "light" | "dark");
@@ -30,7 +31,7 @@ export function useColorMode() {
   useEffect(() => {
     const checkSystemTheme = async () => {
       const savedScheme = await storage.getString(COLOR_SCHEME_KEY);
-      if (savedScheme === 'system') {
+      if (savedScheme === "system") {
         setNativeWindColorScheme(systemColorScheme as "light" | "dark");
       }
     };
@@ -38,14 +39,14 @@ export function useColorMode() {
   }, [systemColorScheme]);
 
   const setAndPersistColorScheme = async (scheme: ColorScheme) => {
-    if (scheme === 'system') {
+    console.log("setAndPersistColorScheme", scheme);
+    if (scheme === "system") {
       setNativeWindColorScheme(systemColorScheme as "light" | "dark");
+      await storage.set(COLOR_SCHEME_KEY, "system");
     } else {
       setNativeWindColorScheme(scheme);
+      await storage.set(COLOR_SCHEME_KEY, scheme);
     }
-    StatusBar.setBackgroundColor(colorScheme === "dark" ? "#0F1417" : "#F6FAFE");
-    StatusBar.setBarStyle(colorScheme === "dark" ? "light-content" : "dark-content");
-    await storage.set(COLOR_SCHEME_KEY, scheme);
   };
 
   return {

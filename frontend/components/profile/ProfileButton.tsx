@@ -1,7 +1,8 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, useColorScheme } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { ChevronRight } from 'lucide-react-native';
 import { cn } from '~/lib/utils';
+import { useColorMode } from '~/hooks/useColorMode';
 
 interface ProfileButtonProps {
     label: string;
@@ -18,8 +19,7 @@ export const ProfileButton: React.FC<ProfileButtonProps> = ({
     number,
     danger = false
 }) => {
-    const colorScheme = useColorScheme();
-    const isDark = colorScheme === 'dark';
+    const { isDark } = useColorMode();
 
     return (
         <TouchableOpacity
@@ -43,7 +43,7 @@ export const ProfileButton: React.FC<ProfileButtonProps> = ({
                     {React.cloneElement(icon as React.ReactElement, {
                         color: danger
                             ? (isDark ? '#EF4444' : '#8B0000')
-                            : (isDark ? '#DDE1E5' : '#1D2124')
+                            : (isDark ? '#DDE1E5' : '#9CA3AF')
                     })}
                 </View>
                 <Text className={cn(

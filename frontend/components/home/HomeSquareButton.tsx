@@ -31,14 +31,14 @@ export const HomeSquareButton: React.FC<HomeSquareButtonProps> = ({
     number,
     customStyle,
     iconColor = "#2B2B2B",
-    darkIconColor = "#E5E5E5"
+    darkIconColor = "#262626"
 }) => {
     const colorScheme = useColorScheme();
 
     // Clone the icon element with dark mode color if it exists
     const themedIcon = icon
         ? React.cloneElement(icon, {
-            color: colorScheme === 'dark' ? darkIconColor : iconColor
+            color: colorScheme === 'dark' ? iconColor : darkIconColor
           })
         : null;
 

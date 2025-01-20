@@ -5,6 +5,7 @@ import { Users, Settings, BarChart3, CreditCard, LogOut, UserCog, HelpCircle } f
 import { ProfileButton } from '~/components/profile/ProfileButton';
 import { PageHeader } from '~/components/Header';
 import { useLogout, useUser } from '~/hooks/users';
+import { useColorMode } from '~/hooks/useColorMode';
 
 export default function Profile() {
     const router = useRouter();
