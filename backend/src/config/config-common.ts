@@ -31,6 +31,12 @@ export const commonConfig = {
       firstCrosswordDate: '2000-01-01',
     },
   },
+  status: {
+    cleanup: {
+      interval: 30000, // 30 seconds
+      heartbeatTimeout: 300000, // 5 minutes
+    }
+  },
   redis: {
     host: process.env.REDIS_HOST || 'localhost',
     port: parseInt(process.env.REDIS_PORT || '6379'),

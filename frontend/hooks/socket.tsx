@@ -163,6 +163,7 @@ export const useSocket = () => {
   const [connectionQuality, setConnectionQuality] = useState<'good' | 'poor' | 'disconnected'>('good');
   const latencyHistory = useRef<number[]>([]);
   const reconnectTimeout = useRef<NodeJS.Timeout>();
+  const heartbeatInterval = useRef<NodeJS.Timeout>();
 
   const attemptReconnect = useCallback(() => {
     if (!socket || reconnectAttempts.current >= maxReconnectAttempts) return;
@@ -295,6 +296,21 @@ export const useSocket = () => {
     }, 5000);
 
     return () => clearInterval(checkLatency);
+  }, [socket, isConnected]);
+
+  useEffect(() => {
+    if (!socket || !isConnected) return;
+
+    // Start heartbeat
+    heartbeatInterval.current = setInterval(() => {
+      socket.emit('heartbeat');
+    }, 15000); // Send heartbeat every 15 seconds
+
+    return () => {
+      if (heartbeatInterval.current) {
+        clearInterval(heartbeatInterval.current);
+      }
+    };
   }, [socket, isConnected]);
 
   return {
@@ -479,4 +495,36 @@ export const useRoom = (roomId?: number) => {
     showGameSummary,
     onGameSummaryClose: handleGameSummaryClose,
   };
+};
+
+export const useUserStatus = () => {
+  const { socket } = useSocket();
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleStatusChange = (data: { userId: number; status: 'online' | 'offline' }) => {
+      queryClient.setQueryData(['me'], (oldData: any) => {
+        if (oldData?.id === data.userId) {
+          return { ...oldData, status: data.status };
+        }
+        return oldData;
+      });
+
+      // Update any cached user data
+      queryClient.setQueriesData(['users'], (oldData: any) => {
+        if (!oldData) return oldData;
+        return oldData.map((user: any) =>
+          user.id === data.userId ? { ...user, status: data.status } : user
+        );
+      });
+    };
+
+    socket.on('user_status_change', handleStatusChange);
+
+    return () => {
+      socket.off('user_status_change', handleStatusChange);
+    };
+  }, [socket, queryClient]);
 };

@@ -4,6 +4,8 @@ import { AuthService } from "../../services/AuthService";
 import { User } from "../../entities/User";
 import { UserNotFoundError } from "../../errors/api";
 import { Socket } from "socket.io";
+import { statusCleanupQueue } from "../../jobs/queues";
+import { Job } from "bullmq";
 
 export type Guess = {
   roomId: number;
@@ -70,6 +72,10 @@ export default function (
     try {
       const user = await verifyUser(authService, fastify, socket);
 
+      // Set user as online
+      await fastify.orm.getRepository(User).update(user.id, { status: 'online' });
+      fastify.io.emit('user_status_change', { userId: user.id, status: 'online' });
+
       // Add user to all their active rooms
       const rooms = await roomService.getRoomsByUserId(user.id);
       for (const room of rooms) {
@@ -99,6 +105,47 @@ export default function (
       socket.on("disconnect", () => {
         fastify.log.info("user disconnected");
         socket.broadcast.emit("disconnection", `user ${socket.id} disconnected`);
+        // Set user as offline
+        fastify.orm.getRepository(User).update(user.id, { status: 'offline' })
+          .then(() => {
+            fastify.io.emit('user_status_change', { userId: user.id, status: 'offline' });
+          });
+      });
+
+      // Add heartbeat monitoring
+      let heartbeatTimeout: NodeJS.Timeout;
+      const resetHeartbeatTimeout = () => {
+        if (heartbeatTimeout) clearTimeout(heartbeatTimeout);
+        heartbeatTimeout = setTimeout(async () => {
+          // Set user as offline if no heartbeat received
+          await fastify.orm.getRepository(User).update(user.id, { status: 'offline' });
+          fastify.io.emit('user_status_change', { userId: user.id, status: 'offline' });
+        }, 30000); // 30 seconds timeout
+      };
+
+      socket.on('heartbeat', async () => {
+        resetHeartbeatTimeout();
+        // Update the user's updated_at timestamp
+        await fastify.orm.getRepository(User).update(user.id, {
+          updated_at: new Date()
+        });
+      });
+
+      // Listen for status cleanup results
+      statusCleanupQueue.on('completed', async (job) => {
+        const result = job.returnvalue as { usersUpdated: Array<{ userId: number, status: 'offline' }> };
+        // Emit status changes to all connected clients
+        for (const update of result.usersUpdated) {
+          fastify.io.emit('user_status_change', update);
+        }
+      });
+
+      // Initial heartbeat timeout
+      resetHeartbeatTimeout();
+
+      // Clean up on disconnect
+      socket.on('disconnect', () => {
+        if (heartbeatTimeout) clearTimeout(heartbeatTimeout);
       });
 
       socket.on("join_room_bus", async (data: RoomMessage) => {

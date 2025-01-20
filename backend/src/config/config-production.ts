@@ -23,5 +23,5 @@ export const config = {
     authRefreshTokenExpiry: "3w",
     authTokenExpiry: "2h",
   },
-  secretKeyPath: process.env.SECRET_KEY_PATH,
+  secretKeyPath: process.env.SECRET_KEY_PATH!,
 };

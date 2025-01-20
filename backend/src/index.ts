@@ -2,7 +2,7 @@ import "reflect-metadata";
 import fastifySecureSession from "@fastify/secure-session";
 import fastifyIO from "fastify-socket.io";
 import fastifyCors from "@fastify/cors";
-import { registerDb } from "./db";
+import { AppDataSource, registerDb } from "./db";
 import { config } from "./config/config";
 import fs from "fs";
 import path, { join } from "path";
@@ -14,9 +14,7 @@ import { fileURLToPath } from "url";
 import fastifyAutoload from "@fastify/autoload";
 import { User } from "./entities/User";
 import { Server } from "socket.io";
-import { build } from './app';
-import { workers, closeWorkers } from './jobs/workers';
-import { FastifyInstance } from 'fastify';
+import { closeWorkers, initializeWorkers } from "./jobs/workers/index";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -57,24 +55,29 @@ fastify.register(fastifyAutoload, {
 async function startServer() {
   if (config.mode === 'worker') {
     console.log('Starting in worker mode...');
-    // Workers are automatically started when imported
+
+    // Ensure database is initialized
+    if (!AppDataSource.isInitialized) {
+      await AppDataSource.initialize();
+    }
+
+    // Initialize workers with database connection
+    initializeWorkers(AppDataSource);
 
     // Handle graceful shutdown
     process.on('SIGTERM', async () => {
       console.log('Shutting down workers...');
       await closeWorkers();
+      if (AppDataSource.isInitialized) {
+        await AppDataSource.destroy();
+      }
       process.exit(0);
     });
   } else {
-    console.log('Starting in API mode...');
-    const server: FastifyInstance = await build({
-      logger: config.logger,
-    });
-
     try {
-      await server.listen({ port: 3000, host: '0.0.0.0' });
+      await fastify.listen({ port: config.api.port, host: config.api.host });
     } catch (err) {
-      server.log.error(err);
+      fastify.log.error(err);
       process.exit(1);
     }
   }
