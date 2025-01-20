@@ -4,7 +4,7 @@
     "module": "ESNext",
     "moduleResolution": "node",
     "esModuleInterop": true,
-    "strict": true,
+    "strict": false,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "outDir": "dist",

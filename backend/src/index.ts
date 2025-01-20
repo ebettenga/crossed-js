@@ -61,8 +61,10 @@ async function startServer() {
       await AppDataSource.initialize();
     }
 
+    await fastify.ready();
+
     // Initialize workers with database connection
-    initializeWorkers(AppDataSource);
+    initializeWorkers(AppDataSource, fastify.io);
 
     // Handle graceful shutdown
     process.on('SIGTERM', async () => {

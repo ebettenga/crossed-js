@@ -8,6 +8,10 @@ export interface EmailJobData {
   body: string;
 }
 
+export interface GameTimeoutJobData {
+  roomId: number;
+}
+
 // Create and export queues
 export const emailQueue = new Queue<EmailJobData>("email", {
   connection: config.redis,
@@ -19,6 +23,14 @@ export const statusCleanupQueue = new Queue("status-cleanup", {
     port: config.redis.port,
     password: config.redis.password,
   },
+  defaultJobOptions: {
+    removeOnComplete: true,
+    removeOnFail: 1000,
+  },
+});
+
+export const gameTimeoutQueue = new Queue<GameTimeoutJobData>("game-timeout", {
+  connection: config.redis,
   defaultJobOptions: {
     removeOnComplete: true,
     removeOnFail: 1000,

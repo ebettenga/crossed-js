@@ -9,7 +9,7 @@ export const useRooms = (status?: 'playing' | 'pending' | 'finished' | 'cancelle
         const data = await get(`/rooms${params}`);
         return data;
     },
-    refetchInterval: 1000 * 60 * 10,
+    refetchInterval: 1000 * 60 * 2
 });
 
 // For backwards compatibility, keep the useActiveRooms hook

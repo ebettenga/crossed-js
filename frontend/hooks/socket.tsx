@@ -7,6 +7,7 @@ import { useRouter } from 'expo-router';
 import { Room } from './useJoinRoom';
 import { useUser } from './users';
 import { post } from './api';
+import { showToast } from '~/components/shared/Toast';
 
 // Create a function to get a new socket instance with the current token
 const createSocketInstance = (token: string) => {
@@ -438,10 +439,22 @@ export const useRoom = (roomId?: number) => {
       }
     };
 
+    const handleRoomCancelled = (data: { message: string, roomId: number, reason: string }) => {
+      console.log("Room cancelled:", data.message);
+      // Invalidate pending rooms query
+      queryClient.invalidateQueries({ queryKey: ['rooms', 'pending'] });
+      showToast(
+        'error',
+        'Game was cancelled due to inactivity. Please try again later',
+      );
+
+    };
+
     socket?.on("room", handleRoom);
     socket?.on("game_started", handleGameStarted);
     socket?.on("game_forfeited", handleGameForfeited);
     socket?.on("rating_change", handleRatingChange);
+    socket?.on("room_cancelled", handleRoomCancelled);
 
     // Only refresh if we haven't initialized the room yet
     if (!isInitialized && roomId) {
@@ -454,6 +467,7 @@ export const useRoom = (roomId?: number) => {
       socket?.off("game_started", handleGameStarted);
       socket?.off("game_forfeited", handleGameForfeited);
       socket?.off("rating_change", handleRatingChange);
+      socket?.off("room_cancelled", handleRoomCancelled);
     };
   }, [socket, isConnected, roomId, isInitialized, currentUser]);
 
@@ -513,7 +527,7 @@ export const useUserStatus = () => {
       });
 
       // Update any cached user data
-      queryClient.setQueriesData(['users'], (oldData: any) => {
+      queryClient.setQueryData(['users'], (oldData: any[] | undefined) => {
         if (!oldData) return oldData;
         return oldData.map((user: any) =>
           user.id === data.userId ? { ...user, status: data.status } : user

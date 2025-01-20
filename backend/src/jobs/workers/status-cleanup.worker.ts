@@ -21,7 +21,7 @@ export const createStatusCleanupWorker = (dataSource: DataSource) => {
       const staleUsers = await userRepository
         .createQueryBuilder("user")
         .where("user.status = :status", { status: "online" })
-        .andWhere("user.updated_at < :threshold", {
+        .andWhere("user.lastActiveAt < :threshold", {
           threshold: new Date(Date.now() - config.status.cleanup.heartbeatTimeout),
         })
         .getMany();

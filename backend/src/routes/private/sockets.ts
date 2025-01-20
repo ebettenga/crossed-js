@@ -4,8 +4,6 @@ import { AuthService } from "../../services/AuthService";
 import { User } from "../../entities/User";
 import { UserNotFoundError } from "../../errors/api";
 import { Socket } from "socket.io";
-import { statusCleanupQueue } from "../../jobs/queues";
-import { Job } from "bullmq";
 
 export type Guess = {
   roomId: number;
@@ -86,7 +84,7 @@ export default function (
       }
 
       // Join a room for user-specific events
-      socket.join(user.id.toString());
+      socket.join(`user_${user.id}`);
 
       fastify.log.info("a user connected");
       // middleware to parse JSON payloads
@@ -112,40 +110,15 @@ export default function (
           });
       });
 
-      // Add heartbeat monitoring
-      let heartbeatTimeout: NodeJS.Timeout;
-      const resetHeartbeatTimeout = () => {
-        if (heartbeatTimeout) clearTimeout(heartbeatTimeout);
-        heartbeatTimeout = setTimeout(async () => {
-          // Set user as offline if no heartbeat received
-          await fastify.orm.getRepository(User).update(user.id, { status: 'offline' });
-          fastify.io.emit('user_status_change', { userId: user.id, status: 'offline' });
-        }, 30000); // 30 seconds timeout
-      };
-
       socket.on('heartbeat', async () => {
-        resetHeartbeatTimeout();
-        // Update the user's updated_at timestamp
+        // Update the user's lastActiveAt timestamp
         await fastify.orm.getRepository(User).update(user.id, {
-          updated_at: new Date()
+          lastActiveAt: new Date()
         });
       });
 
-      // Listen for status cleanup results
-      statusCleanupQueue.on('completed', async (job) => {
-        const result = job.returnvalue as { usersUpdated: Array<{ userId: number, status: 'offline' }> };
-        // Emit status changes to all connected clients
-        for (const update of result.usersUpdated) {
-          fastify.io.emit('user_status_change', update);
-        }
-      });
-
-      // Initial heartbeat timeout
-      resetHeartbeatTimeout();
-
       // Clean up on disconnect
       socket.on('disconnect', () => {
-        if (heartbeatTimeout) clearTimeout(heartbeatTimeout);
       });
 
       socket.on("join_room_bus", async (data: RoomMessage) => {

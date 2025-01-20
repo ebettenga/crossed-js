@@ -21,6 +21,9 @@ export class User {
   })
   updated_at!: Date;
 
+  @Column({ type: "timestamp", default: () => "CURRENT_TIMESTAMP" })
+  lastActiveAt!: Date;
+
   @Column("text")
   email!: string;
 
