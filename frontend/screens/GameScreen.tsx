@@ -225,7 +225,7 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
                             <Text className="text-xs text-[#666666] dark:text-[#9CA3AF]">
                                 Created by{' '}
                             </Text>
-                            <Text className="text-xs text-[#666666] dark:text-[#9CA3AF]">
+                            <Text className="text-sm text-[#666666] dark:text-[#9CA3AF]">
                                 {room.crossword.creator_link ? (
                                     <TouchableOpacity
                                         onPress={() => Linking.openURL(room.crossword.creator_link!)}

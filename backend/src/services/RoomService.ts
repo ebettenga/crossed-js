@@ -181,7 +181,7 @@ export class RoomService {
 
     // If game was forfeited, adjust scores
     if (forfeitedBy !== undefined) {
-      const minScore = Math.min(...Object.values(room.scores)) - 100;
+      const minScore = Math.min(...Object.values(room.scores)) - config.game.points.forfeit;
       room.scores[forfeitedBy] = minScore;
     }
 

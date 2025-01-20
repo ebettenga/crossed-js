@@ -14,6 +14,7 @@ export const commonConfig = {
     points: {
       correct: 3,
       incorrect: -1,
+      forfeit: -300,
     },
     elo: {
       kFactorBase: 40,
