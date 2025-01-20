@@ -13,6 +13,7 @@ import { config } from "../config/config";
 import { fastify } from "../fastify";
 import { GameStats } from "../entities/GameStats";
 import { NotFoundError } from "../errors/api";
+import { gameTimeoutQueue } from "../jobs/queues";
 
 export class RoomService {
   private crosswordService: CrosswordService;
@@ -71,6 +72,8 @@ export class RoomService {
     const maxPlayers = config.game.maxPlayers[room.type];
     if (room.players.length >= maxPlayers) {
       room.status = "playing";
+      // Remove timeout job since the game is starting
+      await gameTimeoutQueue.remove(`room-timeout-${room.id}`);
       // Emit game_started event through fastify.io
       fastify.io.to(room.id.toString()).emit("game_started", {
         message: "All players have joined! Game is starting.",
@@ -107,7 +110,19 @@ export class RoomService {
       crossword.id,
     );
 
-    return await this.ormConnection.getRepository(Room).save(room);
+    const savedRoom = await this.ormConnection.getRepository(Room).save(room);
+
+    // Add timeout job
+    await gameTimeoutQueue.add(
+      `room-timeout-${savedRoom.id}`,
+      { roomId: savedRoom.id },
+      {
+        delay: config.game.timeout.pending,
+        jobId: `room-timeout-${savedRoom.id}`,
+      }
+    );
+
+    return savedRoom;
   }
 
   async cancelRoom(roomId: number): Promise<Room> {

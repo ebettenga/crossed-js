@@ -1,6 +1,18 @@
 version: '3.8'
 
 services:
+  redis:
+    image: redis:7-alpine
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    networks:
+      - app-network
+
   db:
     image: postgres:16
     environment:
@@ -11,11 +23,38 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
 
-  backend:
+  # backend:
+  #   build:
+  #     context: ./backend
+  #     dockerfile: Dockerfile
+  #   environment:
+  #     NODE_ENV: production
+  #     PGHOST: db
+  #     PGUSER: postgres
+  #     PGPORT: 5432
+  #     PGPASSWORD: postgres
+  #     POSTGRES_DB: crossed
+  #     SECRET_ACCESS_TOKEN: adfhadfhadfh2j51jk
+  #     SECRET_KEY_PATH: "../src/config/secret-key"
+  #     REDIS_HOST: redis
+  #   ports:
+  #     - "3000:3000"
+  #   command: ["yarn", "start"]
+  #   networks:
+  #     - app-network
+  #   depends_on:
+  #     - db
+  #     - redis
+
+  worker:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    env_file:
+      - ./backend/.env
     environment:
       NODE_ENV: production
       PGHOST: db
@@ -25,9 +64,26 @@ services:
       POSTGRES_DB: crossed
       SECRET_ACCESS_TOKEN: adfhadfhadfh2j51jk
       SECRET_KEY_PATH: "../src/config/secret-key"
-    ports:
-      - "3000:3000"
-    command: ["yarn", "start"]
+      REDIS_HOST: redis
+      SERVER_MODE: worker
+      # Email configuration
+      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS}
+      SMTP_FROM: ${SMTP_FROM:-noreply@crossed.com}
+    command: ["yarn", "dev"]
+    networks:
+      - app-network
+    depends_on:
+      - db
+      - redis
 
 volumes:
+  redis_data:
   postgres_data:
+
+networks:
+  app-network:
+    driver: bridge

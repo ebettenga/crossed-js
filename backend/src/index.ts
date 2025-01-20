@@ -2,7 +2,7 @@ import "reflect-metadata";
 import fastifySecureSession from "@fastify/secure-session";
 import fastifyIO from "fastify-socket.io";
 import fastifyCors from "@fastify/cors";
-import { registerDb } from "./db";
+import { AppDataSource, registerDb } from "./db";
 import { config } from "./config/config";
 import fs from "fs";
 import path, { join } from "path";
@@ -14,6 +14,7 @@ import { fileURLToPath } from "url";
 import fastifyAutoload from "@fastify/autoload";
 import { User } from "./entities/User";
 import { Server } from "socket.io";
+import { closeWorkers, initializeWorkers } from "./jobs/workers/index";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -51,24 +52,38 @@ fastify.register(fastifyAutoload, {
   options: { prefix: config.api.prefix },
 });
 
-const start = async () => {
-  try {
-    await fastify.listen({
-      port: config.api.port,
-      host: config.api.host,
-    });
+async function startServer() {
+  if (config.mode === 'worker') {
+    console.log('Starting in worker mode...');
 
-    fastify.log.info(
-      "Running server on http://%s:%d",
-      config.api.host,
-      config.api.port,
-    );
-  } catch (err) {
-    console.error(err);
-    fastify.log.error(err);
-    process.exit(1);
+    // Ensure database is initialized
+    if (!AppDataSource.isInitialized) {
+      await AppDataSource.initialize();
+    }
+
+    await fastify.ready();
+
+    // Initialize workers with database connection
+    initializeWorkers(AppDataSource, fastify.io);
+
+    // Handle graceful shutdown
+    process.on('SIGTERM', async () => {
+      console.log('Shutting down workers...');
+      await closeWorkers();
+      if (AppDataSource.isInitialized) {
+        await AppDataSource.destroy();
+      }
+      process.exit(0);
+    });
+  } else {
+    try {
+      await fastify.listen({ port: config.api.port, host: config.api.host });
+    } catch (err) {
+      fastify.log.error(err);
+      process.exit(1);
+    }
   }
-};
+}
 
 declare module "fastify" {
   interface FastifyInstance {
@@ -80,4 +95,7 @@ declare module "fastify" {
   }
 }
 
-start();
+startServer().catch((err) => {
+  console.error('Failed to start server:', err);
+  process.exit(1);
+});

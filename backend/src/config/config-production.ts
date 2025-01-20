@@ -19,9 +19,9 @@ export const config = {
     entities: ["./src/entities/**/*.ts"],
   } as PostgresConnectionOptions,
   auth: {
-    secretAccessToken: process.env.SECRET_ACCESS_TOKEN,
+    secretAccessToken: process.env.SECRET_ACCESS_TOKEN!,
     authRefreshTokenExpiry: "3w",
     authTokenExpiry: "2h",
   },
-  secretKeyPath: process.env.SECRET_KEY_PATH,
+  secretKeyPath: process.env.SECRET_KEY_PATH!,
 };

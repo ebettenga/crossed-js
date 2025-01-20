@@ -4,7 +4,9 @@ import { ForbiddenError, NotFoundError, UniqueConstraintError } from "../errors/
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import { config } from "../config/config";
-import fastify from "fastify";
+import fastify, { FastifyInstance } from "fastify";
+import { emailService } from "./EmailService";
+import crypto from 'crypto';
 
 export class AuthService {
   private ormConnection: DataSource;
@@ -13,7 +15,7 @@ export class AuthService {
     this.ormConnection = ormConnection;
   }
 
-  private generateAccessToken(user) {
+  private generateAccessToken(user: User) {
     return jwt.sign(
       { sub: user.id, roles: user.roles },
       config.auth.secretAccessToken,
@@ -21,7 +23,7 @@ export class AuthService {
     );
   }
 
-  private generateRefreshToken(user) {
+  private generateRefreshToken(user: User) {
     return jwt.sign(
       { sub: user.id, roles: user.roles, aud: "/refresh" },
       config.auth.secretAccessToken,
@@ -29,7 +31,7 @@ export class AuthService {
     );
   }
 
-  async signup(app, body) {
+  async signup(app: FastifyInstance, body: any) {
     const { email, password, username } = body;
 
   // Checks if the user and emails are unique
@@ -79,8 +81,6 @@ export class AuthService {
     const accessToken = this.generateAccessToken(user);
     const refreshToken = this.generateRefreshToken(user);
 
-    // Remove password from user object before sending
-    delete user.password;
 
     return {
       token_type: "Bearer",
@@ -91,7 +91,7 @@ export class AuthService {
     };
   }
 
-  async signin(app, body) {
+  async signin(app: FastifyInstance, body: any) {
     const { email, password } = body;
 
     const user = await this.ormConnection.getRepository(User).findOne({
@@ -123,9 +123,6 @@ export class AuthService {
     const accessToken = this.generateAccessToken(user);
     const refreshToken = this.generateRefreshToken(user);
 
-    // Remove password from user object before sending
-    delete user.password;
-
     return {
       token_type: "Bearer",
       user_id: user.id,
@@ -135,7 +132,7 @@ export class AuthService {
     };
   }
 
-  verify(app, body) {
+  verify(app: FastifyInstance, body: any) {
     const { token } = body;
     try {
       const decoded = jwt.verify(token, config.auth.secretAccessToken);
@@ -145,7 +142,7 @@ export class AuthService {
     }
   }
 
-  async refresh(app, body) {
+  async refresh(app: FastifyInstance, body: any) {
     const { refresh_token } = body;
 
     try {
@@ -171,5 +168,77 @@ export class AuthService {
     } catch (err) {
       throw new Error("auth/invalid-refresh-token");
     }
+  }
+
+  async forgotPassword(email: string): Promise<void> {
+    const userRepository = this.ormConnection.getRepository(User);
+    const user = await userRepository.findOne({ where: { email } });
+
+    if (!user) {
+      // Return silently to prevent email enumeration
+      return;
+    }
+
+    // Generate reset token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetTokenExpiry = new Date(Date.now() + 3600000); // 1 hour from now
+
+    // Save reset token to user
+    await userRepository.update(user.id, {
+      attributes: [
+        ...(user.attributes || []).filter(attr => attr.key !== 'resetToken' && attr.key !== 'resetTokenExpiry'),
+        { key: 'resetToken', value: resetToken },
+        { key: 'resetTokenExpiry', value: resetTokenExpiry.toISOString() }
+      ]
+    });
+
+    // Send reset email
+    await emailService.sendPasswordResetEmail(user.email, user.username || 'User', resetToken);
+  }
+
+  async resetPassword(token: string, newPassword: string): Promise<void> {
+    const userRepository = this.ormConnection.getRepository(User);
+    const user = await userRepository.findOne({
+      where: {},
+      select: ['id', 'attributes']
+    });
+
+    if (!user?.attributes) {
+      throw new ForbiddenError("Invalid or expired reset token");
+    }
+
+    const resetToken = user.attributes.find(attr => attr.key === 'resetToken')?.value;
+    const resetTokenExpiry = user.attributes.find(attr => attr.key === 'resetTokenExpiry')?.value;
+
+    if (!resetToken || !resetTokenExpiry || resetToken !== token) {
+      throw new ForbiddenError("Invalid or expired reset token");
+    }
+
+    if (new Date(resetTokenExpiry) < new Date()) {
+      throw new ForbiddenError("Reset token has expired");
+    }
+
+    // Update password and remove reset token
+    await this.updatePassword(user.id, newPassword);
+    await userRepository.update(user.id, {
+      attributes: user.attributes.filter(attr =>
+        attr.key !== 'resetToken' && attr.key !== 'resetTokenExpiry'
+      )
+    });
+  }
+
+  async updatePassword(userId: number, newPassword: string): Promise<void> {
+    const userRepository = this.ormConnection.getRepository(User);
+    const user = await userRepository.findOne({
+      where: { id: userId },
+      select: ['id', 'password']
+    });
+
+    if (!user) {
+      throw new NotFoundError("auth/user-not-found");
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await userRepository.update(userId, { password: hashedPassword });
   }
 }

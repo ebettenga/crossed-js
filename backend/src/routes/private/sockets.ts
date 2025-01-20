@@ -70,6 +70,10 @@ export default function (
     try {
       const user = await verifyUser(authService, fastify, socket);
 
+      // Set user as online
+      await fastify.orm.getRepository(User).update(user.id, { status: 'online' });
+      fastify.io.emit('user_status_change', { userId: user.id, status: 'online' });
+
       // Add user to all their active rooms
       const rooms = await roomService.getRoomsByUserId(user.id);
       for (const room of rooms) {
@@ -80,7 +84,7 @@ export default function (
       }
 
       // Join a room for user-specific events
-      socket.join(user.id.toString());
+      socket.join(`user_${user.id}`);
 
       fastify.log.info("a user connected");
       // middleware to parse JSON payloads
@@ -99,6 +103,23 @@ export default function (
       socket.on("disconnect", () => {
         fastify.log.info("user disconnected");
         socket.broadcast.emit("disconnection", `user ${socket.id} disconnected`);
+        // Set user as offline
+        fastify.orm.getRepository(User).update(user.id, { status: 'offline' })
+          .then(() => {
+            fastify.io.emit('user_status_change', { userId: user.id, status: 'offline' });
+          });
+      });
+
+      socket.on('heartbeat', async () => {
+        // Update the user's lastActiveAt timestamp
+        await fastify.orm.getRepository(User).update(user.id, {
+          status: 'online',
+          lastActiveAt: new Date()
+        });
+      });
+
+      // Clean up on disconnect
+      socket.on('disconnect', () => {
       });
 
       socket.on("join_room_bus", async (data: RoomMessage) => {

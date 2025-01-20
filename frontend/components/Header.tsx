@@ -1,15 +1,18 @@
 import React, { useMemo } from 'react';
 import { View, Text, Image, TouchableOpacity } from 'react-native';
-import { TrendingUp, TrendingDown } from 'lucide-react-native';
+import { TrendingUp, TrendingDown, Users } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useUser } from '~/hooks/users';
 import { useRecentGames } from '~/hooks/useRecentGames';
 import { useEloVisibility } from '~/hooks/useEloVisibility';
+import { useActiveUsers } from '~/hooks/useActiveUsers';
 
-export const PageHeader = React.memo(() => {
+export const PageHeader = () => {
     const router = useRouter();
     const { data: user } = useUser();
     const { isEloVisible } = useEloVisibility();
+    const { data: activeUsers } = useActiveUsers();
+
     if (!user) return null;
 
     // Get stats from the last week
@@ -22,14 +25,12 @@ export const PageHeader = React.memo(() => {
     const { data: weeklyStats } = useRecentGames(oneWeekAgo);
 
     // Calculate ELO difference and games played
-    const { eloChange, gamesPlayed, isEloUp, eloChangeColor } = useMemo(() => {
+    const { eloChange, isEloUp, eloChangeColor } = useMemo(() => {
         const oldestGame = weeklyStats?.length ? weeklyStats.reduce((min, game) => new Date(game.room.created_at) < new Date(min.room.created_at) ? game : min, weeklyStats[0]) : null;
         const change = oldestGame ? user.eloRating - oldestGame.stats.eloAtGame : 0;
-        const games = user.gamesWon + user.gamesLost;
         const up = change > 0;
         return {
             eloChange: change,
-            gamesPlayed: games,
             isEloUp: up,
             eloChangeColor: up ? '#34D399' : '#EF4444'
         };
@@ -86,17 +87,19 @@ export const PageHeader = React.memo(() => {
                                         ELO
                                     </Text>
                                 </View>
-
-                                <View className="w-px h-6 bg-neutral-200 dark:bg-neutral-700" />
                             </>
                         )}
+                        <View className="w-px h-6 bg-neutral-200 dark:bg-neutral-700" />
 
                         <View className="items-center gap-0.5">
-                            <Text className="text-base font-semibold text-[#1D2124] dark:text-[#DDE1E5] font-['Times_New_Roman']">
-                                {gamesPlayed}
-                            </Text>
+                            <View className="flex-row items-center gap-1">
+                                <Users size={16} color="#666666" />
+                                <Text className="text-base font-semibold text-[#1D2124] dark:text-[#DDE1E5] font-['Times_New_Roman']">
+                                    {activeUsers?.toString() || 0}
+                                </Text>
+                            </View>
                             <Text className="text-xs text-[#666666] dark:text-neutral-400 font-['Times_New_Roman']">
-                                Games
+                                Online
                             </Text>
                         </View>
                     </View>
@@ -104,4 +107,4 @@ export const PageHeader = React.memo(() => {
             </View>
         </View>
     );
-});
+};

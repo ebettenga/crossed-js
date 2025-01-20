@@ -19,6 +19,14 @@ import { useChallenge } from '~/hooks/useChallenge';
 import { ChallengeRow } from '~/components/ChallengeRow';
 import { cn } from '~/lib/utils';
 import { showToast } from '~/components/shared/Toast';
+import { useUserStatus } from '../../../hooks/socket';
+
+interface OtherUser {
+    id: number;
+    username: string;
+    photo: string;
+    status: 'online' | 'offline';
+}
 
 interface FriendRowProps {
     friend: Friend;
@@ -30,6 +38,7 @@ interface FriendRowProps {
     isChallenge?: boolean;
     isPending?: boolean;
     roomId?: number;
+    otherUser: OtherUser;
 }
 
 const FriendRow: React.FC<FriendRowProps> = ({
@@ -41,9 +50,9 @@ const FriendRow: React.FC<FriendRowProps> = ({
     onReject,
     isChallenge = false,
     isPending = false,
-    roomId
+    roomId,
+    otherUser
 }) => {
-    const otherUser = friend.sender.id === currentUserId ? friend.receiver : friend.sender;
     const isReceiver = friend.receiver.id === currentUserId;
     return (
         <View className="flex-row items-center justify-between bg-neutral-50 dark:bg-neutral-800 p-3 rounded-xl border border-neutral-200 dark:border-neutral-700 mb-2">
@@ -61,6 +70,11 @@ const FriendRow: React.FC<FriendRowProps> = ({
                             </Text>
                         </View>
                     )}
+                    <View
+                        className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white ${
+                            otherUser.status === 'online' ? 'bg-green-500' : 'bg-gray-400'
+                        }`}
+                    />
                 </View>
                 <View className="flex-1">
                     <Text className="text-base text-[#1D2124] dark:text-[#DDE1E5] font-['Times_New_Roman']">
@@ -243,6 +257,8 @@ export default function Friends() {
         setRefreshing(false);
     }, [refetchFriends, refetchPending]);
 
+    useUserStatus(); // Add this hook to listen for status changes
+
     if (!user) return null;
 
     const isLoading = friendsLoading || pendingLoading;
@@ -350,6 +366,7 @@ export default function Friends() {
                                     onAccept={handleAcceptFriend}
                                     onReject={handleRejectFriend}
                                     isPending={true}
+                                    otherUser={friend.sender}
                                 />
                             ))}
                             {friends?.map((friend) => (
@@ -359,6 +376,7 @@ export default function Friends() {
                                     currentUserId={user.id}
                                     onChallenge={handleChallenge}
                                     onRemove={handleRemoveFriend}
+                                    otherUser={friend.sender}
                                 />
                             ))}
                         </ScrollView>

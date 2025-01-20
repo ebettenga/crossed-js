@@ -1,27 +1,19 @@
 {
   "compilerOptions": {
-    "target": "esnext",
-    "module": "esnext",
+    "target": "ESNext",
+    "module": "ESNext",
     "moduleResolution": "node",
-    "outDir": "./dist",
-    "rootDir": "./src",
-    "strict": false,
-    "sourceMap": true,
     "esModuleInterop": true,
+    "strict": false,
     "skipLibCheck": true,
-    "emitDecoratorMetadata": true,
+    "forceConsistentCasingInFileNames": true,
+    "outDir": "dist",
     "experimentalDecorators": true,
-    "allowSyntheticDefaultImports": true,
-    "resolveJsonModule": true,
+    "emitDecoratorMetadata": true,
+    "jsx": "react",
     "allowJs": true,
-    "allowUnreachableCode": true,
-    "allowUnusedLabels": true,
+    "resolveJsonModule": true
   },
-  "include": [
-    "src/**/*.ts",
-    "src/routes/private/.autohooks.ts"
-  ],
-  "exclude": [
-    "node_modules"
-  ]
+  "include": ["src/**/*", "src/routes/private/.autohooks.ts"],
+  "exclude": ["node_modules", "dist"]
 }

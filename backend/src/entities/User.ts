@@ -5,13 +5,13 @@ import { GameStats } from "./GameStats";
 @Entity()
 export class User {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @Column("text", { nullable: true })
-  username: string;
+  username!: string;
 
   @Column({ type: "timestamp", default: () => "CURRENT_TIMESTAMP" })
-  created_at: Date;
+  created_at!: Date;
 
   @Column({
     type: "timestamp",
@@ -19,19 +19,22 @@ export class User {
     default: () => "CURRENT_TIMESTAMP",
     onUpdate: "CURRENT_TIMESTAMP",
   })
-  updated_at: Date;
+  updated_at!: Date;
+
+  @Column({ type: "timestamp", default: () => "CURRENT_TIMESTAMP" })
+  lastActiveAt!: Date;
 
   @Column("text")
-  email: string;
+  email!: string;
 
   @Column("text", { select: false })
-  password: string;
+  password!: string;
 
   @Column("boolean", { default: false, select: false })
-  confirmed_mail: boolean;
+  confirmed_mail!: boolean;
 
   @Column("simple-array", { default: ["user"] })
-  roles: string[];
+  roles!: string[];
 
   @Column("text", { nullable: true })
   description?: string;
@@ -42,20 +45,23 @@ export class User {
   @Column("text", { nullable: true })
   photoContentType?: string;
 
+  @Column("enum", { enum: ['online', 'offline'], default: 'offline' })
+  status!: 'online' | 'offline';
+
   @Column("simple-json", { nullable: true, select: false })
   attributes?: { key: string; value: string }[];
 
   @Column({ type: 'integer', default: 1200 })
-  eloRating: number;
+  eloRating!: number;
 
   @OneToMany(() => GameStats, stats => stats.user, { eager: true })
-  gameStats: GameStats[];
+  gameStats!: GameStats[];
 
   // Virtual properties for statistics
-  gamesWon: number;
-  gamesLost: number;
-  guessAccuracy: number;
-  winRate: number;
+  gamesWon!: number;
+  gamesLost!: number;
+  guessAccuracy!: number;
+  winRate!: number;
 
   @AfterLoad()
   async calculateStats() {
@@ -87,9 +93,10 @@ export class User {
       winRate: Math.round(this.winRate || 0),
       photo: this.photo ? `data:${this.photoContentType};base64,${this.photo.toString('base64')}` : null,
       photoContentType: undefined,
+      status: this.status || 'offline',
     };
   }
 
   @ManyToMany(() => Room, room => room.players)
-  rooms: Room[];
+  rooms!: Room[];
 }

@@ -7,6 +7,7 @@ import { useRouter } from 'expo-router';
 import { Room } from './useJoinRoom';
 import { useUser } from './users';
 import { post } from './api';
+import { showToast } from '~/components/shared/Toast';
 
 // Create a function to get a new socket instance with the current token
 const createSocketInstance = (token: string) => {
@@ -163,6 +164,7 @@ export const useSocket = () => {
   const [connectionQuality, setConnectionQuality] = useState<'good' | 'poor' | 'disconnected'>('good');
   const latencyHistory = useRef<number[]>([]);
   const reconnectTimeout = useRef<NodeJS.Timeout>();
+  const heartbeatInterval = useRef<NodeJS.Timeout>();
 
   const attemptReconnect = useCallback(() => {
     if (!socket || reconnectAttempts.current >= maxReconnectAttempts) return;
@@ -297,6 +299,21 @@ export const useSocket = () => {
     return () => clearInterval(checkLatency);
   }, [socket, isConnected]);
 
+  useEffect(() => {
+    if (!socket || !isConnected) return;
+
+    // Start heartbeat
+    heartbeatInterval.current = setInterval(() => {
+      socket.emit('heartbeat');
+    }, 15000); // Send heartbeat every 15 seconds
+
+    return () => {
+      if (heartbeatInterval.current) {
+        clearInterval(heartbeatInterval.current);
+      }
+    };
+  }, [socket, isConnected]);
+
   return {
     socket,
     isConnected,
@@ -422,10 +439,22 @@ export const useRoom = (roomId?: number) => {
       }
     };
 
+    const handleRoomCancelled = (data: { message: string, roomId: number, reason: string }) => {
+      console.log("Room cancelled:", data.message);
+      // Invalidate pending rooms query
+      queryClient.invalidateQueries({ queryKey: ['rooms', 'pending'] });
+      showToast(
+        'error',
+        'Game was cancelled due to inactivity. Please try again later',
+      );
+
+    };
+
     socket?.on("room", handleRoom);
     socket?.on("game_started", handleGameStarted);
     socket?.on("game_forfeited", handleGameForfeited);
     socket?.on("rating_change", handleRatingChange);
+    socket?.on("room_cancelled", handleRoomCancelled);
 
     // Only refresh if we haven't initialized the room yet
     if (!isInitialized && roomId) {
@@ -438,6 +467,7 @@ export const useRoom = (roomId?: number) => {
       socket?.off("game_started", handleGameStarted);
       socket?.off("game_forfeited", handleGameForfeited);
       socket?.off("rating_change", handleRatingChange);
+      socket?.off("room_cancelled", handleRoomCancelled);
     };
   }, [socket, isConnected, roomId, isInitialized, currentUser]);
 
@@ -479,4 +509,36 @@ export const useRoom = (roomId?: number) => {
     showGameSummary,
     onGameSummaryClose: handleGameSummaryClose,
   };
+};
+
+export const useUserStatus = () => {
+  const { socket } = useSocket();
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleStatusChange = (data: { userId: number; status: 'online' | 'offline' }) => {
+      queryClient.setQueryData(['me'], (oldData: any) => {
+        if (oldData?.id === data.userId) {
+          return { ...oldData, status: data.status };
+        }
+        return oldData;
+      });
+
+      // Update any cached user data
+      queryClient.setQueryData(['users'], (oldData: any[] | undefined) => {
+        if (!oldData) return oldData;
+        return oldData.map((user: any) =>
+          user.id === data.userId ? { ...user, status: data.status } : user
+        );
+      });
+    };
+
+    socket.on('user_status_change', handleStatusChange);
+
+    return () => {
+      socket.off('user_status_change', handleStatusChange);
+    };
+  }, [socket, queryClient]);
 };
