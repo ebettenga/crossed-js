@@ -2,6 +2,7 @@ import { FastifyInstance } from "fastify";
 import { User } from "../../entities/User";
 import { PhotoService } from "../../services/PhotoService";
 import multipart from "@fastify/multipart";
+import { ILike } from "typeorm";
 
 export default function (
   fastify: FastifyInstance,
@@ -141,6 +142,28 @@ export default function (
 
     fastify.log.info(`Active users count: ${count}`);
     return { count };
+  });
+
+  // Search users by username
+  fastify.get<{
+    Querystring: {
+      query: string;
+    }
+  }>("/users/search", async (request, reply) => {
+    const { query } = request.query;
+    if (!query) {
+      return [];
+    }
+
+    const users = await fastify.orm.getRepository(User).find({
+      where: {
+        username: ILike(`%${query}%`)
+      },
+      select: ["id", "username", "photo", "status"],
+      take: 5 // Limit to 5 results
+    });
+
+    return users;
   });
 
   next();
