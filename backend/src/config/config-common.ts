@@ -30,6 +30,9 @@ export const commonConfig = {
     crossword: {
       firstCrosswordDate: '2000-01-01',
     },
+    timeout: {
+      pending: 300000, // 5 minutes for pending games
+    },
   },
   status: {
     cleanup: {

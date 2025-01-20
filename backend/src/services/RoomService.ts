@@ -28,7 +28,7 @@ export class RoomService {
     );
   }
 
-  async getRoomById(roomId: number): Promise<Room> {
+  async getRoomById(roomId: number): Promise<Room | null> {
     return this.ormConnection
       .getRepository(Room)
       .findOne({ where: { id: roomId } });
@@ -107,7 +107,17 @@ export class RoomService {
       crossword.id,
     );
 
-    return await this.ormConnection.getRepository(Room).save(room);
+    const savedRoom = await this.ormConnection.getRepository(Room).save(room);
+
+    // Set timeout to cancel the game if it remains in pending state
+    setTimeout(async () => {
+      const currentRoom = await this.getRoomById(savedRoom.id);
+      if (currentRoom && currentRoom.status === "pending") {
+        await this.cancelRoom(currentRoom.id);
+      }
+    }, config.game.timeout.pending);
+
+    return savedRoom;
   }
 
   async cancelRoom(roomId: number): Promise<Room> {
@@ -116,6 +126,16 @@ export class RoomService {
     room.status = "cancelled";
     room.markModified();
     await this.ormConnection.getRepository(Room).save(room);
+
+    // Emit cancellation event to all players in the room
+    room.players.forEach(player => {
+      fastify.io.to(player.id.toString()).emit("room_cancelled", {
+        message: "Game has been cancelled",
+        roomId: room.id,
+        reason: "timeout"
+      });
+    });
+
     return room;
   }
 
@@ -123,7 +143,7 @@ export class RoomService {
     difficulty: string,
     type: "1v1" | "2v2" | "free4all",
     user: User,
-  ): Promise<Room> {
+  ): Promise<Room | null> {
     let userRoomIds: number[] = [];
     // First get all rooms this user is in
     if (!user.roles.includes("admin")) {
