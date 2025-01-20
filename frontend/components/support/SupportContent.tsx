@@ -52,7 +52,7 @@ export const SupportContent: React.FC<SupportContentProps> = ({
     };
 
     return (
-        <ScrollView className={cn("bg-[#FFFFFF] rounded-md dark:bg-[#0F1417]", className)} contentContainerStyle={{ flexGrow: 0 }} >
+        <ScrollView className={cn("bg-[#FFFFFF] dark:bg-[#0F1417]", className)} contentContainerStyle={{ flexGrow: 0 }} >
             {header ? header :
                 <View className="w-full relative py-6">
                     <Text className="text-xl text-center text-[#1D2124] dark:text-white font-semibold">

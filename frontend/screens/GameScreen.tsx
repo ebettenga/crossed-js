@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { View, Text, TouchableOpacity, Linking } from 'react-native';
+import { View, Text, TouchableOpacity, Linking, KeyboardAvoidingView, Platform } from 'react-native';
 import { CrosswordBoard } from '../components/game/CrosswordBoard';
 import { Keyboard } from '../components/game/Keyboard';
 import { PlayerInfo } from '../components/game/PlayerInfo';
@@ -218,16 +218,15 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
     }
 
     return (
-        <View
-            style={{
-                flex: 1,
-                paddingTop: insets.top,
-                paddingBottom: insets.bottom,
-                paddingLeft: insets.left,
-                paddingRight: insets.right,
-            }}
-            className="bg-[#F6FAFE] dark:bg-[#0F1417]"
-        >
+        <KeyboardAvoidingView style={{
+            flex: 1,
+            paddingTop: insets.top,
+            paddingBottom: insets.bottom,
+            paddingLeft: insets.left,
+            paddingRight: insets.right,
+        }}
+            className="bg-[#F6FAFE] dark:bg-[#0F1417]" behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+
             <View className="flex-row justify-between items-center px-4 mt-6">
                 <View className="flex-row items-center gap-2">
                     {currentUser && (
@@ -300,6 +299,6 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
                 onClose={() => setShowSupportModal(false)}
                 onReport={handleReport}
             />
-        </View>
+        </KeyboardAvoidingView>
     );
 };
