@@ -7,6 +7,7 @@ import { PortalHost } from '@rn-primitives/portal';
 import { RoomProvider, SocketProvider } from '~/hooks/socket';
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useUser } from "~/hooks/users";
+import Toast from "react-native-toast-message";
 
 // Prevent the splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
@@ -65,6 +66,7 @@ export default function RootLayout() {
           <SocketProvider>
             <RoomProvider>
               <AppContent />
+              <Toast/>
             </RoomProvider>
           </SocketProvider>
     </QueryClientProvider>

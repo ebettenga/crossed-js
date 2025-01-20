@@ -18,6 +18,7 @@ import { ChallengeDialog } from '~/components/ChallengeDialog';
 import { useChallenge } from '~/hooks/useChallenge';
 import { ChallengeRow } from '~/components/ChallengeRow';
 import { cn } from '~/lib/utils';
+import { showToast } from '~/components/shared/Toast';
 import { useUserStatus } from '../../../hooks/socket';
 
 interface OtherUser {
@@ -185,6 +186,8 @@ export default function Friends() {
     const { mutate: acceptFriend } = useAcceptFriendRequest();
     const { mutate: rejectFriend } = useRejectFriendRequest();
 
+
+
     const handleChallenge = (friend: Friend) => {
         setSelectedFriend(friend);
     };
@@ -235,6 +238,7 @@ export default function Friends() {
         try {
             await addFriend(username.trim());
             setUsername(''); // Clear input on success
+            showToast('success', 'Friend request sent');
         } catch (err) {
             console.error('Failed to add friend:', err);
         }
