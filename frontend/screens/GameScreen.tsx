@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { View, SafeAreaView, Text, TouchableOpacity, Linking } from 'react-native';
+import { View, Text, TouchableOpacity, Linking } from 'react-native';
 import { CrosswordBoard } from '../components/game/CrosswordBoard';
 import { Keyboard } from '../components/game/Keyboard';
 import { PlayerInfo } from '../components/game/PlayerInfo';
@@ -13,6 +13,8 @@ import { useUser } from '~/hooks/users';
 import { Avatar } from '~/components/shared/Avatar';
 import ConnectionStatus from '~/components/ConnectionStatus';
 import { CluesButton } from '../components/game/CluesButton';
+import { SupportModal } from '../components/game/SupportModal';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 
 type MenuOption = {
@@ -22,29 +24,16 @@ type MenuOption = {
 };
 
 export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
+    const insets = useSafeAreaInsets();
     const { room, guess, refresh, forfeit, showGameSummary, onGameSummaryClose } = useRoom(roomId);
     const { data: currentUser } = useUser();
     const router = useRouter();
     const [selectedCell, setSelectedCell] = useState<Square | null>(null);
     const [isAcrossMode, setIsAcrossMode] = useState(true);
+    const [showSupportModal, setShowSupportModal] = useState(false);
 
     useEffect(() => {
         refresh(roomId);
-    }, []);
-
-    useEffect(() => {
-        if (room?.board) {
-            // Find the first valid cell in the board
-            for (let x = 0; x < room.board.length; x++) {
-                for (let y = 0; y < room.board[x].length; y++) {
-                    const cell = room.board[x][y];
-                    if (cell.squareType !== SquareType.BLACK && cell.squareType !== SquareType.SOLVED) {
-                        setSelectedCell(cell);
-                        return;
-                    }
-                }
-            }
-        }
     }, []);
 
     // Format clues and firstCellsMap for the CluesModal
@@ -187,7 +176,11 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
         forfeit(roomId);
     };
 
-
+    const handleReport = () => {
+        setShowSupportModal(false);
+        // TODO: Implement report functionality
+        console.log('Report game:', roomId);
+    };
 
     const menuOptions: MenuOption[] = [
         {
@@ -197,9 +190,9 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
             },
         },
         {
-            label: 'Settings',
+            label: 'Support / Report',
             onPress: () => {
-                console.log('Open settings');
+                setShowSupportModal(true);
             },
         },
     ];
@@ -211,8 +204,30 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
         },);
     }
 
+    if (room?.board && !selectedCell) {
+        // Find the first valid cell in the board
+        for (let x = 0; x < room.board.length; x++) {
+            for (let y = 0; y < room.board[x].length; y++) {
+                const cell = room.board[x][y];
+                if (cell.squareType !== SquareType.BLACK && cell.squareType !== SquareType.SOLVED) {
+                    setSelectedCell(cell);
+                    return;
+                }
+            }
+        }
+    }
+
     return (
-        <SafeAreaView className="flex-1 bg-[#F5F5EB] dark:bg-[#0F1417]">
+        <View
+            style={{
+                flex: 1,
+                paddingTop: insets.top,
+                paddingBottom: insets.bottom,
+                paddingLeft: insets.left,
+                paddingRight: insets.right,
+            }}
+            className="bg-[#F6FAFE] dark:bg-[#0F1417]"
+        >
             <View className="flex-row justify-between items-center px-4 mt-6">
                 <View className="flex-row items-center gap-2">
                     {currentUser && (
@@ -280,6 +295,11 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
                     setIsAcrossMode(isAcrossMode);
                 }}
             />
-        </SafeAreaView>
+            <SupportModal
+                isVisible={showSupportModal}
+                onClose={() => setShowSupportModal(false)}
+                onReport={handleReport}
+            />
+        </View>
     );
 };

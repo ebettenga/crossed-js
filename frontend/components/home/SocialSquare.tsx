@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, Linking } from 'react-native';
+import { View, StyleSheet, Linking, Text } from 'react-native';
 import { Twitter, Youtube, Facebook, Swords } from 'lucide-react-native';
 import { HomeSquareButton } from './HomeSquareButton';
-import { TournamentInfoModal } from './TournamentInfoModal';
 
 interface SocialSquareProps {
     size: number;
@@ -61,10 +60,6 @@ export const SocialSquare: React.FC<SocialSquareProps> = ({ size }) => {
                     />
                 </View>
             </View>
-            <TournamentInfoModal
-                visible={modalVisible}
-                onClose={() => setModalVisible(false)}
-            />
         </>
     );
 };

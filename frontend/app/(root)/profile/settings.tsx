@@ -48,7 +48,7 @@ export default function Settings() {
 
             <TouchableOpacity
                 className="flex-row items-center px-4 py-3"
-                onPress={() => router.back()}
+                onPress={() => router.push('/profile')}
             >
                 <ChevronLeft size={24} color={isDark ? '#DDE1E5' : '#2B2B2B'} />
                 <Text className="text-base text-[#2B2B2B] dark:text-[#DDE1E5] ml-1 font-['Times New Roman']">
