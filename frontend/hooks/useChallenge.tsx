@@ -4,11 +4,17 @@ import { useSocket } from "./socket";
 import { useEffect } from "react";
 import { Room } from "./useJoinRoom";
 import { useRouter } from "expo-router";
+import { useAds } from './useAds';
+
+interface ChallengeResponse {
+    data: Room;
+}
 
 export const useChallenge = () => {
     const queryClient = useQueryClient();
     const { socket, isConnected } = useSocket();
     const router = useRouter();
+    const { showInterstitial } = useAds();
 
     useEffect(() => {
         if (!isConnected || !socket) return;
@@ -32,20 +38,21 @@ export const useChallenge = () => {
 
     const sendChallenge = useMutation({
         mutationFn: async ({ challengedId, difficulty }: { challengedId: number; difficulty: string }) => {
-            const { data } = await post('/rooms/challenge', { challengedId, difficulty });
-            return data as Room;
+            const response = await post('/rooms/challenge', { challengedId, difficulty }) as ChallengeResponse;
+            return response.data;
         },
-        onSuccess: (room) => {
+        onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['rooms'] });
             queryClient.invalidateQueries({ queryKey: ['challenges', 'pending'] });
-            router.push(`/game?roomId=${room.id}`);
         },
     });
 
     const acceptChallenge = useMutation({
         mutationFn: async (roomId: number) => {
-            const { data } = await post(`/rooms/challenge/${roomId}/accept`, { roomId });
-            return data as Room;
+            await showInterstitial();
+
+            const response = await post(`/rooms/challenge/${roomId}/accept`, { roomId }) as ChallengeResponse;
+            return response.data;
         },
         onSuccess: (room) => {
             queryClient.invalidateQueries({ queryKey: ['rooms'] });
@@ -56,8 +63,8 @@ export const useChallenge = () => {
 
     const rejectChallenge = useMutation({
         mutationFn: async (roomId: number) => {
-            const { data } = await post(`/rooms/challenge/${roomId}/reject`, { roomId });
-            return data as Room;
+            const response = await post(`/rooms/challenge/${roomId}/reject`, { roomId }) as ChallengeResponse;
+            return response.data;
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['rooms'] });

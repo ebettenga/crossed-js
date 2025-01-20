@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, Modal, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useChallenge } from '~/hooks/useChallenge';
 import { Swords, X } from 'lucide-react-native';
+import { useAds } from '~/hooks/useAds';
 
 type ChallengeDialogProps = {
   isVisible: boolean;
@@ -12,9 +13,13 @@ type ChallengeDialogProps = {
 
 export const ChallengeDialog = ({ isVisible, onClose, friendId, friendName }: ChallengeDialogProps) => {
   const { sendChallenge } = useChallenge();
+  const { showInterstitial } = useAds();
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>('easy');
 
-  const handleChallenge = () => {
+  const handleChallenge = async () => {
+    // Show interstitial ad before sending challenge
+    await showInterstitial();
+
     sendChallenge.mutate({
       challengedId: friendId,
       difficulty: selectedDifficulty,
