@@ -7,6 +7,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Menu } from 'lucide-react-native';
 import { cn } from '~/lib/utils';
+import { useColorMode } from '~/hooks/useColorMode';
 
 interface MenuOption {
   label: string;
@@ -20,7 +21,7 @@ interface GameMenuProps {
 
 export const GameMenu: React.FC<GameMenuProps> = ({ options }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const isDarkMode = useColorScheme() === 'dark';
+  const { isDark } = useColorMode();
 
   const toggleMenu = () => {
     setIsOpen(!isOpen);
@@ -93,7 +94,7 @@ export const GameMenu: React.FC<GameMenuProps> = ({ options }) => {
         )}
         onPress={toggleMenu}
       >
-        <Menu size={20} color={isDarkMode ? '#DDE1E5' : '#4A4A4A'} />
+        <Menu size={20} color={isDark ? '#DDE1E5' : '#4A4A4A'} />
       </TouchableOpacity>
     </View>
   );

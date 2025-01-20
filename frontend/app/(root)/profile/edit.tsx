@@ -6,6 +6,7 @@ import { ChevronLeft, Camera } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import { PageHeader } from '~/components/Header';
+import { useColorMode } from '~/hooks/useColorMode';
 
 export default function EditProfile() {
     const router = useRouter();
@@ -15,7 +16,7 @@ export default function EditProfile() {
     const [username, setUsername] = useState(user?.username || '');
     const [email, setEmail] = useState(user?.email || '');
     const [isLoading, setIsLoading] = useState(false);
-    const isDarkMode = useColorScheme() === 'dark';
+    const { isDark } = useColorMode();
     const [pendingPhoto, setPendingPhoto] = useState<{ uri: string, formData: FormData } | null>(null);
 
     const handleSave = async () => {
@@ -101,7 +102,7 @@ export default function EditProfile() {
                 className="flex-row items-center px-4 py-3"
                 onPress={() => router.push('/profile')}
             >
-                <ChevronLeft size={24} color={isDarkMode ? '#DDE1E5' : '#2B2B2B'} />
+                <ChevronLeft size={24} color={isDark ? '#DDE1E5' : '#2B2B2B'} />
                 <Text className="text-base text-[#2B2B2B] dark:text-[#DDE1E5] ml-1 font-['Times New Roman']">
                     Back
                 </Text>

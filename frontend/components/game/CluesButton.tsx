@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { View, TouchableOpacity, useColorScheme } from 'react-native';
+import { View, TouchableOpacity } from 'react-native';
 import { NotepadText } from 'lucide-react-native';
 import { CluesModal } from './CluesModal';
 import { Square } from '~/hooks/useRoom';
 import { cn } from '~/lib/utils';
+import { useColorMode } from '~/hooks/useColorMode';
 
 interface CluesButtonProps {
     clues: {
@@ -18,7 +19,7 @@ export const CluesButton: React.FC<CluesButtonProps> = ({
     onCluePress
 }) => {
     const [isCluesModalVisible, setIsCluesModalVisible] = useState(false);
-    const isDarkMode = useColorScheme() === 'dark';
+    const { isDark } = useColorMode();
 
     return (
         <View className="absolute bottom-5 left-4 items-start">
@@ -29,7 +30,7 @@ export const CluesButton: React.FC<CluesButtonProps> = ({
                 )}
                 onPress={() => setIsCluesModalVisible(true)}
             >
-                <NotepadText size={20} color={isDarkMode ? '#DDE1E5' : '#4A4A4A'} />
+                <NotepadText size={20} color={isDark ? '#DDE1E5' : '#4A4A4A'} />
             </TouchableOpacity>
 
             {<CluesModal

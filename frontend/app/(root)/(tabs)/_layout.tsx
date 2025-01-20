@@ -5,6 +5,7 @@ import { usePathname } from 'expo-router';
 import { cn } from '~/lib/utils';
 
 import icons from '@/constants/icons'
+import { useColorMode } from '~/hooks/useColorMode';
 
 const TabIcon = ({ focused, icon, title }: { focused: boolean; icon: any; title: string }) => (
     <View className="flex-1 mt-3 flex-col items-center">
@@ -26,19 +27,19 @@ const TabIcon = ({ focused, icon, title }: { focused: boolean; icon: any; title:
 const TabsLayout = () => {
     const pathname = usePathname();
     const hideTabBar = pathname === '/game';
-    const colorScheme = useColorScheme();
+    const { isDark } = useColorMode();
 
     useEffect(() => {
-        StatusBar.setBackgroundColor(colorScheme === 'dark' ? '#0F1417' : '#F6FAFE');
-        StatusBar.setBarStyle(colorScheme === 'dark' ? 'light-content' : 'dark-content');
-    }, [colorScheme]);
+        StatusBar.setBackgroundColor(isDark ? '#0F1417' : '#F6FAFE');
+        StatusBar.setBarStyle(isDark ? 'light-content' : 'dark-content');
+    }, [isDark]);
 
     return (
         <Tabs
             screenOptions={{
                 tabBarShowLabel: false,
                 tabBarStyle: {
-                    backgroundColor: colorScheme === 'dark' ? '#0F1417' : '#F6FAFE',
+                    backgroundColor: isDark ? '#0F1417' : '#F6FAFE',
                     position: 'absolute',
                     minHeight: 70,
                     display: hideTabBar ? 'none' : 'flex',
@@ -47,7 +48,7 @@ const TabsLayout = () => {
                         width: 0,
                         height: -2,
                     },
-                    shadowOpacity: colorScheme === 'dark' ? 0.3 : 0.1,
+                    shadowOpacity: isDark ? 0.3 : 0.1,
                     shadowRadius: 3,
                     elevation: 5,
                 }
