@@ -128,6 +128,11 @@ export default function (
 
   // Get active users count
   fastify.get("/users/active", async (request, reply) => {
+    // Update current user's status and last active time
+    await fastify.orm.getRepository(User).update(request.user.id, {
+      status: "online",
+      lastActiveAt: new Date()
+    });
     const count = await fastify.orm.getRepository(User).count({
       where: {
         status: "online"

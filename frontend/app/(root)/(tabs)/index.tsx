@@ -14,6 +14,7 @@ import { Link } from 'expo-router';
 import { useActiveRooms, usePendingRooms } from '~/hooks/useActiveRooms';
 import { useUser } from '~/hooks/users';
 import { cn } from '~/lib/utils';
+import { useAds } from '~/hooks/useAds';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const PADDING = 6;
@@ -31,6 +32,7 @@ export default function Home() {
     const { data: pendingRooms, isLoading: isLoadingPendingRooms, refetch: refetchPendingRooms } = usePendingRooms();
     const { data: user, isLoading: isLoadingUser, refetch: refetchUser } = useUser();
     const [refreshing, setRefreshing] = useState(false);
+    const { showInterstitial } = useAds();
 
     const isBottomSheetOpen = useSharedValue(false);
     const [selectedGameMode, setSelectedGameMode] = React.useState<GameMode | null>(null);
@@ -49,9 +51,13 @@ export default function Home() {
         setRefreshing(false);
     }, [refetchUser, refetchActiveRooms, refetchPendingRooms]);
 
-    const handleGameModePress = (mode: GameMode) => {
-        setSelectedGameMode(mode);
-        isBottomSheetOpen.value = true;
+    const handleGameModePress = async (mode: GameMode) => {
+        // Show interstitial ad before opening difficulty selection
+        showInterstitial().then(() => {
+
+            setSelectedGameMode(mode);
+            isBottomSheetOpen.value = true;
+        });
     };
 
     const handleDifficultySelect = async (difficulty: 'easy' | 'medium' | 'hard') => {
