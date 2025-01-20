@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, Modal, TouchableOpacity, ScrollView, useColorScheme } from 'react-native';
 import { X } from 'lucide-react-native';
 import { Square } from '~/hooks/useRoom';
+import { useColorMode } from '~/hooks/useColorMode';
 
 interface CluesModalProps {
     visible: boolean;
@@ -19,7 +20,7 @@ export const CluesModal: React.FC<CluesModalProps> = ({
     clues,
     onCluePress,
 }) => {
-    const colorScheme = useColorScheme();
+    const { isDark } = useColorMode();
     const [isAcrossMode, setIsAcrossMode] = React.useState(true);
 
     const handleCluePress = (number: number | null, isAcross: boolean) => {
@@ -76,7 +77,7 @@ export const CluesModal: React.FC<CluesModalProps> = ({
                             Clues
                         </Text>
                         <TouchableOpacity onPress={onClose} className="p-2">
-                            <X size={24} color={colorScheme === 'dark' ? '#DDE1E5' : '#2B2B2B'} />
+                            <X size={24} color={isDark ? '#FFFFFF' : '#2B2B2B'} />
                         </TouchableOpacity>
                     </View>
                     <View className="flex-row justify-center my-4">
