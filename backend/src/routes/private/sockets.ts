@@ -113,6 +113,7 @@ export default function (
       socket.on('heartbeat', async () => {
         // Update the user's lastActiveAt timestamp
         await fastify.orm.getRepository(User).update(user.id, {
+          status: 'online',
           lastActiveAt: new Date()
         });
       });
