@@ -14,6 +14,7 @@ import { Avatar } from '~/components/shared/Avatar';
 import ConnectionStatus from '~/components/ConnectionStatus';
 import { CluesButton } from '../components/game/CluesButton';
 import { SupportModal } from '../components/game/SupportModal';
+import { GameSummaryModal } from '../components/game/GameSummaryModal';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 
@@ -275,10 +276,10 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
                     />
 
                 </View>
-                <ClueDisplay
-                    selectedSquare={selectedCell || null}
-                    isAcrossMode={isAcrossMode}
-                />
+                    <ClueDisplay
+                        selectedSquare={selectedCell || null}
+                        isAcrossMode={isAcrossMode}
+                    />
             </View>
             <View className="w-full absolute bottom-0 left-0 right-0 bg-[#F5F5EB] dark:bg-[#0F1417]">
                 <Keyboard
@@ -299,6 +300,14 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
                 onClose={() => setShowSupportModal(false)}
                 onReport={handleReport}
             />
+
+            {room && room.status === 'finished' && (
+                <GameSummaryModal
+                    isVisible={showGameSummary}
+                    onClose={onGameSummaryClose}
+                    room={room}
+                />
+            )}
         </KeyboardAvoidingView>
     );
 };
