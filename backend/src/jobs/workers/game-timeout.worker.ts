@@ -4,6 +4,7 @@ import { DataSource } from "typeorm";
 import { Room } from "../../entities/Room";
 import { NotFoundError } from "../../errors/api";
 import { Server } from "socket.io";
+import { redisService } from "../../services/RedisService";
 
 export const createGameTimeoutWorker = (dataSource: DataSource, io: Server) => {
   // Ensure the dataSource is initialized
@@ -14,7 +15,7 @@ export const createGameTimeoutWorker = (dataSource: DataSource, io: Server) => {
   };
 
   const worker = new Worker(
-    "game-timeout",
+    `game-timeout`,
     async (job) => {
       await ensureConnection();
       const roomRepository = dataSource.getRepository(Room);
@@ -32,6 +33,19 @@ export const createGameTimeoutWorker = (dataSource: DataSource, io: Server) => {
       if (room.status === "pending") {
         room.status = "cancelled";
         await roomRepository.save(room);
+
+        // Publish cancellation event to Redis
+        const message = JSON.stringify({
+          type: 'room_cancelled',
+          data: {
+            roomId: room.id,
+            message: 'Game was cancelled due to inactivity',
+            reason: 'timeout',
+            players: room.players.map(p => p.id)
+          }
+        });
+
+        await redisService.publish('game_events', message);
       }
     },
     {

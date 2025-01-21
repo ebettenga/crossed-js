@@ -418,18 +418,12 @@ export const useRoom = (roomId?: number) => {
         const userStats = data.room.players.find(p => p.id === currentUser.id);
         const userGameStats = {
           isWinner,
-          correctGuesses: 0, // These will be updated when we receive rating_change
+          correctGuesses: 0,
           incorrectGuesses: 0,
           eloAtGame: userStats?.eloRating || 0,
           eloChange: 0,
         };
         setShowGameSummary(true);
-      }
-
-      // If current user is in the game, prepare for redirection
-      if (currentUser && data.room.players.some(player => player.id === currentUser.id)) {
-        // Don't redirect immediately, wait for user to close the game summary
-        // router.push('/(root)/(tabs)');
       }
     };
 
@@ -443,13 +437,15 @@ export const useRoom = (roomId?: number) => {
       console.log("Room cancelled:", data.message);
       // Invalidate pending rooms query
       queryClient.invalidateQueries({ queryKey: ['rooms', 'pending'] });
+
+
       showToast(
         'error',
-        'Game was cancelled due to inactivity. Please try again later',
+        data.message || 'Game was cancelled due to inactivity. Please try again later',
       );
+    }
 
-    };
-
+    socket?.on("room", handleRoom);
     socket?.on("room", handleRoom);
     socket?.on("game_started", handleGameStarted);
     socket?.on("game_forfeited", handleGameForfeited);

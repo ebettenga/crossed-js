@@ -107,14 +107,16 @@ export class RoomService {
     const savedRoom = await this.ormConnection.getRepository(Room).save(room);
 
     // Add timeout job
+    fastify.log.info(`Adding timeout job for room: ${savedRoom.id}`);
     await gameTimeoutQueue.add(
-      `room-timeout-${savedRoom.id}`,
+      `game-timeout`,
       { roomId: savedRoom.id },
       {
         delay: config.game.timeout.pending,
-        jobId: `room-timeout-${savedRoom.id}`,
+        jobId: `game-timeout`,
       },
     );
+    fastify.log.info(`Added timeout job for room: ${savedRoom.id}`);
 
     return savedRoom;
   }

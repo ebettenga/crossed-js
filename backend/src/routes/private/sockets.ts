@@ -4,6 +4,7 @@ import { AuthService } from "../../services/AuthService";
 import { User } from "../../entities/User";
 import { UserNotFoundError } from "../../errors/api";
 import { Socket } from "socket.io";
+import { redisService } from "../../services/RedisService";
 
 export type Guess = {
   roomId: number;
@@ -65,6 +66,36 @@ export default function (
 ): void {
   const authService = new AuthService(fastify.orm);
   const roomService = new RoomService(fastify.orm);
+
+  // Subscribe to game events from Redis
+  redisService.subscribe('game_events', (channel, message) => {
+    try {
+      const event = JSON.parse(message);
+
+      if (event.type === 'room_cancelled') {
+        const { roomId, message: cancelMessage, reason, players } = event.data;
+
+        // Emit to all players in the room
+        players.forEach(playerId => {
+          fastify.io.to(`user_${playerId}`).emit('room_cancelled', {
+            message: cancelMessage,
+            roomId,
+            reason
+          });
+        });
+
+        // Also emit to the room channel for any spectators
+        fastify.io.to(roomId.toString()).emit('room_cancelled', {
+          message: cancelMessage,
+          roomId,
+          reason
+        });
+      }
+    } catch (error) {
+      fastify.log.error('Error handling Redis message:', error);
+    }
+  });
+
   // connection stuff
   fastify.io.on("connection", async (socket) => {
     try {
@@ -77,8 +108,10 @@ export default function (
       // Add user to all their active rooms
       const rooms = await roomService.getRoomsByUserId(user.id);
       for (const room of rooms) {
-        if (room.status === 'playing') {
+        // Join both playing and pending rooms to receive updates
+        if (room.status === 'playing' || room.status === 'pending') {
           socket.join(room.id.toString());
+          socket.join(`user_${user.id}`);
           fastify.log.info(`User ${user.id} joined room ${room.id}`);
         }
       }
@@ -118,15 +151,16 @@ export default function (
         });
       });
 
-      // Clean up on disconnect
-      socket.on('disconnect', () => {
-      });
-
       socket.on("join_room_bus", async (data: RoomMessage) => {
         try {
           const room = await roomService.getRoomById(data.roomId);
-          socket.emit("room", room.toJSON());
+          if (!room) {
+            socket.emit("error", "Room not found");
+            return;
+          }
           socket.join(room.id.toString());
+          socket.emit("room", room.toJSON());
+          fastify.log.info(`User ${user.id} joined room ${room.id} via join_room_bus`);
         } catch (e) {
           if (e instanceof UserNotFoundError) {
             socket.emit("error", "Authentication failed");
@@ -139,13 +173,13 @@ export default function (
       socket.on("loadRoom", async (data: LoadRoom) => {
         try {
           const room = await roomService.getRoomById(data.roomId);
-
           if (!room) {
-            socket.emit("error", "Couldn't find room.");
-          } else {
-            socket.join(room.id.toString());
-            socket.emit("room", room.toJSON());
+            socket.emit("error", "Room not found");
+            return;
           }
+          socket.join(room.id.toString());
+          socket.emit("room", room.toJSON());
+          fastify.log.info(`User ${user.id} joined room ${room.id} via loadRoom`);
         } catch (e) {
           if (e instanceof UserNotFoundError) {
             socket.emit("error", "Authentication failed");
