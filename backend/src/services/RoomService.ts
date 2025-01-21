@@ -7,7 +7,8 @@ import { config } from "../config/config";
 import { fastify } from "../fastify";
 import { GameStats } from "../entities/GameStats";
 import { NotFoundError } from "../errors/api";
-import { gameTimeoutQueue } from "../jobs/queues";
+import { gameInactivityQueue, gameTimeoutQueue } from "../jobs/queues";
+import { v4 as uuidv4 } from "uuid";
 
 export class RoomService {
   private crosswordService: CrosswordService;
@@ -66,8 +67,31 @@ export class RoomService {
     const maxPlayers = config.game.maxPlayers[room.type];
     if (room.players.length >= maxPlayers) {
       room.status = "playing";
+      room.last_activity_at = new Date();
       // Remove timeout job since the game is starting
       await gameTimeoutQueue.remove(`room-timeout-${room.id}`);
+
+      // Log timestamps for debugging
+      console.log(`Setting initial last_activity_at for room ${room.id}:`, {
+        timestamp: room.last_activity_at.toISOString(),
+        unixTimestamp: room.last_activity_at.getTime(),
+        currentTime: new Date().toISOString(),
+      });
+
+      // Start inactivity check
+      fastify.log.info(`Adding inactivity job for room: ${room.id}`);
+      await gameInactivityQueue.add(
+        "game-inactivity",
+        {
+          roomId: room.id,
+          lastActivityTimestamp: room.last_activity_at.getTime(),
+        },
+        {
+          jobId: `game-inactivity-${room.id}-${uuidv4()}`,
+          delay: config.game.timeout.inactivity.initial,
+        },
+      );
+
       // Emit game_started event through fastify.io
       fastify.io.to(room.id.toString()).emit("game_started", {
         message: "All players have joined! Game is starting.",
@@ -107,14 +131,16 @@ export class RoomService {
     const savedRoom = await this.ormConnection.getRepository(Room).save(room);
 
     // Add timeout job
+    fastify.log.info(`Adding timeout job for room: ${savedRoom.id}`);
     await gameTimeoutQueue.add(
-      `room-timeout-${savedRoom.id}`,
+      `game-timeout`,
       { roomId: savedRoom.id },
       {
         delay: config.game.timeout.pending,
-        jobId: `room-timeout-${savedRoom.id}`,
+        jobId: `game-timeout`,
       },
     );
+    fastify.log.info(`Added timeout job for room: ${savedRoom.id}`);
 
     return savedRoom;
   }
@@ -343,6 +369,8 @@ export class RoomService {
       guess,
     );
 
+    room.markModified();
+
     // Get or create game stats for this user and room
     let gameStats = await this.ormConnection.getRepository(GameStats).findOne({
       where: { userId, roomId },
@@ -367,6 +395,9 @@ export class RoomService {
 
     // Update stats based on guess result
     if (isCorrect) {
+      // Update last activity timestamp
+      room.last_activity_at = new Date();
+
       gameStats.correctGuesses++;
       gameStats.correctGuessDetails = [
         ...(gameStats.correctGuessDetails || []),
@@ -499,13 +530,16 @@ export class RoomService {
     const savedRoom = await this.ormConnection.getRepository(Room).save(room);
 
     // Emit a challenge event through socket.io
-    fastify.io.to(`user_${challenged.id.toString()}`).emit("challenge_received", {
-      room: savedRoom.toJSON(),
-      challenger: {
-        id: challenger.id,
-        username: challenger.username,
+    fastify.io.to(`user_${challenged.id.toString()}`).emit(
+      "challenge_received",
+      {
+        room: savedRoom.toJSON(),
+        challenger: {
+          id: challenger.id,
+          username: challenger.username,
+        },
       },
-    });
+    );
 
     return savedRoom;
   }
