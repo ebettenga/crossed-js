@@ -33,8 +33,8 @@ export const commonConfig = {
     timeout: {
       pending: 120000, // 2 minutes in milliseconds
       inactivity: {
-        initial: 60000, // 1 minute initial timeout
-        minimum: 60000,  // 1 minute minimum timeout
+        initial: 10000, // 10 seconds initial timeout
+        minimum: 10000,  // 10 seconds minimum timeout
         // The rate at which the timeout decreases (percentage)
         // e.g., 0.2 means timeout reduces by 20% for each 10% of puzzle completed
         accelerationRate: 0.2,
