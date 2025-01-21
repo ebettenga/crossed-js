@@ -5,8 +5,12 @@ import { Room } from "../../entities/Room";
 import { NotFoundError } from "../../errors/api";
 import { Server } from "socket.io";
 import { redisService } from "../../services/RedisService";
+import { createSocketEventService } from "../../services/SocketEventService";
+import { FastifyInstance } from "fastify";
 
-export const createGameTimeoutWorker = (dataSource: DataSource, io: Server) => {
+export const createGameTimeoutWorker = (dataSource: DataSource, fastify: FastifyInstance) => {
+  const socketEventService = createSocketEventService(fastify);
+
   // Ensure the dataSource is initialized
   const ensureConnection = async () => {
     if (!dataSource.isInitialized) {
@@ -15,7 +19,7 @@ export const createGameTimeoutWorker = (dataSource: DataSource, io: Server) => {
   };
 
   const worker = new Worker(
-    `game-timeout`,
+    "game-timeout",
     async (job) => {
       await ensureConnection();
       const roomRepository = dataSource.getRepository(Room);
@@ -34,18 +38,20 @@ export const createGameTimeoutWorker = (dataSource: DataSource, io: Server) => {
         room.status = "cancelled";
         await roomRepository.save(room);
 
-        // Publish cancellation event to Redis
-        const message = JSON.stringify({
-          type: 'room_cancelled',
-          data: {
-            roomId: room.id,
-            message: 'Game was cancelled due to inactivity',
-            reason: 'timeout',
-            players: room.players.map(p => p.id)
-          }
+        // Notify all players in the room using the SocketEventService
+        await socketEventService.emitToRoom(room.id, "room_cancelled", {
+          message: 'Game was cancelled due to inactivity',
+          roomId: room.id,
+          reason: 'timeout'
         });
 
-        await redisService.publish('game_events', message);
+        // Also notify each player individually to ensure they receive the message
+        const playerIds = room.players.map(p => p.id);
+        await socketEventService.emitToUsers(playerIds, "room_cancelled", {
+          message: 'Game was cancelled due to inactivity',
+          roomId: room.id,
+          reason: 'timeout'
+        });
       }
     },
     {

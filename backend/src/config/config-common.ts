@@ -31,7 +31,7 @@ export const commonConfig = {
       firstCrosswordDate: '2000-01-01',
     },
     timeout: {
-      pending: 100, // 2 minutes for pending games
+      pending: 12000, // 2 minutes in milliseconds
     },
   },
   status: {
