@@ -30,7 +30,7 @@ export const HomeSquareButton: React.FC<HomeSquareButtonProps> = ({
     size = 120,
     number,
     customStyle,
-    iconColor = "#2B2B2B",
+    iconColor = "#E2E2E2",
     darkIconColor = "#262626"
 }) => {
     const colorScheme = useColorScheme();

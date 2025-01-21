@@ -57,6 +57,8 @@ export const CrosswordCell: React.FC<CrosswordCellProps> = ({
     const isBlackSquare = squareType === SquareType.BLACK;
     const isSolved = squareType === SquareType.SOLVED;
 
+
+
     // Disable press for black squares and solved squares
     const isDisabled = squareType === SquareType.BLACK || squareType === SquareType.SOLVED;
 

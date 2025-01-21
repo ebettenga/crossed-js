@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, TouchableOpacity, Text, StyleProp, TextStyle, useColorScheme } from 'react-native';
+import { View, TouchableOpacity, Text, StyleProp, TextStyle } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   withSpring,
@@ -55,7 +55,7 @@ export const GameMenu: React.FC<GameMenuProps> = ({ options }) => {
   };
 
   return (
-    <View className="absolute bottom-5 right-4 items-end">
+    <View className="absolute bottom-5 right-4 items-end" pointerEvents="box-none">
       {/* Menu Options */}
       <Animated.View
         className={cn(
@@ -63,7 +63,8 @@ export const GameMenu: React.FC<GameMenuProps> = ({ options }) => {
           "rounded-lg p-2 shadow-lg",
           "border border-neutral-200 dark:border-neutral-700"
         )}
-        style={menuItemStyle}
+        style={[menuItemStyle, { zIndex: isOpen ? 1000 : -1 }]}
+        pointerEvents={isOpen ? "auto" : "none"}
       >
         {options.map((option, index) => (
           <TouchableOpacity
