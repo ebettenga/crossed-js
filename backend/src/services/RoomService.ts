@@ -96,6 +96,10 @@ export class RoomService {
       fastify.io.to(room.id.toString()).emit("game_started", {
         message: "All players have joined! Game is starting.",
         room: room.toJSON(),
+        navigate: {
+          screen: "game",
+          params: { roomId: room.id }
+        }
       });
     }
 
@@ -549,6 +553,17 @@ export class RoomService {
     if (!room) throw new NotFoundError("Room not found");
 
     await this.joinExistingRoom(room, userId);
+
+    // Emit game_started event with navigation for both players
+    fastify.io.to(room.id.toString()).emit("game_started", {
+      message: "Challenge accepted! Game is starting.",
+      room: room.toJSON(),
+      navigate: {
+        screen: "game",
+        params: { roomId: room.id }
+      }
+    });
+
     return room;
   }
 

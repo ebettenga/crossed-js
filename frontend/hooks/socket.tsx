@@ -399,7 +399,7 @@ export const useRoom = (roomId?: number) => {
       setIsInitialized(true);
     };
 
-    const handleGameStarted = (data: { message: string, room: Room }) => {
+    const handleGameStarted = (data: { message: string, room: Room, navigate?: { screen: string, params: any } }) => {
       console.log("Game started:", data.message);
       // Only redirect if the current user is a player in this game
       if (currentUser && data.room.players.some(player => player.id === currentUser.id)) {
@@ -417,16 +417,6 @@ export const useRoom = (roomId?: number) => {
       setRoom(data.room);
 
       if (currentUser) {
-        // Find the current user's game stats
-        const isWinner = data.forfeitedBy !== currentUser.id;
-        const userStats = data.room.players.find(p => p.id === currentUser.id);
-        const userGameStats = {
-          isWinner,
-          correctGuesses: 0,
-          incorrectGuesses: 0,
-          eloAtGame: userStats?.eloRating || 0,
-          eloChange: 0,
-        };
         setShowGameSummary(true);
       }
     };
