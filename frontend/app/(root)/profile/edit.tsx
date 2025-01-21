@@ -135,20 +135,6 @@ export default function EditProfile() {
 
                 <View className="gap-2">
                     <Text className="text-base text-[#666666] dark:text-[#DDE1E5]/70 font-['Times New Roman']">
-                        Username
-                    </Text>
-                    <TextInput
-                        className="h-[46px] border border-[#E5E5E5] dark:border-[#2A3136] rounded-lg px-3 bg-[#F8F8F5] dark:bg-[#1A2227] text-base text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times New Roman']"
-                        value={username}
-                        onChangeText={setUsername}
-                        placeholder="Enter username"
-                        placeholderTextColor="#666666"
-                        autoCapitalize="none"
-                    />
-                </View>
-
-                <View className="gap-2">
-                    <Text className="text-base text-[#666666] dark:text-[#DDE1E5]/70 font-['Times New Roman']">
                         Email
                     </Text>
                     <TextInput
