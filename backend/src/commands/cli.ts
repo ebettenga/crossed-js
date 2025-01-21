@@ -72,4 +72,42 @@ program
     }
   });
 
+program
+  .command('kill-inactivity-jobs')
+  .description('Kill game inactivity jobs')
+  .option('-r, --roomId <number>', 'Room ID to kill jobs for (if not provided, kills all game inactivity jobs)')
+  .action(async (options) => {
+    try {
+      const { roomId } = options;
+
+      if (roomId) {
+        console.log(`Removing inactivity jobs for room ${roomId}`);
+        const jobs = await gameInactivityQueue.getJobs(['active', 'waiting', 'delayed']);
+        const roomJobs = jobs.filter(job => job.data.roomId === parseInt(roomId));
+
+        for (const job of roomJobs) {
+          await job.remove();
+          console.log(`Removed job ${job.id} for room ${roomId}`);
+        }
+
+        console.log(`Successfully removed ${roomJobs.length} jobs for room ${roomId}`);
+      } else {
+        console.log('Removing all game inactivity jobs');
+        const jobs = await gameInactivityQueue.getJobs(['active', 'waiting', 'delayed']);
+
+        for (const job of jobs) {
+          await job.remove();
+          console.log(`Removed job ${job.id} for room ${job.data.roomId}`);
+        }
+
+        console.log(`Successfully removed ${jobs.length} jobs`);
+      }
+
+      process.exit(0);
+    } catch (error) {
+      console.error('Error killing inactivity jobs:', error);
+      process.exit(1);
+    }
+  });
+
 program.parse(process.argv);
