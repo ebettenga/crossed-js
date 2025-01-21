@@ -1,4 +1,4 @@
-import { Slot, SplashScreen, useRouter, useSegments } from "expo-router";
+import { Slot, SplashScreen, useRouter, useSegments, Stack } from "expo-router";
 
 import "./globals.css";
 import { useEffect, useState } from "react";
@@ -7,8 +7,8 @@ import { PortalHost } from '@rn-primitives/portal';
 import { RoomProvider, SocketProvider } from '~/hooks/socket';
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useUser } from "~/hooks/users";
-import Toast from "react-native-toast-message";
 import { useColorMode } from "~/hooks/useColorMode";
+import { useColorScheme } from 'react-native';
 
 // Prevent the splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
@@ -60,21 +60,26 @@ function AppContent() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <Slot screenOptions={{ headerShown: false }} />
+      <Stack screenOptions={{ headerShown: false }}>
+        <Slot />
+      </Stack>
       <PortalHost />
     </GestureHandlerRootView>
   );
 }
 
-export default function RootLayout() {
+const RootLayout = () => {
+  const colorScheme = useColorScheme();
+
   return (
-    <QueryClientProvider client={queryClient}>
-      <SocketProvider>
-        <RoomProvider>
-          <AppContent />
-          <Toast />
-        </RoomProvider>
-      </SocketProvider>
-    </QueryClientProvider>
+      <QueryClientProvider client={queryClient}>
+        <SocketProvider>
+          <RoomProvider>
+              <AppContent />
+          </RoomProvider>
+        </SocketProvider>
+      </QueryClientProvider>
   );
-}
+};
+
+export default RootLayout;

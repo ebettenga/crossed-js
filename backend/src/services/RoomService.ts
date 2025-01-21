@@ -108,11 +108,11 @@ export class RoomService {
 
     // Add timeout job
     await gameTimeoutQueue.add(
-      `room-timeout-${savedRoom.id}`,
+      `game-timeout`,
       { roomId: savedRoom.id },
       {
         delay: config.game.timeout.pending,
-        jobId: `room-timeout-${savedRoom.id}`,
+        jobId: `game-timeout`,
       },
     );
 
