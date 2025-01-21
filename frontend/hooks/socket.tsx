@@ -408,6 +408,10 @@ export const useRoom = (roomId?: number) => {
       }
     };
 
+    const handleGameInactive = (data: { message: string, completionRate: number, nextTimeout: number, revealedLetter: { index: number, letter: string } }) => {
+      showToast('info', data.message);
+    };
+
     const handleGameForfeited = (data: { message: string, forfeitedBy: number, room: Room }) => {
       console.log("Game forfeited:", data.message);
       setRoom(data.room);
@@ -446,8 +450,8 @@ export const useRoom = (roomId?: number) => {
     }
 
     socket?.on("room", handleRoom);
-    socket?.on("room", handleRoom);
     socket?.on("game_started", handleGameStarted);
+    socket?.on("game_inactive", handleGameInactive);
     socket?.on("game_forfeited", handleGameForfeited);
     socket?.on("rating_change", handleRatingChange);
     socket?.on("room_cancelled", handleRoomCancelled);
@@ -461,6 +465,7 @@ export const useRoom = (roomId?: number) => {
     return () => {
       socket?.off("room", handleRoom);
       socket?.off("game_started", handleGameStarted);
+      socket?.off("game_inactive", handleGameInactive);
       socket?.off("game_forfeited", handleGameForfeited);
       socket?.off("rating_change", handleRatingChange);
       socket?.off("room_cancelled", handleRoomCancelled);

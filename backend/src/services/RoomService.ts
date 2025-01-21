@@ -7,7 +7,7 @@ import { config } from "../config/config";
 import { fastify } from "../fastify";
 import { GameStats } from "../entities/GameStats";
 import { NotFoundError } from "../errors/api";
-import { gameTimeoutQueue } from "../jobs/queues";
+import { gameTimeoutQueue, gameInactivityQueue } from "../jobs/queues";
 
 export class RoomService {
   private crosswordService: CrosswordService;
@@ -66,8 +66,25 @@ export class RoomService {
     const maxPlayers = config.game.maxPlayers[room.type];
     if (room.players.length >= maxPlayers) {
       room.status = "playing";
+      room.last_activity_at = new Date();
       // Remove timeout job since the game is starting
       await gameTimeoutQueue.remove(`room-timeout-${room.id}`);
+
+      // Start inactivity check
+      fastify.log.info(`Adding inactivity job for room: ${room.id}`);
+      await gameInactivityQueue.add(
+        "game-inactivity",
+        {
+          roomId: room.id,
+          lastActivityTimestamp: room.last_activity_at.getTime()
+        },
+        {
+          jobId: `game-inactivity-${room.id}`,
+          delay: config.game.timeout.inactivity.initial,
+        }
+      );
+
+
       // Emit game_started event through fastify.io
       fastify.io.to(room.id.toString()).emit("game_started", {
         message: "All players have joined! Game is starting.",
@@ -344,6 +361,10 @@ export class RoomService {
       { x, y },
       guess,
     );
+
+    // Update last activity timestamp
+    room.last_activity_at = new Date();
+    room.markModified();
 
     // Get or create game stats for this user and room
     let gameStats = await this.ormConnection.getRepository(GameStats).findOne({

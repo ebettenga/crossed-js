@@ -31,7 +31,16 @@ export const commonConfig = {
       firstCrosswordDate: '2000-01-01',
     },
     timeout: {
-      pending: 12000, // 2 minutes in milliseconds
+      pending: 120000, // 2 minutes in milliseconds
+      inactivity: {
+        initial: 60000, // 1 minute initial timeout
+        minimum: 60000,  // 1 minute minimum timeout
+        // The rate at which the timeout decreases (percentage)
+        // e.g., 0.2 means timeout reduces by 20% for each 10% of puzzle completed
+        accelerationRate: 0.2,
+        // Percentage of puzzle completion between timeout adjustments
+        completionStep: 0.1, // 10%
+      }
     },
   },
   status: {

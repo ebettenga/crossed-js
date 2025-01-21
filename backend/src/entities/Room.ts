@@ -100,6 +100,9 @@ export class Room {
   @OneToMany(() => GameStats, (gameStats) => gameStats.room)
   stats: GameStats[];
 
+  @Column({ type: 'timestamp', nullable: true })
+  last_activity_at: Date;
+
   // Cache for toView result
   private viewCache: any = null;
   private lastModified: number = 0;
