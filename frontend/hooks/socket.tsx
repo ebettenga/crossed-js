@@ -8,6 +8,7 @@ import { Room } from './useJoinRoom';
 import { useUser } from './users';
 import { post } from './api';
 import { showToast } from '~/components/shared/Toast';
+import { useActiveRooms } from './useActiveRooms';
 
 // Create a function to get a new socket instance with the current token
 const createSocketInstance = (token: string) => {
@@ -378,13 +379,16 @@ export const useRoom = (roomId?: number) => {
   const [isInitialized, setIsInitialized] = useState(false);
   const { data: currentUser } = useUser();
   const [showGameSummary, setShowGameSummary] = useState(true);
+  const hasCheckedActiveGames = useRef(false);
+  const { data: activeRooms, refetch: refetchActiveRooms } = useActiveRooms();
+  const [revealedLetterIndex, setRevealedLetterIndex] = useState<number | undefined>(undefined);
 
   useEffect(() => {
     if (!isConnected) {
       return;
     }
 
-    const handleRoom = (data: Room) => {
+    const handleRoom = (data: Room & { revealedLetterIndex?: number }) => {
       if (!data) return;
 
       if (data.status === 'finished') {
@@ -396,6 +400,9 @@ export const useRoom = (roomId?: number) => {
       }
 
       setRoom(data);
+      if (data.revealedLetterIndex !== undefined) {
+        setRevealedLetterIndex(data.revealedLetterIndex);
+      }
       setIsInitialized(true);
     };
 
@@ -410,6 +417,7 @@ export const useRoom = (roomId?: number) => {
 
     const handleGameInactive = (data: { message: string, completionRate: number, nextTimeout: number, revealedLetter: { index: number, letter: string } }) => {
       showToast('info', data.message);
+      setRevealedLetterIndex(data.revealedLetter.index);
     };
 
     const handleGameForfeited = (data: { message: string, forfeitedBy: number, room: Room }) => {
@@ -499,6 +507,7 @@ export const useRoom = (roomId?: number) => {
     cancel,
     showGameSummary,
     onGameSummaryClose: handleGameSummaryClose,
+    revealedLetterIndex,
   };
 };
 

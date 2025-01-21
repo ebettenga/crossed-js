@@ -26,12 +26,13 @@ type MenuOption = {
 
 export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
     const insets = useSafeAreaInsets();
-    const { room, guess, refresh, forfeit, showGameSummary, onGameSummaryClose } = useRoom(roomId);
+    const { room, guess, refresh, forfeit, showGameSummary, onGameSummaryClose, revealedLetterIndex } = useRoom(roomId);
     const { data: currentUser } = useUser();
     const router = useRouter();
     const [selectedCell, setSelectedCell] = useState<Square | null>(null);
     const [isAcrossMode, setIsAcrossMode] = useState(true);
     const [showSupportModal, setShowSupportModal] = useState(false);
+
 
     useEffect(() => {
         refresh(roomId);
@@ -273,6 +274,7 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
                         isAcrossMode={isAcrossMode}
                         setIsAcrossMode={setIsAcrossMode}
                         title={room.crossword.title}
+                        revealedLetterIndex={revealedLetterIndex}
                     />
 
                 </View>

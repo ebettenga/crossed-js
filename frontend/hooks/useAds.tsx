@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import mobileAds, { InterstitialAd, TestIds, AdEventType } from 'react-native-google-mobile-ads';
+import { config } from '~/config/config';
 
 const adUnitId = __DEV__ ? TestIds.INTERSTITIAL : 'ca-app-pub-xxxxxxxx/yyyyyyyyyy';
 
@@ -20,7 +21,9 @@ export const useAds = () => {
   }, []);
 
   const loadInterstitial = () => {
-    const newInterstitial = InterstitialAd.createForAdRequest(adUnitId);
+    const newInterstitial = InterstitialAd.createForAdRequest(adUnitId, {
+      keywords: config.ads.keywords,
+    });
 
     newInterstitial.addAdEventListener(AdEventType.LOADED, () => {
       setInterstitialLoaded(true);

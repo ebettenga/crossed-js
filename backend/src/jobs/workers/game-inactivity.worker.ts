@@ -166,22 +166,24 @@ export const createGameInactivityWorker = (
             await roomRepository.save(room);
 
             // Notify players about inactivity and revealed letter
-            // await socketEventService.emitToRoom(room.id, "game_inactive", {
-            //   message: "Due to inactivity, a letter has been revealed!",
-            //   completionRate,
-            //   nextTimeout,
-            //   revealedLetter: {
-            //     index: letterToReveal.index,
-            //     letter: letterToReveal.letter,
-            //   },
-            //   isGameFinished,
-            // });
+            await socketEventService.emitToRoom(room.id, "game_inactive", {
+              completionRate,
+              nextTimeout,
+              revealedLetter: {
+                index: letterToReveal.index,
+                letter: letterToReveal.letter,
+              },
+              isGameFinished,
+            });
 
             // Send updated room state to all players
             console.log(
               `Sending updated room state to all players for room ${room.id}`,
             );
-            await socketEventService.emitToRoom(room.id, "room", room.toJSON());
+            await socketEventService.emitToRoom(room.id, "room", {
+              ...room.toJSON(),
+              revealedLetterIndex: letterToReveal.index
+            });
           } else {
             console.log(`No unsolved letters found for room ${room.id}`);
           }

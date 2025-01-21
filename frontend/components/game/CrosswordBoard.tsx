@@ -28,6 +28,7 @@ interface CrosswordBoardProps {
     isAcrossMode: boolean;
     setIsAcrossMode: (isAcross: boolean) => void;
     title: string;
+    revealedLetterIndex?: number;
 }
 
 export const CrosswordBoard: React.FC<CrosswordBoardProps> = ({
@@ -36,7 +37,8 @@ export const CrosswordBoard: React.FC<CrosswordBoardProps> = ({
     selectedCell,
     isAcrossMode,
     setIsAcrossMode,
-    title
+    title,
+    revealedLetterIndex
 }) => {
     const handleCellPress = (square: Square) => {
         if (selectedCell?.id === square.id) {
@@ -51,6 +53,9 @@ export const CrosswordBoard: React.FC<CrosswordBoardProps> = ({
             <View key={x} className="flex-row">
                 {row.map((square, y) => {
                     const isSelected = selectedCell?.id === square.id;
+                    const cellIndex = x * board[0].length + y;
+                    const isRevealed = cellIndex === revealedLetterIndex;
+
                     return (
                         <CrosswordCell
                             key={`${x}-${y}`}
@@ -61,12 +66,13 @@ export const CrosswordBoard: React.FC<CrosswordBoardProps> = ({
                             gridNumber={square.gridnumber}
                             squareType={square.squareType}
                             isAcrossMode={isAcrossMode}
+                            isRevealed={isRevealed}
                         />
                     );
                 })}
             </View>
         ));
-    }, [board, selectedCell, onCellPress, isAcrossMode]);
+    }, [board, selectedCell, onCellPress, isAcrossMode, revealedLetterIndex]);
 
     return (
         <View className={cn(

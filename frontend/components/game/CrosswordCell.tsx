@@ -28,6 +28,7 @@ const CORNER_RADIUS = config.game.crossword.cornerRadius;
 const PAPER_COLOR = "#F6FAFE"
 const SELECTED_COLOR = config.theme.colors.primary.DEFAULT
 const BORDER_COLOR = "#000000"
+const REVEALED_COLOR = "#8B0000"
 
 interface CrosswordCellProps {
     letter: string;
@@ -37,6 +38,7 @@ interface CrosswordCellProps {
     gridNumber?: number | null;
     squareType: SquareType;
     isAcrossMode?: boolean;
+    isRevealed?: boolean; // New prop for revealed letters
 }
 
 export const CrosswordCell: React.FC<CrosswordCellProps> = ({
@@ -47,6 +49,7 @@ export const CrosswordCell: React.FC<CrosswordCellProps> = ({
     gridNumber,
     squareType,
     isAcrossMode = true,
+    isRevealed = false,
 }) => {
     // Determine if this cell is a corner
     const isTopLeft = coordinates.x === 0 && coordinates.y === 0;
@@ -57,10 +60,16 @@ export const CrosswordCell: React.FC<CrosswordCellProps> = ({
     const isBlackSquare = squareType === SquareType.BLACK;
     const isSolved = squareType === SquareType.SOLVED;
 
-
-
     // Disable press for black squares and solved squares
     const isDisabled = squareType === SquareType.BLACK || squareType === SquareType.SOLVED;
+
+    // Determine background color based on state
+    const getBackgroundColor = () => {
+        if (isBlackSquare) return BORDER_COLOR;
+        if (isSelected) return SELECTED_COLOR;
+        if (isRevealed && isSolved) return REVEALED_COLOR;
+        return PAPER_COLOR;
+    };
 
     return (
         <Pressable onPress={isDisabled ? undefined : onPress}>
@@ -70,7 +79,7 @@ export const CrosswordCell: React.FC<CrosswordCellProps> = ({
                     {
                         borderRightWidth: coordinates.y === GRID_SIZE - 1 ? BORDER_WIDTH : 0,
                         borderBottomWidth: coordinates.x === GRID_SIZE - 1 ? BORDER_WIDTH : 0,
-                        backgroundColor: isBlackSquare ? BORDER_COLOR : (isSelected ? SELECTED_COLOR : PAPER_COLOR),
+                        backgroundColor: getBackgroundColor(),
                         borderTopLeftRadius: isTopLeft ? CORNER_RADIUS : 0,
                         borderTopRightRadius: isTopRight ? CORNER_RADIUS : 0,
                         borderBottomLeftRadius: isBottomLeft ? CORNER_RADIUS : 0,
@@ -82,7 +91,8 @@ export const CrosswordCell: React.FC<CrosswordCellProps> = ({
                 {gridNumber && gridNumber > 0 && (
                     <Text style={[
                         styles.gridNumber,
-                        isSelected && !isDisabled && styles.selectedText
+                        isSelected && !isDisabled && styles.selectedText,
+                        isRevealed && isSolved && styles.revealedText
                     ]}>
                         {gridNumber}
                     </Text>
@@ -91,7 +101,8 @@ export const CrosswordCell: React.FC<CrosswordCellProps> = ({
                     <Text style={[
                         styles.letter,
                         !isSolved && styles.hiddenText,
-                        isSelected && !isDisabled && styles.selectedText
+                        isSelected && !isDisabled && styles.selectedText,
+                        isRevealed && isSolved && styles.revealedText
                     ]}>
                         {letter}
                     </Text>
@@ -109,6 +120,7 @@ export const CrosswordCell: React.FC<CrosswordCellProps> = ({
         </Pressable>
     );
 };
+
 const styles = StyleSheet.create({
     cell: {
         width: CELL_SIZE,
@@ -147,5 +159,8 @@ const styles = StyleSheet.create({
     },
     selectedText: {
         color: '#FFFFFF',
+    },
+    revealedText: {
+        color: '#8B0000', // Dark red for revealed letters
     },
 });
