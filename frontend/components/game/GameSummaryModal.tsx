@@ -26,7 +26,7 @@ export const GameSummaryModal: React.FC<GameSummaryModalProps> = ({
 
     return (
         <Dialog style={{ borderRadius: 4 }} open={isVisible} onOpenChange={onClose}>
-            <DialogContent className="mx-4 my-safe-or-44">
+            <DialogContent className=" bg-[#F5F5F5] w-96 h-96 dark:bg-[#1A2227]">
                 <View className="flex-1 p-4">
                     <Text className="text-2xl font-semibold text-center text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman'] mb-6">
                         Game Summary
