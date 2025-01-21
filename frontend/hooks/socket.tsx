@@ -415,8 +415,9 @@ export const useRoom = (roomId?: number) => {
       }
     };
 
-    const handleGameInactive = (data: { message: string, completionRate: number, nextTimeout: number, revealedLetter: { index: number, letter: string } }) => {
-      showToast('info', data.message);
+    const handleGameInactive = (data: { message?: string, completionRate: number, nextTimeout: number, revealedLetter: { index: number, letter: string } }) => {
+
+      data.message && showToast('info', data.message);
       setRevealedLetterIndex(data.revealedLetter.index);
     };
 

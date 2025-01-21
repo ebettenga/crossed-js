@@ -28,7 +28,7 @@ const CORNER_RADIUS = config.game.crossword.cornerRadius;
 const PAPER_COLOR = "#F6FAFE"
 const SELECTED_COLOR = config.theme.colors.primary.DEFAULT
 const BORDER_COLOR = "#000000"
-const REVEALED_COLOR = "#8B0000"
+const REVEALED_COLOR = "#FFE4E1" // Misty Rose - a light red/pink color that will make text visible
 
 interface CrosswordCellProps {
     letter: string;
@@ -71,6 +71,13 @@ export const CrosswordCell: React.FC<CrosswordCellProps> = ({
         return PAPER_COLOR;
     };
 
+    // Determine text color based on state
+    const getTextColor = () => {
+        if (isSelected && !isDisabled) return '#FFFFFF';
+        if (isRevealed && isSolved) return SELECTED_COLOR; // Use primary color for revealed letters
+        return BORDER_COLOR;
+    };
+
     return (
         <Pressable onPress={isDisabled ? undefined : onPress}>
             <View
@@ -91,8 +98,7 @@ export const CrosswordCell: React.FC<CrosswordCellProps> = ({
                 {gridNumber && gridNumber > 0 && (
                     <Text style={[
                         styles.gridNumber,
-                        isSelected && !isDisabled && styles.selectedText,
-                        isRevealed && isSolved && styles.revealedText
+                        { color: getTextColor() }
                     ]}>
                         {gridNumber}
                     </Text>
@@ -101,8 +107,7 @@ export const CrosswordCell: React.FC<CrosswordCellProps> = ({
                     <Text style={[
                         styles.letter,
                         !isSolved && styles.hiddenText,
-                        isSelected && !isDisabled && styles.selectedText,
-                        isRevealed && isSolved && styles.revealedText
+                        { color: getTextColor() }
                     ]}>
                         {letter}
                     </Text>
@@ -138,7 +143,6 @@ const styles = StyleSheet.create({
     letter: {
         fontSize: CELL_SIZE * 0.5,
         fontWeight: '600',
-        color: BORDER_COLOR,
         fontFamily: 'Times New Roman',
     },
     gridNumber: {
@@ -146,7 +150,6 @@ const styles = StyleSheet.create({
         top: 0,
         left: 2,
         fontSize: CELL_SIZE * 0.25,
-        color: BORDER_COLOR,
         fontWeight: '500',
     },
     hiddenText: {
@@ -156,11 +159,5 @@ const styles = StyleSheet.create({
         position: 'absolute',
         bottom: 2,
         right: 2,
-    },
-    selectedText: {
-        color: '#FFFFFF',
-    },
-    revealedText: {
-        color: '#8B0000', // Dark red for revealed letters
     },
 });
