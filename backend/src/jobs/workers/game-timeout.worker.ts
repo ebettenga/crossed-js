@@ -51,7 +51,11 @@ export const createGameTimeoutWorker = (dataSource: DataSource, io: Server) => {
         console.log(`Publishing room_cancelled event to Redis:`, eventData);
 
         try {
-          await redisService.publishGameEvent(room.id, "room_cancelled", eventData);
+          // Send to each player's user-specific room
+          for (const player of room.players) {
+            console.log(`Publishing room_cancelled event to user ${player.id}`);
+            await redisService.publishGameEvent(player.id, "room_cancelled", eventData);
+          }
           console.log(`Successfully published room_cancelled event for room ${room.id}`);
         } catch (error) {
           console.error(`Failed to publish room_cancelled event:`, error);

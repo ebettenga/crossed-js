@@ -24,7 +24,7 @@ export class RedisService {
       password: config.redis.password,
     });
 
-    // Subscribe to game events
+    // Subscribe to game events and user-specific events
     this.subscriber.psubscribe('game_channel:*').then(() => {
       console.log('Redis subscriber initialized and subscribed to game_channel:*');
     }).catch(err => {
@@ -36,19 +36,29 @@ export class RedisService {
       console.log(`Redis received message on channel ${channel}:`, message);
       try {
         const { event, data } = JSON.parse(message);
-        const gameId = channel.split(':')[1];
+        const channelId = channel.split(':')[1];
 
-        console.log(`Broadcasting to room ${gameId}, event: ${event}`, data);
+        console.log(`Broadcasting to channel ${channelId}, event: ${event}`, data);
 
-        // Get all sockets in the room before broadcasting
-        this.io.in(gameId.toString()).fetchSockets().then(sockets => {
-          console.log(`Found ${sockets.length} socket(s) in room ${gameId}`);
-          // Broadcast to all clients in the game room
-          this.io.to(gameId.toString()).emit(event, data);
-          console.log(`Broadcast completed for room ${gameId}`);
-        }).catch(err => {
-          console.error(`Error fetching sockets for room ${gameId}:`, err);
-        });
+        // Check if this is a user-specific channel
+        if (channel.startsWith('game_channel:user_')) {
+          const userId = channelId.replace('user_', '');
+          console.log(`Broadcasting to user-specific room: user_${userId}`);
+          this.io.to(`user_${userId}`).emit(event, data);
+        } else if (event === 'user_status_change') {
+          // Handle user status changes globally
+          this.io.emit(event, data);
+        } else {
+          // Get all sockets in the room before broadcasting
+          this.io.in(channelId.toString()).fetchSockets().then(sockets => {
+            console.log(`Found ${sockets.length} socket(s) in room ${channelId}`);
+            // Broadcast to all clients in the game room
+            this.io.to(channelId.toString()).emit(event, data);
+            console.log(`Broadcast completed for room ${channelId}`);
+          }).catch(err => {
+            console.error(`Error fetching sockets for room ${channelId}:`, err);
+          });
+        }
       } catch (error) {
         console.error('Error processing Redis message:', error);
       }
@@ -56,7 +66,7 @@ export class RedisService {
 
     // Log connection events
     this.subscriber.on('connect', () => {
-      console.log('Redis subscriber connected');
+      console.log('Redis subscriber  connected');
     });
 
     this.publisher.on('connect', () => {
@@ -73,7 +83,7 @@ export class RedisService {
     });
   }
 
-  async publishGameEvent(gameId: number, event: string, data: any) {
+  async publishGameEvent(gameId: number | string, event: string, data: any) {
     const message = JSON.stringify({ event, data });
     console.log(`Publishing to game_channel:${gameId}, event: ${event}`, data);
     try {

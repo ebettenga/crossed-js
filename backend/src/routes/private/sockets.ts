@@ -75,7 +75,7 @@ export default function (
 
       // Set user as online
       await fastify.orm.getRepository(User).update(user.id, { status: 'online' });
-      await redisService.publishGameEvent(0, 'user_status_change', { userId: user.id, status: 'online' });
+      await redisService.publishGameEvent('global', 'user_status_change', { userId: user.id, status: 'online' });
 
       // Add user to all their active rooms
       const rooms = await roomService.getRoomsByUserId(user.id);
@@ -111,7 +111,7 @@ export default function (
         socket.broadcast.emit("disconnection", `user ${socket.id} disconnected`);
         // Set user as offline
         await fastify.orm.getRepository(User).update(user.id, { status: 'offline' });
-        await redisService.publishGameEvent(0, 'user_status_change', { userId: user.id, status: 'offline' });
+        await redisService.publishGameEvent('global', 'user_status_change', { userId: user.id, status: 'offline' });
       });
 
       socket.on('heartbeat', async () => {
