@@ -364,7 +364,7 @@ export class RoomService {
     await queryRunner.startTransaction();
 
     try {
-        // Get room with pessimistic lock
+        // First get the room with lock
         const room = await queryRunner.manager
             .getRepository(Room)
             .createQueryBuilder("room")
@@ -376,6 +376,21 @@ export class RoomService {
             await queryRunner.rollbackTransaction();
             throw new NotFoundError("Room not found");
         }
+
+        // Then load relations separately
+        await queryRunner.manager
+            .getRepository(Room)
+            .createQueryBuilder()
+            .relation(Room, "crossword")
+            .of(room)
+            .loadOne();
+
+        await queryRunner.manager
+            .getRepository(Room)
+            .createQueryBuilder()
+            .relation(Room, "players")
+            .of(room)
+            .loadMany();
 
         // Check if letter is already found at this position
         const letterIndex = x * room.crossword.col_size + y;

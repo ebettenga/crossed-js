@@ -87,13 +87,11 @@ export const createGameInactivityWorker = (
       await queryRunner.startTransaction();
 
       try {
-        // Get room with pessimistic lock
+        // First get the room with lock
         const room = await queryRunner.manager
           .getRepository(Room)
           .createQueryBuilder("room")
           .setLock("pessimistic_write")
-          .leftJoinAndSelect("room.players", "players")
-          .leftJoinAndSelect("room.crossword", "crossword")
           .where("room.id = :roomId", { roomId: job.data.roomId })
           .getOne();
 
@@ -101,6 +99,21 @@ export const createGameInactivityWorker = (
           await queryRunner.rollbackTransaction();
           throw new NotFoundError("Room not found");
         }
+
+        // Then load relations separately
+        await queryRunner.manager
+          .getRepository(Room)
+          .createQueryBuilder()
+          .relation(Room, "crossword")
+          .of(room)
+          .loadOne();
+
+        await queryRunner.manager
+          .getRepository(Room)
+          .createQueryBuilder()
+          .relation(Room, "players")
+          .of(room)
+          .loadMany();
 
         // Only process if the game is still active
         if (room.status === "playing") {
@@ -216,7 +229,6 @@ export const createGameInactivityWorker = (
               );
 
               const nextJob = await gameInactivityQueue.add(
-                "game-inactivity",
                 {
                   roomId: room.id,
                   lastActivityTimestamp: room.last_activity_at?.getTime(),
@@ -245,7 +257,6 @@ export const createGameInactivityWorker = (
                 const retryDelay = Math.max(1000, Math.floor(nextTimeout / 2));
                 console.log(`Retrying with shorter delay of ${retryDelay}ms`);
                 await gameInactivityQueue.add(
-                  "game-inactivity",
                   {
                     roomId: room.id,
                     lastActivityTimestamp: room.last_activity_at?.getTime(),
@@ -288,7 +299,12 @@ export const createGameInactivityWorker = (
       }
     },
     {
-      connection: config.redis,
+      connection: {
+        host: config.redis.host,
+        port: typeof config.redis.port === 'string' ? parseInt(config.redis.port, 10) : config.redis.port,
+        username: config.redis.username,
+        password: config.redis.password,
+      },
       removeOnComplete: { count: 1 },
       removeOnFail: { count: 1 },
     },
