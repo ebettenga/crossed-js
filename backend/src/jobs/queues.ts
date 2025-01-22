@@ -23,11 +23,7 @@ export const emailQueue = new Queue<EmailJobData>("email", {
 });
 
 export const statusCleanupQueue = new Queue("status-cleanup", {
-  connection: {
-    host: config.redis.host,
-    port: config.redis.port,
-    password: config.redis.password,
-  },
+  connection: config.redis,
   defaultJobOptions: {
     removeOnComplete: true,
     removeOnFail: 1000,
