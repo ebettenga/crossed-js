@@ -9,6 +9,7 @@ import { GameStats } from "../entities/GameStats";
 import { NotFoundError } from "../errors/api";
 import { gameInactivityQueue, gameTimeoutQueue } from "../jobs/queues";
 import { v4 as uuidv4 } from "uuid";
+import { Crossword } from "../entities/Crossword";
 
 export class RoomService {
   private crosswordService: CrosswordService;
@@ -364,7 +365,7 @@ export class RoomService {
     await queryRunner.startTransaction();
 
     try {
-        // First get the room with lock
+        // First get and lock just the room
         const room = await queryRunner.manager
             .getRepository(Room)
             .createQueryBuilder("room")
@@ -377,14 +378,22 @@ export class RoomService {
             throw new NotFoundError("Room not found");
         }
 
-        // Then load relations separately
-        await queryRunner.manager
-            .getRepository(Room)
-            .createQueryBuilder()
-            .relation(Room, "crossword")
-            .of(room)
-            .loadOne();
+        // Then get the crossword with a separate query
+        const crossword = await queryRunner.manager
+            .getRepository(Crossword)
+            .createQueryBuilder("crossword")
+            .where("crossword.id = :id", { id: room.crossword?.id })
+            .getOne();
 
+        if (!crossword) {
+            await queryRunner.rollbackTransaction();
+            throw new Error("Room has no crossword");
+        }
+
+        // Attach the crossword to the room
+        room.crossword = crossword;
+
+        // Then load players relation separately
         await queryRunner.manager
             .getRepository(Room)
             .createQueryBuilder()
