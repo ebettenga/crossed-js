@@ -361,10 +361,14 @@ export class RoomService {
   ): Promise<Room> {
     // Start a transaction to ensure data consistency
     const queryRunner = this.ormConnection.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
+    let transactionStarted = false;
 
     try {
+        // Connect and start transaction
+        await queryRunner.connect();
+        await queryRunner.startTransaction();
+        transactionStarted = true;
+
         // First get and lock just the room
         const room = await queryRunner.manager
             .getRepository(Room)
@@ -374,7 +378,6 @@ export class RoomService {
             .getOne();
 
         if (!room) {
-            await queryRunner.rollbackTransaction();
             throw new NotFoundError("Room not found");
         }
 
@@ -386,7 +389,6 @@ export class RoomService {
             .getOne();
 
         if (!crossword) {
-            await queryRunner.rollbackTransaction();
             throw new Error("Room has no crossword");
         }
 
@@ -404,7 +406,6 @@ export class RoomService {
         // Check if letter is already found at this position
         const letterIndex = x * room.crossword.col_size + y;
         if (room.found_letters[letterIndex] !== "*") {
-            await queryRunner.rollbackTransaction();
             return room;
         }
 
@@ -431,7 +432,6 @@ export class RoomService {
                 .findOneBy({ id: userId });
 
             if (!user) {
-                await queryRunner.rollbackTransaction();
                 throw new NotFoundError("User not found");
             }
 
@@ -489,12 +489,22 @@ export class RoomService {
         await queryRunner.commitTransaction();
         return room;
     } catch (error) {
-        // Rollback transaction on error
-        await queryRunner.rollbackTransaction();
+        // Only rollback if transaction was started
+        if (transactionStarted) {
+            try {
+                await queryRunner.rollbackTransaction();
+            } catch (rollbackError) {
+                console.error("Error rolling back transaction:", rollbackError);
+            }
+        }
         throw error;
     } finally {
-        // Release the queryRunner
-        await queryRunner.release();
+        try {
+            // Release the queryRunner
+            await queryRunner.release();
+        } catch (releaseError) {
+            console.error("Error releasing query runner:", releaseError);
+        }
     }
   }
 

@@ -83,10 +83,14 @@ export const createGameInactivityWorker = (
 
       // Start a transaction
       const queryRunner = dataSource.createQueryRunner();
-      await queryRunner.connect();
-      await queryRunner.startTransaction();
+      let transactionStarted = false;
 
       try {
+        // Connect and start transaction
+        await queryRunner.connect();
+        await queryRunner.startTransaction();
+        transactionStarted = true;
+
         // First get and lock just the room
         const room = await queryRunner.manager
           .getRepository(Room)
@@ -96,7 +100,6 @@ export const createGameInactivityWorker = (
           .getOne();
 
         if (!room) {
-          await queryRunner.rollbackTransaction();
           throw new NotFoundError("Room not found");
         }
 
@@ -108,7 +111,6 @@ export const createGameInactivityWorker = (
           .getOne();
 
         if (!crossword) {
-          await queryRunner.rollbackTransaction();
           throw new Error("Room has no crossword");
         }
 
@@ -298,12 +300,22 @@ export const createGameInactivityWorker = (
         // Commit the transaction
         await queryRunner.commitTransaction();
       } catch (error) {
-        // Rollback transaction on error
-        await queryRunner.rollbackTransaction();
+        // Only rollback if transaction was started
+        if (transactionStarted) {
+          try {
+            await queryRunner.rollbackTransaction();
+          } catch (rollbackError) {
+            console.error("Error rolling back transaction:", rollbackError);
+          }
+        }
         throw error;
       } finally {
-        // Release the queryRunner
-        await queryRunner.release();
+        try {
+          // Release the queryRunner
+          await queryRunner.release();
+        } catch (releaseError) {
+          console.error("Error releasing query runner:", releaseError);
+        }
       }
     },
     {
