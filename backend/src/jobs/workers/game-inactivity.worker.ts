@@ -267,11 +267,7 @@ export const createGameInactivityWorker = (
       }
     },
     {
-      connection: {
-        host: config.redis.host,
-        port: config.redis.port,
-        password: config.redis.password,
-      },
+      connection: config.redis,
       removeOnComplete: { count: 1 },
       removeOnFail: { count: 1 },
     },
