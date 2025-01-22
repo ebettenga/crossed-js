@@ -9,7 +9,6 @@ import { GameStats } from "../entities/GameStats";
 import { NotFoundError } from "../errors/api";
 import { gameInactivityQueue, gameTimeoutQueue } from "../jobs/queues";
 import { v4 as uuidv4 } from "uuid";
-import { Crossword } from "../entities/Crossword";
 
 export class RoomService {
   private crosswordService: CrosswordService;
@@ -359,153 +358,85 @@ export class RoomService {
     y: number,
     guess: string,
   ): Promise<Room> {
-    // Start a transaction to ensure data consistency
-    const queryRunner = this.ormConnection.createQueryRunner();
-    let transactionStarted = false;
+    const room = await this.getRoomById(roomId);
+    if (!room) throw new NotFoundError("Room not found");
 
-    try {
-        // Connect and start transaction
-        await queryRunner.connect();
-        await queryRunner.startTransaction();
-        transactionStarted = true;
-
-        // First get and lock just the room
-        const room = await queryRunner.manager
-            .getRepository(Room)
-            .createQueryBuilder("room")
-            .setLock("pessimistic_write")
-            .where("room.id = :roomId", { roomId })
-            .getOne();
-
-        if (!room) {
-            throw new NotFoundError("Room not found");
-        }
-
-        // Then get the crossword with a separate query
-        const crossword = await queryRunner.manager
-            .getRepository(Crossword)
-            .createQueryBuilder("crossword")
-            .where("crossword.id = :id", { id: room.crossword?.id })
-            .getOne();
-
-        if (!crossword) {
-            throw new Error("Room has no crossword");
-        }
-
-        // Attach the crossword to the room
-        room.crossword = crossword;
-
-        // Then load players relation separately
-        await queryRunner.manager
-            .getRepository(Room)
-            .createQueryBuilder()
-            .relation(Room, "players")
-            .of(room)
-            .loadMany();
-
-        // Check if letter is already found at this position
-        const letterIndex = x * room.crossword.col_size + y;
-        if (room.found_letters[letterIndex] !== "*") {
-            return room;
-        }
-
-        const isCorrect = await this.crosswordService.checkGuess(
-            room,
-            { x, y },
-            guess,
-        );
-
-        room.markModified();
-
-        // Get or create game stats for this user and room with locking
-        let gameStats = await queryRunner.manager
-            .getRepository(GameStats)
-            .createQueryBuilder("stats")
-            .setLock("pessimistic_write")
-            .where("stats.userId = :userId", { userId })
-            .andWhere("stats.roomId = :roomId", { roomId })
-            .getOne();
-
-        if (!gameStats) {
-            const user = await queryRunner.manager
-                .getRepository(User)
-                .findOneBy({ id: userId });
-
-            if (!user) {
-                throw new NotFoundError("User not found");
-            }
-
-            gameStats = new GameStats();
-            gameStats.user = user;
-            gameStats.room = room;
-            gameStats.userId = userId;
-            gameStats.roomId = roomId;
-            gameStats.eloAtGame = user.eloRating;
-            gameStats.correctGuesses = 0;
-            gameStats.incorrectGuesses = 0;
-            gameStats.correctGuessDetails = [];
-        }
-
-        // Update stats based on guess result
-        if (isCorrect) {
-            // Update last activity timestamp
-            room.last_activity_at = new Date();
-
-            gameStats.correctGuesses++;
-            gameStats.correctGuessDetails = [
-                ...(gameStats.correctGuessDetails || []),
-                {
-                    row: x,
-                    col: y,
-                    letter: guess,
-                    timestamp: new Date(),
-                },
-            ];
-
-            // Update room state
-            room.found_letters[x * room.crossword.col_size + y] = guess;
-            room.scores[userId] = (room.scores[userId] || 0) +
-                config.game.points.correct;
-            room.markModified();
-        } else {
-            gameStats.incorrectGuesses++;
-            room.scores[userId] = (room.scores[userId] || 0) +
-                config.game.points.incorrect;
-            room.markModified();
-        }
-
-        // Save game stats within transaction
-        await queryRunner.manager.save(GameStats, gameStats);
-
-        // Check if game is won
-        if (this.isGameFinished(room)) {
-            await this.onGameEnd(room);
-        } else {
-            // Save room if game is not finished
-            await queryRunner.manager.save(Room, room);
-        }
-
-        // Commit the transaction
-        await queryRunner.commitTransaction();
-        return room;
-    } catch (error) {
-        // Only rollback if transaction was started
-        if (transactionStarted) {
-            try {
-                await queryRunner.rollbackTransaction();
-            } catch (rollbackError) {
-                console.error("Error rolling back transaction:", rollbackError);
-            }
-        }
-        throw error;
-    } finally {
-        try {
-            // Release the queryRunner
-            await queryRunner.release();
-        } catch (releaseError) {
-            console.error("Error releasing query runner:", releaseError);
-        }
+    // Check if letter is already found at this position
+    const letterIndex = x * room.crossword.col_size + y;
+    if (room.found_letters[letterIndex] !== "*") {
+      return room;
     }
+
+    const isCorrect = await this.crosswordService.checkGuess(
+      room,
+      { x, y },
+      guess,
+    );
+
+    room.markModified();
+
+    // Get or create game stats for this user and room
+    let gameStats = await this.ormConnection.getRepository(GameStats).findOne({
+      where: { userId, roomId },
+    });
+
+    if (!gameStats) {
+      const user = await this.ormConnection.getRepository(User).findOneBy({
+        id: userId,
+      });
+      if (!user) throw new NotFoundError("User not found");
+
+      gameStats = new GameStats();
+      gameStats.user = user;
+      gameStats.room = room;
+      gameStats.userId = userId;
+      gameStats.roomId = roomId;
+      gameStats.eloAtGame = user.eloRating;
+      gameStats.correctGuesses = 0;
+      gameStats.incorrectGuesses = 0;
+      gameStats.correctGuessDetails = [];
+    }
+
+    // Update stats based on guess result
+    if (isCorrect) {
+      // Update last activity timestamp
+      room.last_activity_at = new Date();
+
+      gameStats.correctGuesses++;
+      gameStats.correctGuessDetails = [
+        ...(gameStats.correctGuessDetails || []),
+        {
+          row: x,
+          col: y,
+          letter: guess,
+          timestamp: new Date(),
+        },
+      ];
+
+      // Update room state
+      room.found_letters[x * room.crossword.col_size + y] = guess;
+      room.scores[userId] = (room.scores[userId] || 0) +
+        config.game.points.correct;
+      room.markModified();
+    } else {
+      gameStats.incorrectGuesses++;
+      room.scores[userId] = (room.scores[userId] || 0) +
+        config.game.points.incorrect;
+      room.markModified();
+    }
+
+    // Save game stats
+    await this.ormConnection.getRepository(GameStats).save(gameStats);
+
+    // Check if game is won
+    if (this.isGameFinished(room)) {
+      await this.onGameEnd(room);
+    } else {
+      // Save room if game is not finished
+      await this.ormConnection.getRepository(Room).save(room);
+    }
+
+    return room;
   }
 
   async getRecentGamesWithStats(
