@@ -358,85 +358,120 @@ export class RoomService {
     y: number,
     guess: string,
   ): Promise<Room> {
-    const room = await this.getRoomById(roomId);
-    if (!room) throw new NotFoundError("Room not found");
+    // Start a transaction to ensure data consistency
+    const queryRunner = this.ormConnection.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-    // Check if letter is already found at this position
-    const letterIndex = x * room.crossword.col_size + y;
-    if (room.found_letters[letterIndex] !== "*") {
-      return room;
+    try {
+        // Get room with pessimistic lock
+        const room = await queryRunner.manager
+            .getRepository(Room)
+            .createQueryBuilder("room")
+            .setLock("pessimistic_write")
+            .where("room.id = :roomId", { roomId })
+            .getOne();
+
+        if (!room) {
+            await queryRunner.rollbackTransaction();
+            throw new NotFoundError("Room not found");
+        }
+
+        // Check if letter is already found at this position
+        const letterIndex = x * room.crossword.col_size + y;
+        if (room.found_letters[letterIndex] !== "*") {
+            await queryRunner.rollbackTransaction();
+            return room;
+        }
+
+        const isCorrect = await this.crosswordService.checkGuess(
+            room,
+            { x, y },
+            guess,
+        );
+
+        room.markModified();
+
+        // Get or create game stats for this user and room with locking
+        let gameStats = await queryRunner.manager
+            .getRepository(GameStats)
+            .createQueryBuilder("stats")
+            .setLock("pessimistic_write")
+            .where("stats.userId = :userId", { userId })
+            .andWhere("stats.roomId = :roomId", { roomId })
+            .getOne();
+
+        if (!gameStats) {
+            const user = await queryRunner.manager
+                .getRepository(User)
+                .findOneBy({ id: userId });
+
+            if (!user) {
+                await queryRunner.rollbackTransaction();
+                throw new NotFoundError("User not found");
+            }
+
+            gameStats = new GameStats();
+            gameStats.user = user;
+            gameStats.room = room;
+            gameStats.userId = userId;
+            gameStats.roomId = roomId;
+            gameStats.eloAtGame = user.eloRating;
+            gameStats.correctGuesses = 0;
+            gameStats.incorrectGuesses = 0;
+            gameStats.correctGuessDetails = [];
+        }
+
+        // Update stats based on guess result
+        if (isCorrect) {
+            // Update last activity timestamp
+            room.last_activity_at = new Date();
+
+            gameStats.correctGuesses++;
+            gameStats.correctGuessDetails = [
+                ...(gameStats.correctGuessDetails || []),
+                {
+                    row: x,
+                    col: y,
+                    letter: guess,
+                    timestamp: new Date(),
+                },
+            ];
+
+            // Update room state
+            room.found_letters[x * room.crossword.col_size + y] = guess;
+            room.scores[userId] = (room.scores[userId] || 0) +
+                config.game.points.correct;
+            room.markModified();
+        } else {
+            gameStats.incorrectGuesses++;
+            room.scores[userId] = (room.scores[userId] || 0) +
+                config.game.points.incorrect;
+            room.markModified();
+        }
+
+        // Save game stats within transaction
+        await queryRunner.manager.save(GameStats, gameStats);
+
+        // Check if game is won
+        if (this.isGameFinished(room)) {
+            await this.onGameEnd(room);
+        } else {
+            // Save room if game is not finished
+            await queryRunner.manager.save(Room, room);
+        }
+
+        // Commit the transaction
+        await queryRunner.commitTransaction();
+        return room;
+    } catch (error) {
+        // Rollback transaction on error
+        await queryRunner.rollbackTransaction();
+        throw error;
+    } finally {
+        // Release the queryRunner
+        await queryRunner.release();
     }
-
-    const isCorrect = await this.crosswordService.checkGuess(
-      room,
-      { x, y },
-      guess,
-    );
-
-    room.markModified();
-
-    // Get or create game stats for this user and room
-    let gameStats = await this.ormConnection.getRepository(GameStats).findOne({
-      where: { userId, roomId },
-    });
-
-    if (!gameStats) {
-      const user = await this.ormConnection.getRepository(User).findOneBy({
-        id: userId,
-      });
-      if (!user) throw new NotFoundError("User not found");
-
-      gameStats = new GameStats();
-      gameStats.user = user;
-      gameStats.room = room;
-      gameStats.userId = userId;
-      gameStats.roomId = roomId;
-      gameStats.eloAtGame = user.eloRating;
-      gameStats.correctGuesses = 0;
-      gameStats.incorrectGuesses = 0;
-      gameStats.correctGuessDetails = [];
-    }
-
-    // Update stats based on guess result
-    if (isCorrect) {
-      // Update last activity timestamp
-      room.last_activity_at = new Date();
-
-      gameStats.correctGuesses++;
-      gameStats.correctGuessDetails = [
-        ...(gameStats.correctGuessDetails || []),
-        {
-          row: x,
-          col: y,
-          letter: guess,
-          timestamp: new Date(),
-        },
-      ];
-
-      // Update room state
-      room.found_letters[x * room.crossword.col_size + y] = guess;
-      room.scores[userId] = (room.scores[userId] || 0) +
-        config.game.points.correct;
-      room.markModified();
-    } else {
-      gameStats.incorrectGuesses++;
-      room.scores[userId] = (room.scores[userId] || 0) +
-        config.game.points.incorrect;
-      room.markModified();
-    }
-
-    // Save game stats
-    await this.ormConnection.getRepository(GameStats).save(gameStats);
-
-    // Check if game is won
-    if (this.isGameFinished(room)) {
-      await this.onGameEnd(room);
-    } else {
-      // Save room if game is not finished
-      await this.ormConnection.getRepository(Room).save(room);
-    }
-
-    return room;
   }
 
   async getRecentGamesWithStats(

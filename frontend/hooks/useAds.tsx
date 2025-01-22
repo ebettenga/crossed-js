@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import mobileAds, { InterstitialAd, TestIds, AdEventType } from 'react-native-google-mobile-ads';
+import { Platform } from 'react-native';
+import mobileAds, { InterstitialAd, AdEventType } from 'react-native-google-mobile-ads';
 import { config } from '~/config/config';
 
-const adUnitId = __DEV__ ? TestIds.INTERSTITIAL : 'ca-app-pub-xxxxxxxx/yyyyyyyyyy';
+const adUnitId = config.ads.interstitialAdUnitId[Platform.OS as keyof typeof config.ads.interstitialAdUnitId];
 
 export const useAds = () => {
   const [initialized, setInitialized] = useState(false);
