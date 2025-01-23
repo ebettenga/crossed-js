@@ -4,8 +4,12 @@ import { router, useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { get, patch, post } from './api';
 
+
+
+
+
 export type SignInRequest = {
-  email: string;
+  credential: string;
   password: string;
 }
 
