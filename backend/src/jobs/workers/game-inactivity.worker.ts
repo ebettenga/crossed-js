@@ -100,6 +100,21 @@ export const createGameInactivityWorker = (
           throw new NotFoundError("Room not found");
         }
 
+          // Now get the related crossword data and players in a separate query
+          const roomWithRelations = await queryRunner.manager
+            .getRepository(Room)
+            .createQueryBuilder("room")
+            .leftJoinAndSelect("room.crossword", "crossword")
+            .leftJoinAndSelect("room.players", "players")
+            .where("room.id = :roomId", { roomId: room.id })
+            .getOne();
+
+          // Merge all the relations into our locked room object
+          Object.assign(room, {
+            crossword: roomWithRelations.crossword,
+            players: roomWithRelations.players
+          });
+
         // Only process if the game is still active
         if (room.status === "playing") {
           // Calculate completion rate (number of found letters / total letters)
