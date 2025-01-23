@@ -219,6 +219,46 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
         }
     }
 
+    const handleClueNavigation = (direction: 'next' | 'previous') => {
+        if (!selectedCell || !room?.board) return;
+
+        const board = room.board;
+        // Get all squares with clues, filtering out duplicates and solved squares
+        const clueSquares = board.flat().filter(square => {
+            const clue = isAcrossMode ? square.acrossQuestion : square.downQuestion;
+            const isUnsolved = square.squareType !== SquareType.SOLVED;
+            // Only include squares that have a clue and are unsolved
+            return clue && isUnsolved;
+        }).reduce((unique, square) => {
+            const clue = isAcrossMode ? square.acrossQuestion : square.downQuestion;
+            // For each clue, only keep the first unsolved square
+            const existingSquare = unique.find(s =>
+                isAcrossMode ? s.acrossQuestion === clue : s.downQuestion === clue
+            );
+            if (!existingSquare) {
+                unique.push(square);
+            }
+            return unique;
+        }, [] as Square[]).sort((a, b) => (a.gridnumber || 0) - (b.gridnumber || 0));
+
+        const currentClue = isAcrossMode ? selectedCell.acrossQuestion : selectedCell.downQuestion;
+        const currentIndex = clueSquares.findIndex(square => {
+            const squareClue = isAcrossMode ? square.acrossQuestion : square.downQuestion;
+            return squareClue === currentClue;
+        });
+
+        if (currentIndex === -1) return;
+
+        let nextIndex;
+        if (direction === 'next') {
+            nextIndex = currentIndex + 1 >= clueSquares.length ? 0 : currentIndex + 1;
+        } else {
+            nextIndex = currentIndex - 1 < 0 ? clueSquares.length - 1 : currentIndex - 1;
+        }
+
+        setSelectedCell(clueSquares[nextIndex]);
+    };
+
     return (
         <KeyboardAvoidingView style={{
             flex: 1,
@@ -276,12 +316,12 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
                         title={room.crossword.title}
                         revealedLetterIndex={revealedLetterIndex}
                     />
-
                 </View>
-                    <ClueDisplay
-                        selectedSquare={selectedCell || null}
-                        isAcrossMode={isAcrossMode}
-                    />
+                <ClueDisplay
+                    selectedSquare={selectedCell || null}
+                    isAcrossMode={isAcrossMode}
+                    onNavigate={handleClueNavigation}
+                />
             </View>
             <View className="w-full absolute bottom-0 left-0 right-0 bg-[#F5F5EB] dark:bg-[#0F1417]">
                 <Keyboard

@@ -1,13 +1,19 @@
 import React from 'react';
-import { View, Text } from 'react-native';
-import { Square } from '~/hooks/useRoom';
+import { View, Text, TouchableOpacity } from 'react-native';
+import { Square } from '~/hooks/useJoinRoom';
+import { ChevronLeft, ChevronRight } from 'lucide-react-native';
 
 interface ClueDisplayProps {
   selectedSquare: Square | null;
   isAcrossMode: boolean;
+  onNavigate: (direction: 'next' | 'previous') => void;
 }
 
-export const ClueDisplay: React.FC<ClueDisplayProps> = ({ selectedSquare, isAcrossMode }) => {
+export const ClueDisplay: React.FC<ClueDisplayProps> = ({
+  selectedSquare,
+  isAcrossMode,
+  onNavigate
+}) => {
   if (!selectedSquare) return null;
   const clue = isAcrossMode ? selectedSquare.acrossQuestion : selectedSquare.downQuestion;
 
@@ -16,10 +22,26 @@ export const ClueDisplay: React.FC<ClueDisplayProps> = ({ selectedSquare, isAcro
   const clueText = clue.split(".")[1];
 
   return (
-  <View className="p-2 pt-4 items-center justify-center min-h-[40px] flex">
-      <Text className="text-base text-[#2B2B2B] dark:text-[#DDE1E5] leading-6 text-center px-4 flex-wrap-none flex-shrink">
-        {clueText}
-      </Text>
+    <View className="p-2 pt-4 flex-row items-center justify-between min-h-[40px]">
+      <TouchableOpacity
+        onPress={() => onNavigate('previous')}
+        className="p-2"
+      >
+        <ChevronLeft size={24} color="#666666" />
+      </TouchableOpacity>
+
+      <View className="flex-1 px-4">
+        <Text className="text-base text-[#2B2B2B] dark:text-[#DDE1E5] leading-6 text-center">
+          {clueText}
+        </Text>
+      </View>
+
+      <TouchableOpacity
+        onPress={() => onNavigate('next')}
+        className="p-2"
+      >
+        <ChevronRight size={24} color="#666666" />
+      </TouchableOpacity>
     </View>
   );
 };
