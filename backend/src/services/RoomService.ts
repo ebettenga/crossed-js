@@ -9,6 +9,7 @@ import { GameStats } from "../entities/GameStats";
 import { NotFoundError } from "../errors/api";
 import { gameInactivityQueue, gameTimeoutQueue } from "../jobs/queues";
 import { v4 as uuidv4 } from "uuid";
+import { EntityManager } from "typeorm";
 
 export class RoomService {
   private crosswordService: CrosswordService;
@@ -352,14 +353,17 @@ export class RoomService {
   }
 
   async handleGuess(
-    roomId: number,
+    room: Room,
     userId: number,
     x: number,
     y: number,
     guess: string,
+    entityManager?: EntityManager
   ): Promise<Room> {
-    const room = await this.getRoomById(roomId);
-    if (!room) throw new NotFoundError("Room not found");
+    const manager = entityManager || this.ormConnection.manager;
+
+    // Use the provided manager for all database operations
+    // This ensures all operations are part of the same transaction
 
     // Check if letter is already found at this position
     const letterIndex = x * room.crossword.col_size + y;
@@ -376,13 +380,13 @@ export class RoomService {
     room.markModified();
 
     // Get or create game stats for this user and room
-    let gameStats = await this.ormConnection.getRepository(GameStats).findOne({
-      where: { userId, roomId },
+    let gameStats = await manager.findOne(GameStats, {
+      where: { userId, roomId: room.id },
     });
 
     if (!gameStats) {
-      const user = await this.ormConnection.getRepository(User).findOneBy({
-        id: userId,
+      const user = await manager.findOne(User, {
+        where: { id: userId },
       });
       if (!user) throw new NotFoundError("User not found");
 
@@ -390,7 +394,7 @@ export class RoomService {
       gameStats.user = user;
       gameStats.room = room;
       gameStats.userId = userId;
-      gameStats.roomId = roomId;
+      gameStats.roomId = room.id;
       gameStats.eloAtGame = user.eloRating;
       gameStats.correctGuesses = 0;
       gameStats.incorrectGuesses = 0;
@@ -426,14 +430,14 @@ export class RoomService {
     }
 
     // Save game stats
-    await this.ormConnection.getRepository(GameStats).save(gameStats);
+    await manager.save(GameStats, gameStats);
 
     // Check if game is won
     if (this.isGameFinished(room)) {
       await this.onGameEnd(room);
     } else {
       // Save room if game is not finished
-      await this.ormConnection.getRepository(Room).save(room);
+      await manager.save(Room, room);
     }
 
     return room;

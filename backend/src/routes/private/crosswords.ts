@@ -1,5 +1,7 @@
 import { FastifyInstance } from "fastify";
 import { CrosswordService } from "../../services/CrosswordService";
+import { CrosswordRatingService } from "../../services/CrosswordRatingService";
+import { DifficultyRating } from "../../entities/CrosswordRating";
 
 type CrosswordQueryParams = {
   page?: number;
@@ -15,6 +17,7 @@ export default function (
   next: (err?: Error) => void,
 ): void {
   const crosswordService = new CrosswordService(fastify.orm);
+  const ratingService = new CrosswordRatingService(fastify.orm);
 
   fastify.get("/crosswords", async (request, reply) => {
     const {
@@ -40,6 +43,51 @@ export default function (
     } else {
       await crosswordService.loadCrosswords();
     }
+  });
+
+  // Rate crossword difficulty
+  fastify.post<{
+    Body: {
+      rating: DifficultyRating;
+    };
+    Params: {
+      crosswordId: string;
+    };
+  }>("/crosswords/:crosswordId/rate-difficulty", async (request, reply) => {
+    const { rating } = request.body;
+    const crosswordId = parseInt(request.params.crosswordId);
+    const userId = request.user.id;
+
+    const result = await ratingService.rateDifficulty(userId, crosswordId, rating);
+    return { success: true, rating: result };
+  });
+
+  // Rate crossword quality
+  fastify.post<{
+    Body: {
+      rating: number;
+    };
+    Params: {
+      crosswordId: string;
+    };
+  }>("/crosswords/:crosswordId/rate-quality", async (request, reply) => {
+    const { rating } = request.body;
+    const crosswordId = parseInt(request.params.crosswordId);
+    const userId = request.user.id;
+
+    const result = await ratingService.rateQuality(userId, crosswordId, rating);
+    return { success: true, rating: result };
+  });
+
+  // Get crossword ratings
+  fastify.get<{
+    Params: {
+      crosswordId: string;
+    };
+  }>("/crosswords/:crosswordId/ratings", async (request, reply) => {
+    const crosswordId = parseInt(request.params.crosswordId);
+    const ratings = await ratingService.getCrosswordRatings(crosswordId);
+    return ratings;
   });
 
   next();

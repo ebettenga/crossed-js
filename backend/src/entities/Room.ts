@@ -140,6 +140,7 @@ export class Room {
       })),
       scores: this.scores,
       crossword: {
+        id: this.crossword.id,
         col_size: this.crossword.col_size,
         row_size: this.crossword.row_size,
         gridnums: this.crossword.gridnums,

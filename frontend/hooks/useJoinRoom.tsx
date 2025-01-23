@@ -39,6 +39,7 @@ export type Room = {
     players: Player[];
     scores: { [key: number]: number };
     crossword: {
+        id: number;
         col_size: number;
         row_size: number;
         gridnums: number[];
