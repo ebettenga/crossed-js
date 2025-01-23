@@ -7,7 +7,11 @@ import { config } from "../config/config";
 import { fastify } from "../fastify";
 import { GameStats } from "../entities/GameStats";
 import { NotFoundError } from "../errors/api";
-import { gameInactivityQueue, gameTimeoutQueue } from "../jobs/queues";
+import {
+  gameInactivityQueue,
+  GameJobName,
+  gameTimeoutQueue,
+} from "../jobs/queues";
 import { v4 as uuidv4 } from "uuid";
 import { EntityManager } from "typeorm";
 
@@ -40,8 +44,13 @@ export class RoomService {
   async joinRoom(
     user: User,
     difficulty: string,
-    type: "1v1" | "2v2" | "free4all" = "1v1",
+    type: "1v1" | "2v2" | "free4all" | "time_trial" = "1v1",
   ): Promise<Room> {
+    // For time_trial, create a new room immediately since it's single player
+    if (type === "time_trial") {
+      return await this.createRoom(user.id, difficulty, type);
+    }
+
     let room = await this.findEmptyRoomByDifficulty(difficulty, type, user);
 
     if (room) {
@@ -99,8 +108,8 @@ export class RoomService {
         room: room.toJSON(),
         navigate: {
           screen: "game",
-          params: { roomId: room.id }
-        }
+          params: { roomId: room.id },
+        },
       });
     }
 
@@ -110,7 +119,7 @@ export class RoomService {
   async createRoom(
     userId: number,
     difficulty: string,
-    type: "1v1" | "2v2" | "free4all" = "1v1",
+    type: "1v1" | "2v2" | "free4all" | "time_trial" = "1v1",
   ): Promise<Room> {
     const crossword = await this.crosswordService.getCrosswordByDifficulty(
       difficulty,
@@ -133,19 +142,43 @@ export class RoomService {
       crossword.id,
     );
 
+    // For time trials, start the game immediately
+    if (type === "time_trial") {
+      room.status = "playing";
+      room.last_activity_at = new Date();
+    }
+
     const savedRoom = await this.ormConnection.getRepository(Room).save(room);
 
-    // Add timeout job
-    fastify.log.info(`Adding timeout job for room: ${savedRoom.id}`);
-    await gameTimeoutQueue.add(
-      `game-timeout`,
-      { roomId: savedRoom.id },
-      {
-        delay: config.game.timeout.pending,
-        jobId: `game-timeout`,
-      },
-    );
-    fastify.log.info(`Added timeout job for room: ${savedRoom.id}`);
+    // Only add timeout job for non-time trial games
+    if (type !== "time_trial") {
+      fastify.log.info(`Adding timeout job for room: ${savedRoom.id}`);
+      await gameTimeoutQueue.add(
+        "game-timeout",
+        { roomId: savedRoom.id },
+        {
+          delay: config.game.timeout.pending,
+          jobId: `game-timeout`,
+        },
+      );
+      fastify.log.info(`Added timeout job for room: ${savedRoom.id}`);
+    } else {
+      // For time trials, start inactivity check immediately
+      fastify.log.info(
+        `Adding inactivity job for time trial room: ${savedRoom.id}`,
+      );
+      await gameInactivityQueue.add(
+        "game-inactivity",
+        {
+          roomId: savedRoom.id,
+          lastActivityTimestamp: room.last_activity_at.getTime(),
+        },
+        {
+          jobId: `game-inactivity-${savedRoom.id}-${uuidv4()}`,
+          delay: config.game.timeout.inactivity.initial,
+        },
+      );
+    }
 
     return savedRoom;
   }
@@ -161,7 +194,7 @@ export class RoomService {
 
   private async findEmptyRoomByDifficulty(
     difficulty: string,
-    type: "1v1" | "2v2" | "free4all",
+    type: "1v1" | "2v2" | "free4all" | "time_trial",
     user: User,
   ): Promise<Room> {
     let userRoomIds: number[] = [];
@@ -358,7 +391,7 @@ export class RoomService {
     x: number,
     y: number,
     guess: string,
-    entityManager?: EntityManager
+    entityManager?: EntityManager,
   ): Promise<Room> {
     const manager = entityManager || this.ormConnection.manager;
 
@@ -564,8 +597,8 @@ export class RoomService {
       room: room.toJSON(),
       navigate: {
         screen: "game",
-        params: { roomId: room.id }
-      }
+        params: { roomId: room.id },
+      },
     });
 
     return room;

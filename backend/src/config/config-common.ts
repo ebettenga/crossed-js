@@ -26,7 +26,8 @@ export const commonConfig = {
     maxPlayers: {
       "1v1": 2,
       "2v2": 4,
-      "free4all": 5,
+      "free4all": 4,
+      "time_trial": 1,
     },
     crossword: {
       firstCrosswordDate: "2000-01-01",

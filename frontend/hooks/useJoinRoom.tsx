@@ -33,7 +33,7 @@ export type Room = {
     created_at: string;
     completed_at?: string;
     difficulty: string;
-    type: '1v1' | '2v2' | 'free4all';
+    type: '1v1' | '2v2' | 'free4all' | 'time_trial';
     status: 'playing' | 'pending' | 'finished' | 'cancelled';
     player_count: number;
     players: Player[];
@@ -66,7 +66,7 @@ export type Room = {
 
 type JoinRoomParams = {
     difficulty: string;
-    type: '1v1' | '2v2' | 'free4all';
+    type: '1v1' | '2v2' | 'free4all' | 'time_trial';
 };
 
 export const useJoinRoom = () => {
