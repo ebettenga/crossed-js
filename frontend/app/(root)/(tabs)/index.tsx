@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, ScrollView, ActivityIndicator, Dimensions, RefreshControl } from 'react-native';
-import { Users, Swords, Group } from 'lucide-react-native';
+import { Users, Timer, Swords, Group } from 'lucide-react-native';
 import { HomeSquareButton } from '~/components/home/HomeSquareButton';
 import { PageHeader } from '~/components/Header';
 import { SocialSquare } from '~/components/home/SocialSquare';
@@ -22,7 +22,7 @@ const GAP = 3;
 const SQUARES_PER_ROW = 2;
 const BUTTON_SIZE = (SCREEN_WIDTH - (PADDING * 2) - (GAP * (SQUARES_PER_ROW - 1))) / SQUARES_PER_ROW;
 
-type GameMode = '1v1' | '2v2' | 'free4all';
+type GameMode = '1v1' | '2v2' | 'free4all' | 'time_trial';
 
 export default function Home() {
     const insets = useSafeAreaInsets();
@@ -164,9 +164,9 @@ export default function Home() {
                             size={BUTTON_SIZE}
                         />
                         <HomeSquareButton
-                            name="2 v 2"
-                            icon={<Group size={24} />}
-                            onPress={() => handleGameModePress('2v2')}
+                            name="Time Trial"
+                            icon={<Timer size={24} />}
+                            onPress={() => handleGameModePress('time_trial')}
                             size={BUTTON_SIZE}
                         />
                         <HomeSquareButton

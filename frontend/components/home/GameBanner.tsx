@@ -23,7 +23,8 @@ export const GameBanner: React.FC<GameBannerProps> = ({
     const formattedGameType = {
         '1v1': '1 vs 1',
         '2v2': '2 vs 2',
-        'free4all': 'Free for All'
+        'free4all': 'Free for All',
+        'time_trial': 'Time Trial'
     }[gameType] || gameType;
 
     const handleCancel = () => {

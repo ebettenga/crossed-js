@@ -13,7 +13,7 @@ import { User } from "./User";
 import { Crossword } from "./Crossword";
 import { GameStats } from "./GameStats";
 
-export type GameType = "1v1" | "2v2" | "free4all";
+export type GameType = "1v1" | "2v2" | "free4all" | "time_trial";
 export type GameStatus = "playing" | "pending" | "finished" | "cancelled";
 
 type Clues = {
@@ -57,7 +57,7 @@ export class Room {
 
   @Column({
     type: "enum",
-    enum: ["1v1", "2v2", "free4all"],
+    enum: ["1v1", "2v2", "free4all", "time_trial"],
     default: "1v1",
   })
   type: GameType;
@@ -140,6 +140,7 @@ export class Room {
       })),
       scores: this.scores,
       crossword: {
+        id: this.crossword.id,
         col_size: this.crossword.col_size,
         row_size: this.crossword.row_size,
         gridnums: this.crossword.gridnums,

@@ -7,8 +7,13 @@ import { config } from "../config/config";
 import { fastify } from "../fastify";
 import { GameStats } from "../entities/GameStats";
 import { NotFoundError } from "../errors/api";
-import { gameInactivityQueue, gameTimeoutQueue } from "../jobs/queues";
+import {
+  gameInactivityQueue,
+  GameJobName,
+  gameTimeoutQueue,
+} from "../jobs/queues";
 import { v4 as uuidv4 } from "uuid";
+import { EntityManager } from "typeorm";
 
 export class RoomService {
   private crosswordService: CrosswordService;
@@ -39,8 +44,13 @@ export class RoomService {
   async joinRoom(
     user: User,
     difficulty: string,
-    type: "1v1" | "2v2" | "free4all" = "1v1",
+    type: "1v1" | "2v2" | "free4all" | "time_trial" = "1v1",
   ): Promise<Room> {
+    // For time_trial, create a new room immediately since it's single player
+    if (type === "time_trial") {
+      return await this.createRoom(user.id, difficulty, type);
+    }
+
     let room = await this.findEmptyRoomByDifficulty(difficulty, type, user);
 
     if (room) {
@@ -98,8 +108,8 @@ export class RoomService {
         room: room.toJSON(),
         navigate: {
           screen: "game",
-          params: { roomId: room.id }
-        }
+          params: { roomId: room.id },
+        },
       });
     }
 
@@ -109,7 +119,7 @@ export class RoomService {
   async createRoom(
     userId: number,
     difficulty: string,
-    type: "1v1" | "2v2" | "free4all" = "1v1",
+    type: "1v1" | "2v2" | "free4all" | "time_trial" = "1v1",
   ): Promise<Room> {
     const crossword = await this.crosswordService.getCrosswordByDifficulty(
       difficulty,
@@ -132,19 +142,43 @@ export class RoomService {
       crossword.id,
     );
 
+    // For time trials, start the game immediately
+    if (type === "time_trial") {
+      room.status = "playing";
+      room.last_activity_at = new Date();
+    }
+
     const savedRoom = await this.ormConnection.getRepository(Room).save(room);
 
-    // Add timeout job
-    fastify.log.info(`Adding timeout job for room: ${savedRoom.id}`);
-    await gameTimeoutQueue.add(
-      `game-timeout`,
-      { roomId: savedRoom.id },
-      {
-        delay: config.game.timeout.pending,
-        jobId: `game-timeout`,
-      },
-    );
-    fastify.log.info(`Added timeout job for room: ${savedRoom.id}`);
+    // Only add timeout job for non-time trial games
+    if (type !== "time_trial") {
+      fastify.log.info(`Adding timeout job for room: ${savedRoom.id}`);
+      await gameTimeoutQueue.add(
+        "game-timeout",
+        { roomId: savedRoom.id },
+        {
+          delay: config.game.timeout.pending,
+          jobId: `game-timeout`,
+        },
+      );
+      fastify.log.info(`Added timeout job for room: ${savedRoom.id}`);
+    } else {
+      // For time trials, start inactivity check immediately
+      fastify.log.info(
+        `Adding inactivity job for time trial room: ${savedRoom.id}`,
+      );
+      await gameInactivityQueue.add(
+        "game-inactivity",
+        {
+          roomId: savedRoom.id,
+          lastActivityTimestamp: room.last_activity_at.getTime(),
+        },
+        {
+          jobId: `game-inactivity-${savedRoom.id}-${uuidv4()}`,
+          delay: config.game.timeout.inactivity.initial,
+        },
+      );
+    }
 
     return savedRoom;
   }
@@ -160,7 +194,7 @@ export class RoomService {
 
   private async findEmptyRoomByDifficulty(
     difficulty: string,
-    type: "1v1" | "2v2" | "free4all",
+    type: "1v1" | "2v2" | "free4all" | "time_trial",
     user: User,
   ): Promise<Room> {
     let userRoomIds: number[] = [];
@@ -352,14 +386,17 @@ export class RoomService {
   }
 
   async handleGuess(
-    roomId: number,
+    room: Room,
     userId: number,
     x: number,
     y: number,
     guess: string,
+    entityManager?: EntityManager,
   ): Promise<Room> {
-    const room = await this.getRoomById(roomId);
-    if (!room) throw new NotFoundError("Room not found");
+    const manager = entityManager || this.ormConnection.manager;
+
+    // Use the provided manager for all database operations
+    // This ensures all operations are part of the same transaction
 
     // Check if letter is already found at this position
     const letterIndex = x * room.crossword.col_size + y;
@@ -376,13 +413,13 @@ export class RoomService {
     room.markModified();
 
     // Get or create game stats for this user and room
-    let gameStats = await this.ormConnection.getRepository(GameStats).findOne({
-      where: { userId, roomId },
+    let gameStats = await manager.findOne(GameStats, {
+      where: { userId, roomId: room.id },
     });
 
     if (!gameStats) {
-      const user = await this.ormConnection.getRepository(User).findOneBy({
-        id: userId,
+      const user = await manager.findOne(User, {
+        where: { id: userId },
       });
       if (!user) throw new NotFoundError("User not found");
 
@@ -390,7 +427,7 @@ export class RoomService {
       gameStats.user = user;
       gameStats.room = room;
       gameStats.userId = userId;
-      gameStats.roomId = roomId;
+      gameStats.roomId = room.id;
       gameStats.eloAtGame = user.eloRating;
       gameStats.correctGuesses = 0;
       gameStats.incorrectGuesses = 0;
@@ -426,14 +463,14 @@ export class RoomService {
     }
 
     // Save game stats
-    await this.ormConnection.getRepository(GameStats).save(gameStats);
+    await manager.save(GameStats, gameStats);
 
     // Check if game is won
     if (this.isGameFinished(room)) {
       await this.onGameEnd(room);
     } else {
       // Save room if game is not finished
-      await this.ormConnection.getRepository(Room).save(room);
+      await manager.save(Room, room);
     }
 
     return room;
@@ -560,8 +597,8 @@ export class RoomService {
       room: room.toJSON(),
       navigate: {
         screen: "game",
-        params: { roomId: room.id }
-      }
+        params: { roomId: room.id },
+      },
     });
 
     return room;

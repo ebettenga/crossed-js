@@ -6,6 +6,7 @@ import { UserNotFoundError } from "../../errors/api";
 import { Socket } from "socket.io";
 import { redisService } from "../../services/RedisService";
 import { createSocketEventService } from "../../services/SocketEventService";
+import { Room } from "../../entities/Room";
 
 export type Guess = {
   roomId: number;
@@ -221,25 +222,69 @@ export default function (
       });
 
       socket.on("guess", async ({ roomId, x, y, guess }) => {
+        // Start a transaction
+        const queryRunner = fastify.orm.createQueryRunner();
+        await queryRunner.connect();
+
         try {
-          const room = await roomService.handleGuess(
-            roomId,
-            user.id,
-            x,
-            y,
-            guess,
-          );
+          // Start transaction before any database operations
+          await queryRunner.startTransaction();
+
+          // First get and lock just the room
+          const room = await queryRunner.manager
+            .getRepository(Room)
+            .createQueryBuilder("room")
+            .setLock("pessimistic_write")
+            .where("room.id = :roomId", { roomId })
+            .getOne();
 
           if (!room) {
+            // Don't throw, just return after rolling back
+            await queryRunner.rollbackTransaction();
             socket.emit("error", { message: "Room not found" });
             return;
           }
 
-          // Broadcast updated room state to all players using Redis pub/sub
-          await socketEventService.emitToRoom(roomId, "room", room.toJSON());
+          // Now get the related crossword data and players in a separate query
+          const roomWithRelations = await queryRunner.manager
+            .getRepository(Room)
+            .createQueryBuilder("room")
+            .leftJoinAndSelect("room.crossword", "crossword")
+            .leftJoinAndSelect("room.players", "players")
+            .where("room.id = :roomId", { roomId })
+            .getOne();
+
+          // Merge all the relations into our locked room object
+          Object.assign(room, {
+            crossword: roomWithRelations.crossword,
+            players: roomWithRelations.players
+          });
+
+          // Process the guess with the locked room
+          const updatedRoom = await roomService.handleGuess(
+            room,
+            user.id,
+            x,
+            y,
+            guess,
+            queryRunner.manager
+          );
+
+          // Commit the transaction
+          await queryRunner.commitTransaction();
+
+          // Broadcast updated room state to all players
+          await socketEventService.emitToRoom(roomId, "room", updatedRoom.toJSON());
         } catch (error) {
+          // Only try to rollback if we successfully started the transaction
+          if (queryRunner.isTransactionActive) {
+            await queryRunner.rollbackTransaction();
+          }
           console.error("Error handling guess:", error);
           socket.emit("error", { message: "Failed to process guess" });
+        } finally {
+          // Always release the queryRunner
+          await queryRunner.release();
         }
       });
 
