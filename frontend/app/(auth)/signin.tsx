@@ -9,7 +9,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 export default function SignIn() {
     const router = useRouter();
-    const [email, setEmail] = useState('');
+    const [credential,setCredential] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
 
@@ -19,7 +19,7 @@ export default function SignIn() {
     const handleSignIn = () => {
         try {
             setError('');
-            signInMutation.mutate({ email, password });
+            signInMutation.mutate({ credential, password });
         } catch (err) {
             console.log(err);
             setError('Invalid email or password');
@@ -62,13 +62,13 @@ export default function SignIn() {
                 <View>
                     <View>
                         <Text className="text-sm font-semibold mb-2 text-[#1D2124] dark:text-[#DDE1E5]">
-                            Email
+                            Email or Username
                         </Text>
                         <TextInput
                             className="p-4 border placeholder:text-[#1D2124]/50 dark:placeholder:text-[#DDE1E5]/50 bg-white border-[#E5E5E5] text-[#1D2124] dark:bg-[#1A2227] dark:border-[#2A3136] dark:text-[#DDE1E5]"
-                            placeholder="Enter your email"
-                            value={email}
-                            onChangeText={setEmail}
+                            placeholder="Enter your email or username"
+                            value={credential}
+                            onChangeText={setCredential}
                             autoCapitalize="none"
                             keyboardType="email-address"
                         />
