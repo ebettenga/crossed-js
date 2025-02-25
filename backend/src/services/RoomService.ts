@@ -14,6 +14,7 @@ import {
 } from "../jobs/queues";
 import { v4 as uuidv4 } from "uuid";
 import { EntityManager } from "typeorm";
+import { RedisService } from "./RedisService";
 
 export class RoomService {
   private crosswordService: CrosswordService;
@@ -149,6 +150,11 @@ export class RoomService {
     }
 
     const savedRoom = await this.ormConnection.getRepository(Room).save(room);
+
+    const cacheRoom = new RedisService()
+    //Creates a cache of the room in Redis that expires after 24 hours
+    cacheRoom.cacheGame(savedRoom.id.toString(), savedRoom);
+
 
     // Only add timeout job for non-time trial games
     if (type !== "time_trial") {
@@ -440,15 +446,7 @@ export class RoomService {
       room.last_activity_at = new Date();
 
       gameStats.correctGuesses++;
-      gameStats.correctGuessDetails = [
-        ...(gameStats.correctGuessDetails || []),
-        {
-          row: x,
-          col: y,
-          letter: guess,
-          timestamp: new Date(),
-        },
-      ];
+
 
       // Update room state
       room.found_letters[x * room.crossword.col_size + y] = guess;
