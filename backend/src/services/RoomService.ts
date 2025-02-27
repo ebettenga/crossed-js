@@ -59,8 +59,23 @@ export class RoomService {
       await this.joinExistingRoom(room, user.id);
       return room;
     } else {
-      return await this.createRoom(user.id, difficulty, type);
+
+      await this.createRoom(user.id, difficulty, type);
+      //Create new GameStats object for the new room.
+      const gameStats = new GameStats();
+      gameStats.user = user;
+      gameStats.room = room;
+      gameStats.userId = user.id;
+      gameStats.roomId = room.id;
+      gameStats.eloAtGame = user.eloRating;
+      gameStats.correctGuesses = 0;
+      gameStats.incorrectGuesses = 0;
+      gameStats.correctGuessDetails = [];
+
+      return
     }
+
+
   }
 
   async joinExistingRoom(room: Room, userId: number): Promise<void> {
@@ -151,9 +166,6 @@ export class RoomService {
 
     const savedRoom = await this.ormConnection.getRepository(Room).save(room);
 
-    const cacheRoom = new RedisService()
-    //Creates a cache of the room in Redis that expires after 24 hours
-    cacheRoom.cacheGame(savedRoom.id.toString(), savedRoom);
 
 
     // Only add timeout job for non-time trial games
@@ -344,19 +356,8 @@ export class RoomService {
       let gameStats = await gameStatsRepo.findOne({
         where: { userId: player.id, roomId },
       });
+      //used to have gameStats created here
 
-      if (!gameStats) {
-        gameStats = new GameStats();
-        gameStats.user = player;
-        gameStats.room = room;
-        gameStats.userId = player.id;
-        gameStats.roomId = roomId;
-        gameStats.eloAtGame = player.eloRating;
-        gameStats.correctGuesses = 0;
-        gameStats.incorrectGuesses = 0;
-        gameStats.correctGuessDetails = [];
-        await gameStatsRepo.save(gameStats);
-      }
     }
 
     room.markModified();
@@ -429,15 +430,6 @@ export class RoomService {
       });
       if (!user) throw new NotFoundError("User not found");
 
-      gameStats = new GameStats();
-      gameStats.user = user;
-      gameStats.room = room;
-      gameStats.userId = userId;
-      gameStats.roomId = room.id;
-      gameStats.eloAtGame = user.eloRating;
-      gameStats.correctGuesses = 0;
-      gameStats.incorrectGuesses = 0;
-      gameStats.correctGuessDetails = [];
     }
 
     // Update stats based on guess result
@@ -461,7 +453,7 @@ export class RoomService {
     }
 
     // Save game stats
-    await manager.save(GameStats, gameStats);
+    await manager.save(GameStats, gameStats); // Problem line
 
     // Check if game is won
     if (this.isGameFinished(room)) {
