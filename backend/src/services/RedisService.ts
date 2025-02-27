@@ -59,7 +59,7 @@ export class RedisService {
 
   // Publish a message to a channel
   async publish(channel: string, message: string) {
-    await this.publisher.publish(channel, message);
+    await this.redis.publish(channel, message);
   }
 
   // Subscribe to a channel
@@ -67,19 +67,19 @@ export class RedisService {
     channel: string,
     callback: (channel: string, message: string) => void,
   ) {
-    this.subscriber.subscribe(channel);
-    this.subscriber.on("message", callback);
+    this.redis.subscribe(channel);
+    this.redis.on("message", callback);
   }
 
   // Unsubscribe from a channel
   unsubscribe(channel: string) {
-    this.subscriber.unsubscribe(channel);
+    this.redis.unsubscribe(channel);
   }
 
   // Close connections
   async close() {
-    await this.publisher.quit();
-    await this.subscriber.quit();
+    await this.redis.quit();
+    await this.redis.quit();
   }
 }
 
