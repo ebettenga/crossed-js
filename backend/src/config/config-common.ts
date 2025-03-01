@@ -1,6 +1,7 @@
 import { RedisOptions } from "ioredis";
 
 const redisURL = new URL(process.env.REDIS_URL);
+
 export const commonConfig = {
   api: {
     prefix: "/api",

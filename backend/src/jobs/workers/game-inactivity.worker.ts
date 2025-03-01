@@ -210,12 +210,16 @@ export const createGameInactivityWorker = (
                 isGameFinished,
               });
 
+              room.last_activity_at = new Date(cachedGameInfo.lastActivityAt);
+              room.found_letters = cachedGameInfo.foundLetters;
+              room.scores = cachedGameInfo.scores;
+
               // Send updated room state to all players
               console.log(
                 `Sending updated room state to all players for room ${room.id}`,
               );
               await socketEventService.emitToRoom(room.id, "room", {
-                ...room.toJSON(cachedGameInfo.foundLetters, cachedGameInfo.scores),
+                ...room.toJSON(),
                 revealedLetterIndex: letterToReveal.index
               });
             } else {
@@ -313,7 +317,7 @@ export const createGameInactivityWorker = (
       }
     },
     {
-      connection: config.redis,
+      connection: config.redis.default,
       removeOnComplete: { count: 1 },
       removeOnFail: { count: 1 },
     },

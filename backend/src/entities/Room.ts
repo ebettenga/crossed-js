@@ -124,7 +124,18 @@ export class Room {
       lastActivityAt: Date.now(),
       foundLetters: this.found_letters,
       scores: this.scores,
-      userGuessCounts: {},
+      userGuessCounts: {
+        // Initialize user guess counts
+        ...this.players.reduce((acc, player) => {
+          return {
+            ...acc,
+            [player.id]: {
+              correct: 0,
+              incorrect: 0,
+            },
+          };
+        }, {}),
+      },
   }
 }
 

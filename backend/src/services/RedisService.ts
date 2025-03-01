@@ -19,7 +19,8 @@ export type CachedGameInfo = {
 
 export class RedisService {
   private redis: Redis;
-
+  private publisher: Redis;
+  private subscriber: Redis;
   private serverId: string;
 
   constructor() {
@@ -27,9 +28,13 @@ export class RedisService {
     this.serverId = uuidv4();
 
     // Create separate connections for pub/sub
+    this.publisher = new Redis(config.redis.default);
+    this.subscriber = new Redis(config.redis.default);
     this.redis = new Redis(config.redis.default);
 
   }
+
+
 
   // Get the server ID
   getServerId(): string {
@@ -72,7 +77,7 @@ export class RedisService {
 
   // Publish a message to a channel
   async publish(channel: string, message: string) {
-    await this.redis.publish(channel, message);
+    await this.publisher.publish(channel, message);
   }
 
   // Subscribe to a channel
@@ -80,18 +85,19 @@ export class RedisService {
     channel: string,
     callback: (channel: string, message: string) => void,
   ) {
-    this.redis.subscribe(channel);
-    this.redis.on("message", callback);
+    this.subscriber.subscribe(channel);
+    this.subscriber.on("message", callback);
   }
 
   // Unsubscribe from a channel
   unsubscribe(channel: string) {
-    this.redis.unsubscribe(channel);
+    this.subscriber.unsubscribe(channel);
   }
 
   // Close connections
   async close() {
-    await this.redis.quit();
+    await this.publisher.quit();
+    await this.subscriber.quit();
     await this.redis.quit();
   }
 }

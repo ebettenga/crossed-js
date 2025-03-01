@@ -13,7 +13,7 @@ export const createEmailWorker = () => {
       console.log('Email sent successfully');
     },
     {
-      connection: config.redis,
+      connection: config.redis.default,
       concurrency: 5, // Process 5 emails at a time
     }
   );
