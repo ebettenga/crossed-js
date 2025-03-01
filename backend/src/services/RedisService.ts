@@ -2,6 +2,21 @@ import Redis from "ioredis";
 import { config } from "../config/config";
 import { v4 as uuidv4 } from "uuid";
 
+
+export type CachedGameInfo = {
+  lastActivityAt: number;
+  foundLetters: string[];
+  scores: {
+    [key: string]: number;
+  };
+  userGuessCounts: {
+    [key: string]: {
+      correct: number;
+      incorrect: number;
+    };
+  }
+}
+
 export class RedisService {
   private redis: Redis;
 
@@ -14,8 +29,6 @@ export class RedisService {
     // Create separate connections for pub/sub
     this.redis = new Redis(config.redis.default);
 
-
-
   }
 
   // Get the server ID
@@ -23,12 +36,12 @@ export class RedisService {
     return this.serverId;
   }
 
-  cacheGame(gameId: string, game: any) {
+  cacheGame(gameId: string, game: CachedGameInfo) {
     // Cache
     this.redis.set(gameId, JSON.stringify(game), "EX", config.redis.gameTTL);
   }
 
-  async getGame(gameId: string) {
+  async getGame(gameId: string): Promise<CachedGameInfo | null> {
     const game = await this.redis.get(gameId);
     return game ? JSON.parse(game) : null;
   }

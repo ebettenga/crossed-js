@@ -8,6 +8,8 @@ import { createSocketEventService } from "../../services/SocketEventService";
 import { gameInactivityQueue } from "../queues";
 import { v4 as uuidv4 } from "uuid";
 import { Crossword } from "../../entities/Crossword";
+import { RedisService } from "../../services/RedisService";
+import { RoomService } from "../../services/RoomService";
 /**
  * Find a random unsolved letter position in the puzzle
  * @param foundLetters Array of found letters where "*" represents unsolved
@@ -68,6 +70,8 @@ export const createGameInactivityWorker = (
   fastify: FastifyInstance,
 ) => {
   const socketEventService = createSocketEventService(fastify);
+  const redisService = new RedisService();
+  const roomService = new RoomService(dataSource);
 
   const ensureConnection = async () => {
     if (!dataSource.isInitialized) {
@@ -115,11 +119,18 @@ export const createGameInactivityWorker = (
             players: roomWithRelations.players
           });
 
+        let cachedGameInfo = await redisService.getGame(room.id.toString());
+        if (!cachedGameInfo) {
+          // handle creating new cache
+          cachedGameInfo = room.createRoomCache();
+        }
+
+
         // Only process if the game is still active
         if (room.status === "playing") {
           // Calculate completion rate (number of found letters / total letters)
-          const totalLetters = room.found_letters.length;
-          const foundLetters = room.found_letters.filter((letter) =>
+          const totalLetters = cachedGameInfo.foundLetters.length;
+          const foundLetters = cachedGameInfo.foundLetters.filter((letter) =>
             letter !== "*"
           ).length;
           const completionRate = foundLetters / totalLetters;
@@ -147,19 +158,19 @@ export const createGameInactivityWorker = (
           });
 
           // Safety check: If last_activity_at is null, set it to now
-          if (!room.last_activity_at) {
+          if (!cachedGameInfo.lastActivityAt) {
             console.log(
               `Room ${room.id} has no last_activity_at, setting to now`,
             );
-            room.last_activity_at = new Date();
+            cachedGameInfo.lastActivityAt = Date.now();
             await queryRunner.manager.save(room);
           }
 
           // If there's been no activity since the last check OR if the job's timestamp is older than the activity timestamp
           const isInactive =
-            job.data.lastActivityTimestamp === room.last_activity_at?.getTime() ||
-            (job.data.lastActivityTimestamp && room.last_activity_at &&
-              job.data.lastActivityTimestamp < room.last_activity_at.getTime());
+            job.data.lastActivityTimestamp === cachedGameInfo.lastActivityAt ||
+            (job.data.lastActivityTimestamp && cachedGameInfo.lastActivityAt &&
+              job.data.lastActivityTimestamp < cachedGameInfo.lastActivityAt);
 
           if (isInactive) {
             console.log(
@@ -167,24 +178,23 @@ export const createGameInactivityWorker = (
             );
             // Find a random unsolved letter to reveal
             const letterToReveal = findRandomUnsolvedLetter(
-              room.found_letters,
+              cachedGameInfo.foundLetters,
               room.crossword,
             );
 
             if (letterToReveal) {
               // Reveal the letter
-              room.found_letters[letterToReveal.index] = letterToReveal.letter;
-              room.last_activity_at = new Date();
+              cachedGameInfo.foundLetters[letterToReveal.index] = letterToReveal.letter;
+              cachedGameInfo.lastActivityAt = Date.now();
 
               // Check if all letters have been revealed
-              const isGameFinished = !room.found_letters.includes("*");
+              const isGameFinished = !cachedGameInfo.foundLetters.includes("*");
               console.log(
                 `Room ${room.id} game finished status:`,
                 isGameFinished,
               );
               if (isGameFinished) {
-                room.status = "finished";
-                room.completed_at = new Date();
+                roomService.onGameEnd(room);
               }
 
               await queryRunner.manager.save(room);
@@ -205,7 +215,7 @@ export const createGameInactivityWorker = (
                 `Sending updated room state to all players for room ${room.id}`,
               );
               await socketEventService.emitToRoom(room.id, "room", {
-                ...room.toJSON(),
+                ...room.toJSON(cachedGameInfo.foundLetters, cachedGameInfo.scores),
                 revealedLetterIndex: letterToReveal.index
               });
             } else {
@@ -222,7 +232,7 @@ export const createGameInactivityWorker = (
                 `Scheduling next inactivity check for room ${room.id}:`,
                 {
                   nextTimeout,
-                  lastActivityTimestamp: room.last_activity_at?.getTime(),
+                  lastActivityTimestamp: cachedGameInfo.lastActivityAt,
                   currentTime: now,
                   currentTimeISO: new Date(now).toISOString(),
                   lastActivityISO: room.last_activity_at?.toISOString(),
@@ -233,7 +243,7 @@ export const createGameInactivityWorker = (
                 "game-inactivity",
                 {
                   roomId: room.id,
-                  lastActivityTimestamp: room.last_activity_at?.getTime(),
+                  lastActivityTimestamp: cachedGameInfo.lastActivityAt,
                 },
                 {
                   jobId: `game-inactivity-${room.id}-${uuidv4()}`,
@@ -262,7 +272,7 @@ export const createGameInactivityWorker = (
                   "game-inactivity",
                   {
                     roomId: room.id,
-                    lastActivityTimestamp: room.last_activity_at?.getTime(),
+                    lastActivityTimestamp: cachedGameInfo.lastActivityAt,
                   },
                   {
                     jobId: `game-inactivity-${room.id}-${uuidv4()}-retry`,
@@ -291,6 +301,7 @@ export const createGameInactivityWorker = (
         }
 
         // Commit the transaction
+        redisService.cacheGame(room.id.toString(), cachedGameInfo);
         await queryRunner.commitTransaction();
       } catch (error) {
         // Rollback transaction on error
