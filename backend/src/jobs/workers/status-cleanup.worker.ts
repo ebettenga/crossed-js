@@ -46,7 +46,7 @@ export const createStatusCleanupWorker = (dataSource: DataSource) => {
       return { usersUpdated: [] };
     },
     {
-      connection: config.redis,
+      connection: config.redis.default,
     }
   );
 

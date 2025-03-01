@@ -55,7 +55,7 @@ export const createGameTimeoutWorker = (dataSource: DataSource, fastify: Fastify
       }
     },
     {
-      connection: config.redis,
+      connection: config.redis.default,
     },
   );
 

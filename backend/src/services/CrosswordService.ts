@@ -133,11 +133,10 @@ export class CrosswordService {
   }
 
   checkGuess(
-    room: Room,
+    crossword: Crossword,
     coordinates: { x: number; y: number },
     guess: string,
   ): boolean {
-    const crossword = room.crossword;
     const guessPosition = coordinates.x * crossword.col_size + coordinates.y;
     try {
       return (

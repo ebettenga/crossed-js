@@ -2,7 +2,23 @@ import Redis from "ioredis";
 import { config } from "../config/config";
 import { v4 as uuidv4 } from "uuid";
 
+
+export type CachedGameInfo = {
+  lastActivityAt: number;
+  foundLetters: string[];
+  scores: {
+    [key: string]: number;
+  };
+  userGuessCounts: {
+    [key: string]: {
+      correct: number;
+      incorrect: number;
+    };
+  }
+}
+
 export class RedisService {
+  private redis: Redis;
   private publisher: Redis;
   private subscriber: Redis;
   private serverId: string;
@@ -12,29 +28,42 @@ export class RedisService {
     this.serverId = uuidv4();
 
     // Create separate connections for pub/sub
-    this.publisher = new Redis(config.redis);
+    this.publisher = new Redis(config.redis.default);
+    this.subscriber = new Redis(config.redis.default);
+    this.redis = new Redis(config.redis.default);
 
-    this.subscriber = new Redis(config.redis);
   }
+
+
 
   // Get the server ID
   getServerId(): string {
     return this.serverId;
   }
 
+  cacheGame(gameId: string, game: CachedGameInfo) {
+    // Cache
+    this.redis.set(gameId, JSON.stringify(game), "EX", config.redis.gameTTL);
+  }
+
+  async getGame(gameId: string): Promise<CachedGameInfo | null> {
+    const game = await this.redis.get(gameId);
+    return game ? JSON.parse(game) : null;
+  }
+
   // Register a user's socket connection with this server
   async registerUserSocket(userId: number) {
-    await this.publisher.hset("user_servers", userId.toString(), this.serverId);
+    await this.redis.hset("user_servers", userId.toString(), this.serverId);
   }
 
   // Unregister a user's socket connection
   async unregisterUserSocket(userId: number) {
-    await this.publisher.hdel("user_servers", userId.toString());
+    await this.redis.hdel("user_servers", userId.toString());
   }
 
   // Check if a user is connected to this server
   async isUserOnThisServer(userId: number): Promise<boolean> {
-    const serverId = await this.publisher.hget(
+    const serverId = await this.redis.hget(
       "user_servers",
       userId.toString(),
     );
@@ -43,7 +72,7 @@ export class RedisService {
 
   // Get the server ID for a user
   async getUserServer(userId: number): Promise<string | null> {
-    return await this.publisher.hget("user_servers", userId.toString());
+    return await this.redis.hget("user_servers", userId.toString());
   }
 
   // Publish a message to a channel
@@ -69,6 +98,7 @@ export class RedisService {
   async close() {
     await this.publisher.quit();
     await this.subscriber.quit();
+    await this.redis.quit();
   }
 }
 
