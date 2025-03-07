@@ -19,11 +19,11 @@ export interface GameInactivityJobData {
 
 // Create and export queues
 export const emailQueue = new Queue<EmailJobData>("email", {
-  connection: config.redis,
+  connection: config.redis.default,
 });
 
 export const statusCleanupQueue = new Queue("status-cleanup", {
-  connection: config.redis,
+  connection: config.redis.default,
   defaultJobOptions: {
     removeOnComplete: true,
     removeOnFail: 1000,
@@ -31,7 +31,7 @@ export const statusCleanupQueue = new Queue("status-cleanup", {
 });
 
 export const gameTimeoutQueue = new Queue<GameTimeoutJobData>("game-timeout", {
-  connection: config.redis,
+  connection: config.redis.default,
   defaultJobOptions: {
     removeOnComplete: true,
     removeOnFail: 1000,
@@ -39,7 +39,7 @@ export const gameTimeoutQueue = new Queue<GameTimeoutJobData>("game-timeout", {
 });
 
 export const gameInactivityQueue = new Queue<GameInactivityJobData>("game-inactivity", {
-  connection: config.redis,
+  connection: config.redis.default,
   defaultJobOptions: {
     removeOnComplete: true,
     removeOnFail: 1000,

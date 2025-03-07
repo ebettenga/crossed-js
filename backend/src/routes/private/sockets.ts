@@ -274,7 +274,9 @@ export default function (
           await queryRunner.commitTransaction();
 
           // Broadcast updated room state to all players
-          await socketEventService.emitToRoom(roomId, "room", updatedRoom.toJSON());
+          const roomJSON = updatedRoom.toJSON()
+          roomJSON.scores =
+          await socketEventService.emitToRoom(roomId, "room",roomJSON );
         } catch (error) {
           // Only try to rollback if we successfully started the transaction
           if (queryRunner.isTransactionActive) {

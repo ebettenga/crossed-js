@@ -12,6 +12,7 @@ import {
 import { User } from "./User";
 import { Crossword } from "./Crossword";
 import { GameStats } from "./GameStats";
+import { CachedGameInfo } from "../services/RedisService";
 
 export type GameType = "1v1" | "2v2" | "free4all" | "time_trial";
 export type GameStatus = "playing" | "pending" | "finished" | "cancelled";
@@ -118,7 +119,27 @@ export class Room {
     return this.players.length;
   }
 
-  toJSON() {
+  createRoomCache(): CachedGameInfo {
+    return {
+      lastActivityAt: Date.now(),
+      foundLetters: this.found_letters,
+      scores: this.scores,
+      userGuessCounts: {
+        // Initialize user guess counts
+        ...this.players.reduce((acc, player) => {
+          return {
+            ...acc,
+            [player.id]: {
+              correct: 0,
+              incorrect: 0,
+            },
+          };
+        }, {}),
+      },
+  }
+}
+
+  toJSON(foundLetters?: string[], scores?: any): any {
     // If cache exists and room hasn't been modified, return cached view
     if (this.viewCache && this.lastModified === this.lastViewUpdate) {
       return this.viewCache;
@@ -138,7 +159,7 @@ export class Room {
         score: this.scores[player.id] || 0,
         eloRating: player.eloRating,
       })),
-      scores: this.scores,
+      scores: scores ? scores : this.scores,
       crossword: {
         id: this.crossword.id,
         col_size: this.crossword.col_size,
@@ -153,7 +174,7 @@ export class Room {
         created_by: this.crossword.created_by,
         creator_link: this.crossword.creator_link
       },
-      found_letters: this.found_letters,
+      found_letters: foundLetters ? foundLetters : this.found_letters,
       board: this.createBoard(),
       stats: null,
     };

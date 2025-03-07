@@ -1,4 +1,7 @@
+import { RedisOptions } from "ioredis";
+
 const redisURL = new URL(process.env.REDIS_URL);
+
 export const commonConfig = {
   api: {
     prefix: "/api",
@@ -52,11 +55,13 @@ export const commonConfig = {
     },
   },
   redis: {
-    family: 0,
-    host: redisURL.hostname || "localhost",
-    port: redisURL.port || 6379,
-    username: redisURL.username || "default",
-    password: redisURL.password || "",
+    default:{
+      host: redisURL.hostname || "localhost",
+      port: redisURL.port || 6379,
+      username: redisURL.username || "default",
+      password: redisURL.password || "",
+    } as RedisOptions,
+    gameTTL: 86400, // 1 day in seconds
   },
   email: {
     host: process.env.SMTP_HOST || "smtp.gmail.com",

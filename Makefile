@@ -4,7 +4,7 @@ help: ## display this help screen
 
 start-backend: ## spin up the supabase instance
 	cd ./backend && yarn install
-	cd ./backend && docker compose up -d db
+	cd ./backend && docker compose up -d db redis worker
 	cd ./backend && yarn dev
 
 

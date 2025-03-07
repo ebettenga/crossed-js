@@ -92,10 +92,13 @@ export class AuthService {
   }
 
   async signin(app: FastifyInstance, body: any) {
-    const { email, password } = body;
+    const { credential, password } = body;
 
     const user = await this.ormConnection.getRepository(User).findOne({
-      where: { email },
+      where: [
+        { email: credential },
+        { username: credential },
+      ],
       select: [
         "id",
         "email",

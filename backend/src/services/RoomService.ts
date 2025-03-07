@@ -14,11 +14,13 @@ import {
 } from "../jobs/queues";
 import { v4 as uuidv4 } from "uuid";
 import { EntityManager } from "typeorm";
+import { RedisService } from "./RedisService";
 
 export class RoomService {
   private crosswordService: CrosswordService;
   private eloService: EloService;
   private ormConnection: DataSource;
+  private redisService: RedisService;
 
   constructor(ormConnection: DataSource) {
     this.ormConnection = ormConnection;
@@ -27,6 +29,7 @@ export class RoomService {
       ormConnection.getRepository(User),
       ormConnection.getRepository(Room),
     );
+    this.redisService = new RedisService();
   }
 
   async getRoomById(roomId: number): Promise<Room> {
@@ -58,8 +61,23 @@ export class RoomService {
       await this.joinExistingRoom(room, user.id);
       return room;
     } else {
-      return await this.createRoom(user.id, difficulty, type);
+
+     const newRoom =  await this.createRoom(user.id, difficulty, type);
+      //Create new GameStats object for the new room.
+      const gameStats = new GameStats();
+      gameStats.user = user;
+      gameStats.room = newRoom;
+      gameStats.userId = user.id;
+      gameStats.roomId = newRoom.id;
+      gameStats.eloAtGame = user.eloRating;
+      gameStats.correctGuesses = 0;
+      gameStats.incorrectGuesses = 0;
+      gameStats.correctGuessDetails = [];
+
+      return
     }
+
+
   }
 
   async joinExistingRoom(room: Room, userId: number): Promise<void> {
@@ -77,16 +95,8 @@ export class RoomService {
     const maxPlayers = config.game.maxPlayers[room.type];
     if (room.players.length >= maxPlayers) {
       room.status = "playing";
-      room.last_activity_at = new Date();
       // Remove timeout job since the game is starting
       await gameTimeoutQueue.remove(`room-timeout-${room.id}`);
-
-      // Log timestamps for debugging
-      console.log(`Setting initial last_activity_at for room ${room.id}:`, {
-        timestamp: room.last_activity_at.toISOString(),
-        unixTimestamp: room.last_activity_at.getTime(),
-        currentTime: new Date().toISOString(),
-      });
 
       // Start inactivity check
       fastify.log.info(`Adding inactivity job for room: ${room.id}`);
@@ -94,7 +104,7 @@ export class RoomService {
         "game-inactivity",
         {
           roomId: room.id,
-          lastActivityTimestamp: room.last_activity_at.getTime(),
+          lastActivityTimestamp: new Date().getTime(),
         },
         {
           jobId: `game-inactivity-${room.id}-${uuidv4()}`,
@@ -149,6 +159,8 @@ export class RoomService {
     }
 
     const savedRoom = await this.ormConnection.getRepository(Room).save(room);
+
+
 
     // Only add timeout job for non-time trial games
     if (type !== "time_trial") {
@@ -233,10 +245,16 @@ export class RoomService {
       .getMany();
   }
 
-  private async onGameEnd(room: Room, forfeitedBy?: number): Promise<void> {
+  async onGameEnd(room: Room, forfeitedBy?: number): Promise<void> {
     room.status = "finished";
     room.completed_at = new Date();
 
+    const gameCache = await this.redisService.getGame(room.id.toString());
+    if (!gameCache) {
+      throw new Error("Game cache not found");
+    }
+    room.found_letters = gameCache.foundLetters;
+    room.scores = gameCache.scores;
     // If game was forfeited, adjust scores
     if (forfeitedBy !== undefined) {
       const minScore = Math.min(...Object.values(room.scores)) +
@@ -260,6 +278,11 @@ export class RoomService {
 
     // Update win streaks and winner status
     for (const stats of allGameStats) {
+      //Gets correct and incorrect guesses from the cache by userId
+      stats.correctGuesses = gameCache.userGuessCounts[stats.userId].correct;
+      stats.incorrectGuesses = gameCache.userGuessCounts[stats.userId].incorrect;
+
+
       // If game was forfeited, non-forfeiting players are winners
       const isWinner = forfeitedBy !== undefined
         ? stats.userId !== forfeitedBy
@@ -338,19 +361,8 @@ export class RoomService {
       let gameStats = await gameStatsRepo.findOne({
         where: { userId: player.id, roomId },
       });
+      //used to have gameStats created here
 
-      if (!gameStats) {
-        gameStats = new GameStats();
-        gameStats.user = player;
-        gameStats.room = room;
-        gameStats.userId = player.id;
-        gameStats.roomId = roomId;
-        gameStats.eloAtGame = player.eloRating;
-        gameStats.correctGuesses = 0;
-        gameStats.incorrectGuesses = 0;
-        gameStats.correctGuessDetails = [];
-        await gameStatsRepo.save(gameStats);
-      }
     }
 
     room.markModified();
@@ -395,83 +407,58 @@ export class RoomService {
   ): Promise<Room> {
     const manager = entityManager || this.ormConnection.manager;
 
-    // Use the provided manager for all database operations
-    // This ensures all operations are part of the same transaction
+    let cachedGameInfo = await this.redisService.getGame(room.id.toString());
+    if (!cachedGameInfo) {
+      // make a cache s
+      cachedGameInfo = room.createRoomCache();
+    }
+
+
+
 
     // Check if letter is already found at this position
     const letterIndex = x * room.crossword.col_size + y;
-    if (room.found_letters[letterIndex] !== "*") {
+    if (cachedGameInfo.foundLetters[letterIndex] !== "*") {
       return room;
     }
 
     const isCorrect = await this.crosswordService.checkGuess(
-      room,
+      room.crossword,
       { x, y },
       guess,
     );
 
-    room.markModified();
 
-    // Get or create game stats for this user and room
-    let gameStats = await manager.findOne(GameStats, {
-      where: { userId, roomId: room.id },
-    });
-
-    if (!gameStats) {
-      const user = await manager.findOne(User, {
-        where: { id: userId },
-      });
-      if (!user) throw new NotFoundError("User not found");
-
-      gameStats = new GameStats();
-      gameStats.user = user;
-      gameStats.room = room;
-      gameStats.userId = userId;
-      gameStats.roomId = room.id;
-      gameStats.eloAtGame = user.eloRating;
-      gameStats.correctGuesses = 0;
-      gameStats.incorrectGuesses = 0;
-      gameStats.correctGuessDetails = [];
-    }
 
     // Update stats based on guess result
     if (isCorrect) {
       // Update last activity timestamp
-      room.last_activity_at = new Date();
+      cachedGameInfo.lastActivityAt = Date.now();
 
-      gameStats.correctGuesses++;
-      gameStats.correctGuessDetails = [
-        ...(gameStats.correctGuessDetails || []),
-        {
-          row: x,
-          col: y,
-          letter: guess,
-          timestamp: new Date(),
-        },
-      ];
+      cachedGameInfo.userGuessCounts[userId].correct++;
+
 
       // Update room state
-      room.found_letters[x * room.crossword.col_size + y] = guess;
-      room.scores[userId] = (room.scores[userId] || 0) +
+      cachedGameInfo.foundLetters[x * room.crossword.col_size + y] = guess;
+      cachedGameInfo.scores[userId] = (cachedGameInfo.scores[userId] || 0) +
         config.game.points.correct;
-      room.markModified();
     } else {
-      gameStats.incorrectGuesses++;
-      room.scores[userId] = (room.scores[userId] || 0) +
+      cachedGameInfo.userGuessCounts[userId].incorrect++;
+      cachedGameInfo.scores[userId] = (cachedGameInfo.scores[userId] || 0) +
         config.game.points.incorrect;
-      room.markModified();
     }
 
-    // Save game stats
-    await manager.save(GameStats, gameStats);
 
     // Check if game is won
     if (this.isGameFinished(room)) {
       await this.onGameEnd(room);
     } else {
       // Save room if game is not finished
-      await manager.save(Room, room);
+      this.redisService.cacheGame(room.id.toString(), cachedGameInfo);
     }
+
+    room.found_letters = cachedGameInfo.foundLetters;
+    room.scores = cachedGameInfo.scores;
 
     return room;
   }
