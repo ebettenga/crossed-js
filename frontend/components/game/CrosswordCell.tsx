@@ -1,8 +1,15 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { StyleSheet, Dimensions, Pressable, View, Text } from 'react-native';
 import { SquareType } from '~/hooks/useJoinRoom';
 import { config } from '~/config/config';
 import { ArrowRight, ArrowDown } from 'lucide-react-native';
+import Animated, {
+    useAnimatedStyle,
+    withTiming,
+    withSequence,
+    useSharedValue,
+} from 'react-native-reanimated';
+import { useUser } from '~/hooks/users';
 
 // Calculate cell size based on screen width and height
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -39,7 +46,50 @@ interface CrosswordCellProps {
     squareType: SquareType;
     isAcrossMode?: boolean;
     isRevealed?: boolean; // New prop for revealed letters
+    scoreChange?: number;
+    isCurrentUserGuess?: boolean;
 }
+
+const ScoreChange: React.FC<{ value: number }> = ({ value }) => {
+    const opacity = useSharedValue(1);
+    const translateX = useSharedValue(0);
+
+    const animatedStyle = useAnimatedStyle(() => ({
+        opacity: opacity.value,
+        transform: [{ translateX: translateX.value }],
+    }));
+
+    useEffect(() => {
+        opacity.value = 1;
+        translateX.value = 0;
+
+        opacity.value = withSequence(
+            withTiming(1, { duration: 100 }),
+            withTiming(0, { duration: 1000 })
+        );
+        translateX.value = withTiming(-40, { duration: 1100 });
+    }, [value]);
+
+    if (value === 0) return null;
+
+    return (
+        <Animated.Text
+            className={`absolute text-lg font-bold font-['Times_New_Roman'] ${value > 0 ? 'text-green-500' : 'text-red-600'}`}
+            style={[
+                animatedStyle,
+                {
+                    transform: [
+                        { translateX: -CELL_SIZE / 2 },
+                        { translateY: -CELL_SIZE / 2 }
+                    ],
+                    zIndex: 10
+                }
+            ]}
+        >
+            {value > 0 ? `+${value}` : value}
+        </Animated.Text>
+    );
+};
 
 export const CrosswordCell: React.FC<CrosswordCellProps> = ({
     letter,
@@ -50,6 +100,8 @@ export const CrosswordCell: React.FC<CrosswordCellProps> = ({
     squareType,
     isAcrossMode = true,
     isRevealed = false,
+    scoreChange = 0,
+    isCurrentUserGuess = false,
 }) => {
     // Determine if this cell is a corner
     const isTopLeft = coordinates.x === 0 && coordinates.y === 0;
@@ -120,6 +172,9 @@ export const CrosswordCell: React.FC<CrosswordCellProps> = ({
                             <ArrowDown size={12} color={"#FFFFFF"} />
                         )}
                     </View>
+                )}
+                {isCurrentUserGuess && scoreChange !== 0 && (
+                    <ScoreChange value={scoreChange} />
                 )}
             </View>
         </Pressable>

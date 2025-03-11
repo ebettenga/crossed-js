@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, ScrollView, ActivityIndicator, Dimensions, RefreshControl } from 'react-native';
 import { Users, Timer, Swords, Group } from 'lucide-react-native';
 import { HomeSquareButton } from '~/components/home/HomeSquareButton';
@@ -26,6 +26,7 @@ type GameMode = '1v1' | '2v2' | 'free4all' | 'time_trial';
 
 export default function Home() {
     const router = useRouter();
+    const hasActiveGame = useRef(false);
     const { mutate: join } = useJoinRoom();
     const { data: activeRooms, isLoading: isLoadingRooms, refetch: refetchActiveRooms } = useActiveRooms();
     const { data: pendingRooms, isLoading: isLoadingPendingRooms, refetch: refetchPendingRooms } = usePendingRooms();
@@ -88,8 +89,9 @@ export default function Home() {
     const pendingRoomsArray = pendingRooms as Room[] || [];
 
     // Add this useEffect to check for active games and redirect
+
     useEffect(() => {
-        if (user && activeRooms) {
+        if (user && activeRooms && !hasActiveGame.current) {
             // Find any active room where the current user is a player
             const userActiveRoom = activeRooms.find(room =>
                 room.players.some(player => player.id === user.id)
@@ -97,6 +99,7 @@ export default function Home() {
 
             if (userActiveRoom) {
                 // Navigate to the game if found
+                hasActiveGame.current = true;
                 router.push(`/game?roomId=${userActiveRoom.id}`);
             }
         }

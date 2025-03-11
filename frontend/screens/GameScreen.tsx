@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { View, Text, TouchableOpacity, Linking, KeyboardAvoidingView, Platform } from 'react-native';
 import { CrosswordBoard } from '../components/game/CrosswordBoard';
 import { Keyboard } from '../components/game/Keyboard';
@@ -32,11 +32,38 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
     const [selectedCell, setSelectedCell] = useState<Square | null>(null);
     const [isAcrossMode, setIsAcrossMode] = useState(true);
     const [showSupportModal, setShowSupportModal] = useState(false);
+    const [scoreChanges, setScoreChanges] = useState<{ [key: string]: number }>({});
+    const [lastGuessCell, setLastGuessCell] = useState<{ x: number; y: number; playerId: string } | null>(null);
+    const prevScores = useRef<{ [key: string]: number }>({});
 
 
     useEffect(() => {
         refresh(roomId);
     }, []);
+
+    useEffect(() => {
+        if (!room) return;
+
+        const changes: { [key: string]: number } = {};
+        room.players.forEach((player) => {
+            const currentScore = room.scores[player.id] || 0;
+            const previousScore = prevScores.current[player.id] || 0;
+            const change = currentScore - previousScore;
+            if (change !== 0) {
+                changes[player.id] = change;
+            }
+        });
+
+        if (Object.keys(changes).length > 0) {
+            setScoreChanges(changes);
+            setTimeout(() => {
+                setScoreChanges({});
+                setLastGuessCell(null);
+            }, 1100);
+        }
+
+        prevScores.current = room.scores;
+    }, [room?.scores]);
 
     // Format clues and firstCellsMap for the CluesModal
     const formattedClues = useMemo(() => {
@@ -115,6 +142,7 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
             return;
         }
         guess(roomId, { x: selectedCell.x, y: selectedCell.y }, key);
+        setLastGuessCell({ x: selectedCell.x, y: selectedCell.y, playerId: currentUser?.id || '' });
         // Move to next cell based on direction
         const nextCell = getNextCell(selectedCell);
         if (nextCell) {
@@ -315,6 +343,8 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
                         setIsAcrossMode={setIsAcrossMode}
                         title={room.crossword.title}
                         revealedLetterIndex={revealedLetterIndex}
+                        scoreChanges={scoreChanges}
+                        lastGuessCell={lastGuessCell}
                     />
                 </View>
                 <ClueDisplay

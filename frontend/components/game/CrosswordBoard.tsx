@@ -4,6 +4,7 @@ import { CrosswordCell } from './CrosswordCell';
 import { Square } from '~/hooks/useRoom';
 import { config } from '~/config/config';
 import { cn } from '~/lib/utils';
+import { useUser } from '~/hooks/users';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const SCREEN_HEIGHT = Dimensions.get('window').height;
@@ -29,6 +30,8 @@ interface CrosswordBoardProps {
     setIsAcrossMode: (isAcross: boolean) => void;
     title: string;
     revealedLetterIndex?: number;
+    scoreChanges: { [key: string]: number };
+    lastGuessCell?: { x: number; y: number; playerId: string } | null;
 }
 
 export const CrosswordBoard: React.FC<CrosswordBoardProps> = ({
@@ -38,8 +41,12 @@ export const CrosswordBoard: React.FC<CrosswordBoardProps> = ({
     isAcrossMode,
     setIsAcrossMode,
     title,
-    revealedLetterIndex
+    revealedLetterIndex,
+    scoreChanges,
+    lastGuessCell,
 }) => {
+    const { data: currentUser } = useUser();
+
     const handleCellPress = (square: Square) => {
         if (selectedCell?.id === square.id) {
             setIsAcrossMode(!isAcrossMode);
@@ -56,6 +63,10 @@ export const CrosswordBoard: React.FC<CrosswordBoardProps> = ({
                     const cellIndex = x * board[0].length + y;
                     const isRevealed = cellIndex === revealedLetterIndex;
 
+                    const isLastGuessCell = lastGuessCell?.x === x && lastGuessCell?.y === y;
+                    const scoreChange = isLastGuessCell ? scoreChanges[lastGuessCell.playerId] : 0;
+                    const isCurrentUserGuess = isLastGuessCell && lastGuessCell.playerId === currentUser?.id;
+
                     return (
                         <CrosswordCell
                             key={`${x}-${y}`}
@@ -67,12 +78,14 @@ export const CrosswordBoard: React.FC<CrosswordBoardProps> = ({
                             squareType={square.squareType}
                             isAcrossMode={isAcrossMode}
                             isRevealed={isRevealed}
+                            scoreChange={scoreChange}
+                            isCurrentUserGuess={isCurrentUserGuess}
                         />
                     );
                 })}
             </View>
         ));
-    }, [board, selectedCell, onCellPress, isAcrossMode, revealedLetterIndex]);
+    }, [board, selectedCell, onCellPress, isAcrossMode, revealedLetterIndex, scoreChanges, lastGuessCell, currentUser?.id]);
 
     return (
         <View className={cn(
