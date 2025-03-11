@@ -22,11 +22,13 @@ interface GameSummaryModalProps {
 
 const AnimatedStar = ({ filled, onPress, delay }: { filled: boolean; onPress: () => void; delay: number }) => {
     const animatedStyle = useAnimatedStyle(() => ({
-        transform: [{ scale: withSequence(
-            withTiming(1, { duration: 0 }),
-            withDelay(delay, withSpring(1.2)),
-            withSpring(1)
-        ) }],
+        transform: [{
+            scale: withSequence(
+                withTiming(1, { duration: 0 }),
+                withDelay(delay, withSpring(1.2)),
+                withSpring(1)
+            )
+        }],
     }));
 
     return (
@@ -69,7 +71,6 @@ export const GameSummaryModal: React.FC<GameSummaryModalProps> = ({
     };
 
     const handleQualityRate = async (rating: 1 | 2 | 3 | 4 | 5) => {
-        console.log('rating', room);
         try {
             rateQuality.mutate({ crosswordId: room.crossword.id, rating });
             setQualityRating(rating);

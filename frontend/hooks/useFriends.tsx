@@ -48,7 +48,6 @@ export function useAddFriend() {
   return useMutation({
     mutationFn: (username: string) => post('/friends', { username }),
     onSuccess: (data) => {
-      console.log('onSuccess', data);
       queryClient.invalidateQueries({ queryKey: [FRIENDS_KEY] });
       queryClient.invalidateQueries({ queryKey: [PENDING_REQUESTS_KEY] });
     },
