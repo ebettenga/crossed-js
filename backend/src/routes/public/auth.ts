@@ -30,16 +30,22 @@ export default function (
     try {
       await authService.forgotPassword(email);
       reply.send({
-        message: "If an account exists with that email, you will receive a password reset link"
+        message:
+          "If an account exists with that email, you will receive a password reset link",
       });
     } catch (error) {
-      fastify.log.error('Error in forgot password:', error);
-      reply.code(500).send({ error: "Failed to process password reset request" });
+      fastify.log.error("Error in forgot password:", error);
+      reply.code(500).send({
+        error: "Failed to process password reset request",
+      });
     }
   });
 
   fastify.post("/reset-password", async (request, reply) => {
-    const { token, newPassword } = request.body as { token: string; newPassword: string };
+    const { token, newPassword } = request.body as {
+      token: string;
+      newPassword: string;
+    };
 
     try {
       await authService.resetPassword(token, newPassword);
@@ -49,7 +55,7 @@ export default function (
         reply.code(400).send({ error: error.message });
         return;
       }
-      fastify.log.error('Error in reset password:', error);
+      fastify.log.error("Error in reset password:", error);
       reply.code(500).send({ error: "Failed to reset password" });
     }
   });

@@ -45,7 +45,6 @@ export function usePendingRequests() {
 // Add friend
 export function useAddFriend() {
   const queryClient = useQueryClient();
-  console.log('useAddFriend');
   return useMutation({
     mutationFn: (username: string) => post('/friends', { username }),
     onSuccess: (data) => {

@@ -198,8 +198,6 @@ export default function Friends() {
         refetch: refetchPending
     } = usePendingRequests();
 
-    console.log(pendingRequests);
-
     const {
         challenges,
         acceptChallenge,

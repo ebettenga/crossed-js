@@ -17,7 +17,24 @@ export default function SignUp() {
     const handleSignUp = () => {
         try {
             setError('');
-            signUpMutation.mutate({ email, password, username });
+            signUpMutation.mutate(
+                { email, password, username },
+                {
+                    onError: (err: any) => {
+                        if (err) {
+                            if (err.toString().includes('email-already-exists')) {
+                                setError('This email is already registered');
+                            } else if (err.toString().includes('username-already-exists')) {
+                                setError('This username is already taken');
+                            } else {
+                                setError('Failed to create account');
+                            }
+                        } else {
+                            setError('Failed to create account');
+                        }
+                    }
+                }
+            );
         } catch (err) {
             console.log(err);
             setError('Failed to create account');

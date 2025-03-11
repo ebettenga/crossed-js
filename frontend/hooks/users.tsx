@@ -101,9 +101,6 @@ export const useSignUp = () => {
       secureStorage.set("refresh_token", res.refresh_token);
       queryClient.setQueryData(['me'], res.user);
     },
-    onError: (err) => {
-      console.error(err);
-    }
   });
 };
 
