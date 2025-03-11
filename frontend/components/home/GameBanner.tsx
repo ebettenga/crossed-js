@@ -67,8 +67,10 @@ export const GameBanner: React.FC<GameBannerProps> = ({
                     </Text>
                     <Text className="text-sm text-[#666666] dark:text-[#DDE1E5]/70 font-['Times New Roman']">
                         Started {(() => {
-                            const localDate = new Date(createdAt);
-                            const minutes = Math.floor((Date.now() - localDate.getTime()) / 60000);
+                            const serverTime = new Date(createdAt);
+                            const timezoneOffset = serverTime.getTimezoneOffset() * 60000; // Convert minutes to milliseconds
+                            const localTime = new Date(serverTime.getTime() - timezoneOffset);
+                            const minutes = Math.floor((Date.now() - localTime.getTime()) / 60000);
                             if (minutes >= 60) {
                                 const hours = Math.floor(minutes / 60);
                                 return `${hours} ${hours === 1 ? 'hour' : 'hours'}`;
