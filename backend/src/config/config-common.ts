@@ -21,10 +21,10 @@ export const commonConfig = {
       forfeit: -300,
     },
     elo: {
-      kFactorBase: 40,
-      winStreakMultiplier: 0.3, // 30% increase per win streak
-      maxWinStreakBonus: 0.5, // Maximum 50% increase from win streak
-      gamesPlayedDampening: 100, // Multiplier for games played dampening
+      kFactorBase: 32,
+      winStreakMultiplier: 0.1,
+      maxWinStreakBonus: 0.3,
+      gamesPlayedDampening: 30,
     },
     maxPlayers: {
       "1v1": 2,
@@ -55,7 +55,7 @@ export const commonConfig = {
     },
   },
   redis: {
-    default:{
+    default: {
       host: redisURL.hostname || "localhost",
       port: redisURL.port || 6379,
       username: redisURL.username || "default",
