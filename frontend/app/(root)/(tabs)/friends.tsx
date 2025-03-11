@@ -45,6 +45,7 @@ interface FriendRowProps {
     onReject?: (friendId: number) => void;
     isChallenge?: boolean;
     isPending?: boolean;
+    isSender?: boolean;
     roomId?: number;
     otherUser: OtherUser;
 }
@@ -58,6 +59,7 @@ const FriendRow: React.FC<FriendRowProps> = ({
     onReject,
     isChallenge = false,
     isPending = false,
+    isSender = false,
     roomId,
     otherUser
 }) => {
@@ -157,6 +159,20 @@ const FriendRow: React.FC<FriendRowProps> = ({
                     </TouchableOpacity>
                 </View>
             )}
+
+            {isPending && isSender && (
+                <View className="flex-row items-center gap-1.5 ml-auto pl-3">
+                    <TouchableOpacity
+                        className="flex-row items-center p-2 rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900"
+                        onPress={() => onRemove(friend.id)}
+                    >
+                        <X size={16} color="#EF4444" />
+                        <Text className="ml-1 text-xs text-red-500 dark:text-red-400 font-['Times_New_Roman']">
+                            Cancel
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+            )}
         </View>
     );
 };
@@ -181,6 +197,8 @@ export default function Friends() {
         isLoading: pendingLoading,
         refetch: refetchPending
     } = usePendingRequests();
+
+    console.log(pendingRequests);
 
     const {
         challenges,
@@ -221,9 +239,17 @@ export default function Friends() {
     }, [searchUsers]);
 
     const handleSelectUser = useCallback((selectedUsername: string) => {
-        setUsername(selectedUsername);
-        handleAddFriend();
-    }, [setUsername, handleAddFriend]);
+        clearSearchResults(); // Clear the dropdown immediately
+        addFriend(selectedUsername, {
+            onSuccess: () => {
+                setUsername(''); // Clear input on success
+                showToast('success', 'Friend request sent');
+            },
+            onError: (err) => {
+                console.error('Failed to add friend:', err);
+            }
+        });
+    }, [addFriend, clearSearchResults]);
 
     const handleChallenge = useCallback((friend: Friend) => {
         setSelectedFriend(friend);
@@ -358,7 +384,7 @@ export default function Friends() {
                             disabled={isAddingFriend}
                         >
                             {isAddingFriend ? (
-                                <ActivityIndicator size="small" color="#FFFFFF" />
+                                <ActivityIndicator size="large" color="#FFFFFF" />
                             ) : (
                                 <>
                                     <UserPlus size={16} color="#FFFFFF" />
@@ -423,19 +449,23 @@ export default function Friends() {
                                 />
                             }
                         >
-                            {pendingRequests?.map((friend) => (
-                                <FriendRow
-                                    key={friend.id}
-                                    friend={friend}
-                                    currentUserId={user.id}
-                                    onChallenge={handleChallenge}
-                                    onRemove={handleRemoveFriend}
-                                    onAccept={handleAcceptFriend}
-                                    onReject={handleRejectFriend}
-                                    isPending={true}
-                                    otherUser={getFriendStatus(friend)}
-                                />
-                            ))}
+                            {pendingRequests?.map((friend) => {
+                                const isSender = friend.sender.id === user.id;
+                                return (
+                                    <FriendRow
+                                        key={friend.id}
+                                        friend={friend}
+                                        currentUserId={user.id}
+                                        onChallenge={handleChallenge}
+                                        onRemove={handleRemoveFriend}
+                                        onAccept={handleAcceptFriend}
+                                        onReject={handleRejectFriend}
+                                        isPending={true}
+                                        isSender={isSender}
+                                        otherUser={getFriendStatus(friend)}
+                                    />
+                                );
+                            })}
                             {friends?.map((friend) => (
                                 <FriendRow
                                     key={friend.id}

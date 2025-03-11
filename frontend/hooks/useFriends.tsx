@@ -45,10 +45,11 @@ export function usePendingRequests() {
 // Add friend
 export function useAddFriend() {
   const queryClient = useQueryClient();
-
+  console.log('useAddFriend');
   return useMutation({
     mutationFn: (username: string) => post('/friends', { username }),
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('onSuccess', data);
       queryClient.invalidateQueries({ queryKey: [FRIENDS_KEY] });
       queryClient.invalidateQueries({ queryKey: [PENDING_REQUESTS_KEY] });
     },
@@ -90,6 +91,7 @@ export function useRemoveFriend() {
     mutationFn: (friendshipId: number) => del(`/friends/${friendshipId}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [FRIENDS_KEY] });
+      queryClient.invalidateQueries({ queryKey: [PENDING_REQUESTS_KEY] });
     },
   });
 }

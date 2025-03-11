@@ -66,6 +66,7 @@ services:
       SECRET_ACCESS_TOKEN: adfhadfhadfh2j51jk
       SECRET_KEY_PATH: "../src/config/secret-key"
       REDIS_HOST: redis
+      REDIS_URL: redis://redis:6379
       # Email configuration
       SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
       SMTP_PORT: ${SMTP_PORT:-587}
@@ -73,7 +74,7 @@ services:
       SMTP_USER: ${SMTP_USER}
       SMTP_PASS: ${SMTP_PASS}
       SMTP_FROM: ${SMTP_FROM:-noreply@crossed.com}
-    command: ["yarn", "dev"]
+    command: [ "yarn", "dev" ]
     networks:
       - app-network
     depends_on:
@@ -83,6 +84,7 @@ services:
 volumes:
   redis_data:
   postgres_data:
+
 
 networks:
   app-network:

@@ -25,7 +25,7 @@ export class FriendService {
       .getRepository(Friend)
       .findOne({
         where: [
-          { senderId, receiverId: receiver.id }
+          { senderId, receiverId: receiver.id },
         ],
       });
 
@@ -58,9 +58,14 @@ export class FriendService {
   async getPendingRequests(userId: number): Promise<Friend[]> {
     return this.ormConnection
       .getRepository(Friend)
-      .find({
-        where: { receiverId: userId, status: FriendshipStatus.PENDING },
-      });
+      .createQueryBuilder("friend")
+      .where([
+        { receiverId: userId, status: FriendshipStatus.PENDING },
+        { senderId: userId, status: FriendshipStatus.PENDING },
+      ])
+      .leftJoinAndSelect("friend.sender", "sender")
+      .leftJoinAndSelect("friend.receiver", "receiver")
+      .getMany();
   }
 
   async acceptFriendRequest(
