@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, ScrollView, ActivityIndicator, Dimensions, RefreshControl } from 'react-native';
 import { Users, Timer, Swords, Group } from 'lucide-react-native';
 import { HomeSquareButton } from '~/components/home/HomeSquareButton';
@@ -10,7 +10,7 @@ import { useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useJoinRoom, Room } from '~/hooks/useJoinRoom';
 import { useRoom } from '~/hooks/socket';
-import { Link } from 'expo-router';
+import { Link, useRouter } from 'expo-router';
 import { useActiveRooms, usePendingRooms } from '~/hooks/useActiveRooms';
 import { useUser } from '~/hooks/users';
 import { cn } from '~/lib/utils';
@@ -25,8 +25,7 @@ const BUTTON_SIZE = (SCREEN_WIDTH - (PADDING * 2) - (GAP * (SQUARES_PER_ROW - 1)
 type GameMode = '1v1' | '2v2' | 'free4all' | 'time_trial';
 
 export default function Home() {
-    const insets = useSafeAreaInsets();
-    const { room } = useRoom();
+    const router = useRouter();
     const { mutate: join } = useJoinRoom();
     const { data: activeRooms, isLoading: isLoadingRooms, refetch: refetchActiveRooms } = useActiveRooms();
     const { data: pendingRooms, isLoading: isLoadingPendingRooms, refetch: refetchPendingRooms } = usePendingRooms();
@@ -87,6 +86,21 @@ export default function Home() {
 
     const activeRoomsArray = activeRooms as Room[] || [];
     const pendingRoomsArray = pendingRooms as Room[] || [];
+
+    // Add this useEffect to check for active games and redirect
+    useEffect(() => {
+        if (user && activeRooms) {
+            // Find any active room where the current user is a player
+            const userActiveRoom = activeRooms.find(room =>
+                room.players.some(player => player.id === user.id)
+            );
+
+            if (userActiveRoom) {
+                // Navigate to the game if found
+                router.push(`/game?roomId=${userActiveRoom.id}`);
+            }
+        }
+    }, [user, activeRooms, router]);
 
     return (
         <View

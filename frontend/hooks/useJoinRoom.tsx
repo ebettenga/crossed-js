@@ -75,9 +75,8 @@ export const useJoinRoom = () => {
         mutationFn: async (params: JoinRoomParams) => {
             return await post<Room>('/rooms/join', params);
         },
-        onSuccess: (data) => {
-            queryClient.invalidateQueries({ queryKey: ['rooms', 'playing'] });
-            queryClient.invalidateQueries({ queryKey: ['rooms', 'pending'] });
-        },
+        onSettled: () => {
+            queryClient.invalidateQueries({ queryKey: ['rooms'] });
+        }
     });
 };

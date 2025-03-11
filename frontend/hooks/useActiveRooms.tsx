@@ -1,26 +1,25 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, UseQueryOptions } from '@tanstack/react-query';
 import { get } from './api';
 import { Room } from './useJoinRoom';
 
-export const useRooms = (status?: 'playing' | 'pending' | 'finished' | 'cancelled') => useQuery<Room[]>({
+export const useRooms = (status?: 'playing' | 'pending' | 'finished' | 'cancelled', options?: UseQueryOptions<Room[]>) => useQuery<Room[]>({
     queryKey: ['rooms', status],
     queryFn: async () => {
         const params = status ? `?status=${status}` : '';
-        const data = await get(`/rooms${params}`);
+        const data = await get<Room[]>(`/rooms${params}`);
         return data;
     },
-    refetchInterval: 1000 * 60 * 2
+    ...options
 });
 
-// For backwards compatibility, keep the useActiveRooms hook
-export const useActiveRooms = () => {
-    return useRooms('playing');
+export const useActiveRooms = (options?: UseQueryOptions<Room[]>) => {
+    return useRooms('playing', options);
 };
 
-export const usePendingRooms = () => {
-    return useRooms('pending');
+export const usePendingRooms = (options?: UseQueryOptions<Room[]>) => {
+    return useRooms('pending', options);
 };
 
-export const useFinishedRooms = () => {
-    return useRooms('finished');
+export const useFinishedRooms = (options?: UseQueryOptions<Room[]>) => {
+    return useRooms('finished', options);
 };
