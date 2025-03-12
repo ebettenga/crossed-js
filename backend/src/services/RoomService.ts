@@ -7,11 +7,7 @@ import { config } from "../config/config";
 import { fastify } from "../fastify";
 import { GameStats } from "../entities/GameStats";
 import { NotFoundError } from "../errors/api";
-import {
-  gameInactivityQueue,
-  GameJobName,
-  gameTimeoutQueue,
-} from "../jobs/queues";
+import { gameInactivityQueue, gameTimeoutQueue } from "../jobs/queues";
 import { v4 as uuidv4 } from "uuid";
 import { EntityManager } from "typeorm";
 import { RedisService } from "./RedisService";
@@ -61,8 +57,7 @@ export class RoomService {
       await this.joinExistingRoom(room, user.id);
       return room;
     } else {
-
-     const newRoom =  await this.createRoom(user.id, difficulty, type);
+      const newRoom = await this.createRoom(user.id, difficulty, type);
       //Create new GameStats object for the new room.
       const gameStats = new GameStats();
       gameStats.user = user;
@@ -74,10 +69,8 @@ export class RoomService {
       gameStats.incorrectGuesses = 0;
       gameStats.correctGuessDetails = [];
 
-      return
+      return;
     }
-
-
   }
 
   async joinExistingRoom(room: Room, userId: number): Promise<void> {
@@ -159,8 +152,6 @@ export class RoomService {
     }
 
     const savedRoom = await this.ormConnection.getRepository(Room).save(room);
-
-
 
     // Only add timeout job for non-time trial games
     if (type !== "time_trial") {
@@ -280,8 +271,8 @@ export class RoomService {
     for (const stats of allGameStats) {
       //Gets correct and incorrect guesses from the cache by userId
       stats.correctGuesses = gameCache.userGuessCounts[stats.userId].correct;
-      stats.incorrectGuesses = gameCache.userGuessCounts[stats.userId].incorrect;
-
+      stats.incorrectGuesses =
+        gameCache.userGuessCounts[stats.userId].incorrect;
 
       // If game was forfeited, non-forfeiting players are winners
       const isWinner = forfeitedBy !== undefined
@@ -362,7 +353,6 @@ export class RoomService {
         where: { userId: player.id, roomId },
       });
       //used to have gameStats created here
-
     }
 
     room.markModified();
@@ -413,9 +403,6 @@ export class RoomService {
       cachedGameInfo = room.createRoomCache();
     }
 
-
-
-
     // Check if letter is already found at this position
     const letterIndex = x * room.crossword.col_size + y;
     if (cachedGameInfo.foundLetters[letterIndex] !== "*") {
@@ -428,15 +415,12 @@ export class RoomService {
       guess,
     );
 
-
-
     // Update stats based on guess result
     if (isCorrect) {
       // Update last activity timestamp
       cachedGameInfo.lastActivityAt = Date.now();
 
       cachedGameInfo.userGuessCounts[userId].correct++;
-
 
       // Update room state
       cachedGameInfo.foundLetters[x * room.crossword.col_size + y] = guess;
@@ -447,7 +431,6 @@ export class RoomService {
       cachedGameInfo.scores[userId] = (cachedGameInfo.scores[userId] || 0) +
         config.game.points.incorrect;
     }
-
 
     // Check if game is won
     if (this.isGameFinished(room)) {

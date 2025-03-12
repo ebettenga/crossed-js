@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import Superwall, { TransactionBackgroundView } from '@superwall/react-native-superwall';
+import { useEffect, useState } from 'react';
+import Superwall from '@superwall/react-native-superwall';
 import { Platform } from 'react-native';
 import { config } from '@/config/config';
 
