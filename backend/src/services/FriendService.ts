@@ -20,6 +20,11 @@ export class FriendService {
       throw new NotFoundError("User not found");
     }
 
+    // Prevent self-friending
+    if (receiver.id === senderId) {
+      throw new Error("You cannot send a friend request to yourself");
+    }
+
     // Check if friendship already exists
     const existingFriendship = await this.ormConnection
       .getRepository(Friend)
