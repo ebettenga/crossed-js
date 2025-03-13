@@ -29,9 +29,20 @@ export class RoomService {
   }
 
   async getRoomById(roomId: number): Promise<Room> {
-    return this.ormConnection
+    const results = await this.ormConnection
       .getRepository(Room)
       .findOne({ where: { id: roomId } });
+
+    if (results) {
+      let cachedGameInfo = await this.redisService.getGame(
+        results.id.toString(),
+      );
+      if (cachedGameInfo) {
+        results.found_letters = cachedGameInfo.foundLetters;
+        results.scores = cachedGameInfo.scores;
+      }
+    }
+    return results;
   }
 
   async getRoomsByUserId(userId: number): Promise<Room[]> {
