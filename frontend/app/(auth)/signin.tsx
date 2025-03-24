@@ -9,21 +9,14 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 export default function SignIn() {
     const router = useRouter();
-    const [credential,setCredential] = useState('');
+    const [credential, setCredential] = useState('');
     const [password, setPassword] = useState('');
-    const [error, setError] = useState('');
 
     const signInMutation = useSignIn();
-    const { data: user, isLoading: isLoadingUser } = useUser();
+    const { isLoading: isLoadingUser } = useUser();
 
     const handleSignIn = () => {
-        try {
-            setError('');
-            signInMutation.mutate({ credential, password });
-        } catch (err) {
-            console.log(err);
-            setError('Invalid email or password');
-        }
+        signInMutation.mutate({ credential, password });
     };
 
     return (
@@ -88,12 +81,6 @@ export default function SignIn() {
                             secureTextEntry
                         />
                     </View>
-
-                    {error ? (
-                        <Text className="text-red-500 text-center">
-                            {error}
-                        </Text>
-                    ) : null}
 
                     <TouchableOpacity
                         className="bg-[#8B0000] p-4 mt-12"

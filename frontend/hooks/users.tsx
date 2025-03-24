@@ -3,6 +3,7 @@ import { secureStorage } from "./storageApi";
 import { router, useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { get, patch, post } from './api';
+import Toast from "react-native-toast-message";
 
 
 
@@ -86,6 +87,10 @@ export const useSignIn = () => {
     },
     onError: (err) => {
       console.error(err);
+      Toast.show({
+        text1: 'Invalid email or password',
+        type: 'error',
+      });
     }
   });
 };
