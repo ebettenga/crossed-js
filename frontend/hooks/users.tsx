@@ -173,3 +173,23 @@ export const useUpdatePhoto = () => {
     },
   });
 };
+
+export function useUpdatePassword() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ oldPassword, newPassword }: { oldPassword: string; newPassword: string }) => {
+      const response = await post<{ message: string }>('/users/change-password', {
+        oldPassword,
+        newPassword,
+      });
+      return response;
+    },
+    onSuccess: () => {
+      Toast.show({
+        text1: 'Password changed successfully',
+        type: 'success',
+      });
+    },
+  });
+}

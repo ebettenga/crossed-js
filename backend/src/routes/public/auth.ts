@@ -41,24 +41,5 @@ export default function (
     }
   });
 
-  fastify.post("/reset-password", async (request, reply) => {
-    const { token, newPassword } = request.body as {
-      token: string;
-      newPassword: string;
-    };
-
-    try {
-      await authService.resetPassword(token, newPassword);
-      reply.send({ message: "Password has been reset successfully" });
-    } catch (error) {
-      if (error instanceof ForbiddenError) {
-        reply.code(400).send({ error: error.message });
-        return;
-      }
-      fastify.log.error("Error in reset password:", error);
-      reply.code(500).send({ error: "Failed to reset password" });
-    }
-  });
-
   next();
 }

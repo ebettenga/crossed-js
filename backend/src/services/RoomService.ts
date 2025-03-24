@@ -251,12 +251,6 @@ export class RoomService {
     room.status = "finished";
     room.completed_at = new Date();
 
-    const gameCache = await this.redisService.getGame(room.id.toString());
-    if (!gameCache) {
-      throw new Error("Game cache not found");
-    }
-    room.found_letters = gameCache.foundLetters;
-    room.scores = gameCache.scores;
     // If game was forfeited, adjust scores
     if (forfeitedBy !== undefined) {
       const minScore = Math.min(...Object.values(room.scores)) +
@@ -280,10 +274,8 @@ export class RoomService {
 
     // Update win streaks and winner status
     for (const stats of allGameStats) {
-      //Gets correct and incorrect guesses from the cache by userId
-      stats.correctGuesses = gameCache.userGuessCounts[stats.userId].correct;
-      stats.incorrectGuesses =
-        gameCache.userGuessCounts[stats.userId].incorrect;
+      stats.correctGuesses = room.scores[stats.userId];
+      stats.incorrectGuesses = room.scores[stats.userId];
 
       // If game was forfeited, non-forfeiting players are winners
       const isWinner = forfeitedBy !== undefined

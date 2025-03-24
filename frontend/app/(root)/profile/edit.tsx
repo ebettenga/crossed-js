@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Alert, Image, SafeAreaView, useColorScheme } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useUser, useUpdateUser, useUpdatePhoto } from '~/hooks/users';
+import { useUser, useUpdateUser, useUpdatePhoto, useUpdatePassword } from '~/hooks/users';
 import { ChevronLeft, Camera } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
@@ -13,11 +13,15 @@ export default function EditProfile() {
     const { data: user } = useUser();
     const updateUser = useUpdateUser();
     const updatePhoto = useUpdatePhoto();
+    const updatePassword = useUpdatePassword();
     const [username, setUsername] = useState(user?.username || '');
     const [email, setEmail] = useState(user?.email || '');
     const [isLoading, setIsLoading] = useState(false);
     const { isDark } = useColorMode();
     const [pendingPhoto, setPendingPhoto] = useState<{ uri: string, formData: FormData } | null>(null);
+    const [oldPassword, setOldPassword] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [showPasswordFields, setShowPasswordFields] = useState(false);
 
     const handleSave = async () => {
         setIsLoading(true);
@@ -36,6 +40,17 @@ export default function EditProfile() {
                     username: hasUsernameChange ? username : undefined,
                     email: hasEmailChange ? email : undefined,
                 });
+            }
+
+            // Handle password change if both fields are filled
+            if (oldPassword && newPassword) {
+                await updatePassword.mutateAsync({
+                    oldPassword,
+                    newPassword,
+                });
+                setOldPassword('');
+                setNewPassword('');
+                setShowPasswordFields(false);
             }
 
             router.back();
@@ -147,6 +162,47 @@ export default function EditProfile() {
                         keyboardType="email-address"
                     />
                 </View>
+
+                <TouchableOpacity
+                    className="items-center py-2"
+                    onPress={() => setShowPasswordFields(!showPasswordFields)}
+                >
+                    <Text className="text-base text-[#8B0000] font-['Times New Roman']">
+                        {showPasswordFields ? 'Cancel Password Change' : 'Change Password'}
+                    </Text>
+                </TouchableOpacity>
+
+                {showPasswordFields && (
+                    <>
+                        <View className="gap-2">
+                            <Text className="text-base text-[#666666] dark:text-[#DDE1E5]/70 font-['Times New Roman']">
+                                Current Password
+                            </Text>
+                            <TextInput
+                                className="h-[46px] border border-[#E5E5E5] dark:border-[#2A3136] rounded-lg px-3 bg-[#F8F8F5] dark:bg-[#1A2227] text-base text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times New Roman']"
+                                value={oldPassword}
+                                onChangeText={setOldPassword}
+                                placeholder="Enter current password"
+                                placeholderTextColor="#666666"
+                                secureTextEntry
+                            />
+                        </View>
+
+                        <View className="gap-2">
+                            <Text className="text-base text-[#666666] dark:text-[#DDE1E5]/70 font-['Times New Roman']">
+                                New Password
+                            </Text>
+                            <TextInput
+                                className="h-[46px] border border-[#E5E5E5] dark:border-[#2A3136] rounded-lg px-3 bg-[#F8F8F5] dark:bg-[#1A2227] text-base text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times New Roman']"
+                                value={newPassword}
+                                onChangeText={setNewPassword}
+                                placeholder="Enter new password"
+                                placeholderTextColor="#666666"
+                                secureTextEntry
+                            />
+                        </View>
+                    </>
+                )}
 
                 <TouchableOpacity
                     className="bg-[#8B0000] h-[46px] rounded-lg items-center justify-center"

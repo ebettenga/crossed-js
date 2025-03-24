@@ -16,7 +16,9 @@ export default function (
 
   // Get pending friend requests
   fastify.get("/friends/pending", async (request, reply) => {
-    const pendingRequests = await friendService.getPendingRequests(request.user.id);
+    const pendingRequests = await friendService.getPendingRequests(
+      request.user.id,
+    );
     reply.send(pendingRequests);
   });
 
@@ -30,14 +32,20 @@ export default function (
   // Accept friend request
   fastify.post("/friends/:id/accept", async (request, reply) => {
     const { id } = request.params as { id: string };
-    const friendship = await friendService.acceptFriendRequest(request.user.id, parseInt(id));
+    const friendship = await friendService.acceptFriendRequest(
+      request.user.id,
+      parseInt(id),
+    );
     reply.send(friendship);
   });
 
   // Reject friend request
   fastify.post("/friends/:id/reject", async (request, reply) => {
     const { id } = request.params as { id: string };
-    const friendship = await friendService.rejectFriendRequest(request.user.id, parseInt(id));
+    const friendship = await friendService.rejectFriendRequest(
+      request.user.id,
+      parseInt(id),
+    );
     reply.send(friendship);
   });
 
@@ -49,4 +57,4 @@ export default function (
   });
 
   next();
-} 
+}
