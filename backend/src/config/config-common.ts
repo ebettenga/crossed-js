@@ -21,10 +21,10 @@ export const commonConfig = {
       forfeit: -300,
     },
     elo: {
-      kFactorBase: 32,
+      kFactorBase: 25,
       winStreakMultiplier: 0.1,
       maxWinStreakBonus: 0.3,
-      gamesPlayedDampening: 30,
+      gamesPlayedDampening: 10,
     },
     maxPlayers: {
       "1v1": 2,

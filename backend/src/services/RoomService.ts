@@ -10,7 +10,7 @@ import { NotFoundError } from "../errors/api";
 import { gameInactivityQueue, gameTimeoutQueue } from "../jobs/queues";
 import { v4 as uuidv4 } from "uuid";
 import { EntityManager } from "typeorm";
-import { RedisService } from "./RedisService";
+import { CachedGameInfo, RedisService } from "./RedisService";
 
 export class RoomService {
   private crosswordService: CrosswordService;
@@ -445,15 +445,19 @@ export class RoomService {
 
     // Check if game is won
     if (this.isGameFinished(room)) {
+      room = this.addCacheToRoom(room, cachedGameInfo);
       await this.onGameEnd(room);
     } else {
       // Save room if game is not finished
       this.redisService.cacheGame(room.id.toString(), cachedGameInfo);
     }
 
+    return this.addCacheToRoom(room, cachedGameInfo);
+  }
+
+  addCacheToRoom(room: Room, cachedGameInfo: CachedGameInfo): Room {
     room.found_letters = cachedGameInfo.foundLetters;
     room.scores = cachedGameInfo.scores;
-
     return room;
   }
 
