@@ -137,7 +137,7 @@ export default function (
     },
   );
 
-  fastify.post("/change-password", async (request, reply) => {
+  fastify.post("/users/change-password", async (request, reply) => {
     const { oldPassword, newPassword } = request.body as {
       oldPassword: string;
       newPassword: string;
@@ -146,6 +146,10 @@ export default function (
     const userRepository = fastify.orm.getRepository(User);
     const user = await userRepository.findOne({
       where: { id: request.user.id },
+      select: {
+        id: true,
+        password: true,
+      },
     });
 
     if (!user) {
@@ -157,13 +161,14 @@ export default function (
       reply.code(403).send({ error: "Unauthorized" });
       return;
     }
-
+    fastify.log.info("Comparing password");
+    fastify.log.info(oldPassword);
+    fastify.log.info(user.password);
     const isPasswordValid = await bcrypt.compare(oldPassword, user.password);
     if (!isPasswordValid) {
       reply.code(401).send({ error: "Invalid old password" });
       return;
     }
-
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     await userRepository.update(request.user.id, { password: hashedPassword });
     reply.send({ message: "Password changed successfully" });

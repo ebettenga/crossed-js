@@ -191,5 +191,11 @@ export function useUpdatePassword() {
         type: 'success',
       });
     },
+    onError: () => {
+      Toast.show({
+        text1: 'Something went wrong. If this problem persists, please contact support.',
+        type: 'error',
+      });
+    }
   });
 }
