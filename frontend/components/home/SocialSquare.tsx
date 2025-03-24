@@ -1,16 +1,15 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, Linking, Text } from 'react-native';
-import { Twitter, Youtube, Facebook, Swords } from 'lucide-react-native';
+import { View, StyleSheet, Linking, Text, Image } from 'react-native';
 import { HomeSquareButton } from './HomeSquareButton';
+import XLogo from '../../assets/social/x.png';
+import RedditLogo from '../../assets/social/reddit.png';
+import InstagramLogo from '../../assets/social/instagram.png';
+import FacebookLogo from '../../assets/social/facebook.png';
+import { config } from "config/config";
 
 interface SocialSquareProps {
     size: number;
 }
-
-// Official brand colors
-const TWITTER_BLUE = '#1DA1F2';
-const YOUTUBE_RED = '#FF0000';
-const FACEBOOK_BLUE = '#1877F2';
 
 export const SocialSquare: React.FC<SocialSquareProps> = ({ size }) => {
     const [modalVisible, setModalVisible] = useState(false);
@@ -25,38 +24,53 @@ export const SocialSquare: React.FC<SocialSquareProps> = ({ size }) => {
             <View style={[styles.container, { width: size, height: size }]}>
                 <View style={styles.grid}>
                     <HomeSquareButton
-                        icon={<Swords size={16} />}
-                        onPress={() => setModalVisible(true)}
+                        icon={
+                            <Image
+                                source={XLogo}
+                                style={{ width: 24, height: 24, tintColor: config.social.twitter.color }}
+                            />
+                        }
+                        onPress={() => openUrl(config.social.twitter.url)}
                         size={miniSquareSize}
-                        iconColor="#FFFFFF"
-                        darkIconColor="#FFFFFF"
-                        customStyle={{
-                            wrapper: "bg-black dark:bg-black border-black dark:border-black",
-                            container: "bg-black dark:bg-black",
-                            pressed: "bg-neutral-800 dark:bg-neutral-800"
-                        }}
+                        iconColor={config.social.twitter.color}
+                        darkIconColor={config.social.twitter.color}
                     />
                     <HomeSquareButton
-                        icon={<Twitter size={16} />}
-                        onPress={() => openUrl('https://twitter.com')}
+                        icon={
+                            <Image
+                                source={RedditLogo}
+                                style={{ width: 24, height: 24, tintColor: config.social.reddit.color }}
+                            />
+                        }
+                        onPress={() => openUrl(config.social.reddit.url)}
                         size={miniSquareSize}
-                        iconColor={TWITTER_BLUE}
-                        darkIconColor={TWITTER_BLUE}
+                        iconColor={config.social.reddit.color}
+                        darkIconColor={config.social.reddit.color}
                     />
                     <HomeSquareButton
                         number={13}
-                        icon={<Youtube size={16} />}
-                        onPress={() => openUrl('https://youtube.com')}
+                        icon={
+                            <Image
+                                source={InstagramLogo}
+                                style={{ width: 24, height: 24, tintColor: config.social.instagram.color }}
+                            />
+                        }
+                        onPress={() => openUrl(config.social.instagram.url)}
                         size={miniSquareSize}
-                        iconColor={YOUTUBE_RED}
-                        darkIconColor={YOUTUBE_RED}
+                        iconColor={config.social.instagram.color}
+                        darkIconColor={config.social.instagram.color}
                     />
                     <HomeSquareButton
-                        icon={<Facebook size={16} />}
-                        onPress={() => openUrl('https://facebook.com')}
+                        icon={
+                            <Image
+                                source={FacebookLogo}
+                                style={{ width: 24, height: 24, tintColor: config.social.facebook.color }}
+                            />
+                        }
+                        onPress={() => openUrl(config.social.facebook.url)}
                         size={miniSquareSize}
-                        iconColor={FACEBOOK_BLUE}
-                        darkIconColor={FACEBOOK_BLUE}
+                        iconColor={config.social.facebook.color}
+                        darkIconColor={config.social.facebook.color}
                     />
                 </View>
             </View>

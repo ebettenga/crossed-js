@@ -20,6 +20,24 @@ export const commonConfig = {
       cornerRadius: 4,
     },
   },
+  social: {
+    reddit: {
+      url: "https://www.reddit.com/user/Crossed_Mobile_Game/",
+      color: "#FF4500",
+    },
+    facebook: {
+      url: "https://www.facebook.com/share/1B7j2cAFUj/",
+      color: "#1877F2",
+    },
+    instagram: {
+      url: "https://www.instagram.com/crossed_mobile_game/",
+      color: "#E4405F",
+    },
+    twitter: {
+      url: "https://x.com/crossed11781",
+      color: "#1DA1F2",
+    },
+  },
   superwall: {
     ios: {
       apiKey: process.env.EXPO_PUBLIC_SUPERWALL_IOS_API_KEY,

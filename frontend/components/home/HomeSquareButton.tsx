@@ -39,7 +39,7 @@ export const HomeSquareButton: React.FC<HomeSquareButtonProps> = ({
     const themedIcon = icon
         ? React.cloneElement(icon, {
             color: colorScheme === 'dark' ? iconColor : darkIconColor
-          })
+        })
         : null;
 
     return (
