@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as SecureStore from "expo-secure-store";
-import { Platform } from 'react-native';
+import { Platform } from "react-native";
 
 export const storage = {
   set: async (key: string, value: any) => {
@@ -48,7 +48,10 @@ export const storage = {
 const webStorage = {
   set: async (key: string, value: any) => {
     try {
-      localStorage.setItem(key, typeof value === "string" ? value : JSON.stringify(value));
+      localStorage.setItem(
+        key,
+        typeof value === "string" ? value : JSON.stringify(value),
+      );
     } catch (e) {
       console.error("Error storing value:", e);
     }

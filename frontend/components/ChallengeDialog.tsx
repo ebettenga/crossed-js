@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { View, Text, Modal, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useChallenge } from '~/hooks/useChallenge';
 import { Swords, X } from 'lucide-react-native';
-import { useAds } from '~/hooks/useAds';
 
 type ChallengeDialogProps = {
   isVisible: boolean;
@@ -13,12 +12,9 @@ type ChallengeDialogProps = {
 
 export const ChallengeDialog = ({ isVisible, onClose, friendId, friendName }: ChallengeDialogProps) => {
   const { sendChallenge } = useChallenge();
-  const { showInterstitial } = useAds();
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>('easy');
 
   const handleChallenge = async () => {
-    // Show interstitial ad before sending challenge
-    await showInterstitial();
 
     sendChallenge.mutate({
       challengedId: friendId,
@@ -57,19 +53,17 @@ export const ChallengeDialog = ({ isVisible, onClose, friendId, friendName }: Ch
               {difficulties.map(({ label, value }) => (
                 <TouchableOpacity
                   key={value}
-                  className={`flex-1 p-2.5 rounded-lg border ${
-                    selectedDifficulty === value
-                      ? 'bg-[#8B0000] border-[#8B0000]'
-                      : 'border-[#E5E5E5] dark:border-[#2A3136]'
-                  }`}
+                  className={`flex-1 p-2.5 rounded-lg border ${selectedDifficulty === value
+                    ? 'bg-[#8B0000] border-[#8B0000]'
+                    : 'border-[#E5E5E5] dark:border-[#2A3136]'
+                    }`}
                   onPress={() => setSelectedDifficulty(value)}
                 >
                   <Text
-                    className={`text-center text-sm font-['Times New Roman'] ${
-                      selectedDifficulty === value
-                        ? 'text-white'
-                        : 'text-[#666666] dark:text-[#DDE1E5]/70'
-                    }`}
+                    className={`text-center text-sm font-['Times New Roman'] ${selectedDifficulty === value
+                      ? 'text-white'
+                      : 'text-[#666666] dark:text-[#DDE1E5]/70'
+                      }`}
                   >
                     {label}
                   </Text>

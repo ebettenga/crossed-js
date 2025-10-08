@@ -3,7 +3,6 @@ import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Alert, Imag
 import { useRouter } from 'expo-router';
 import { useUser, useUpdateUser, useUpdatePhoto, useUpdatePassword } from '~/hooks/users';
 import { ChevronLeft, Camera } from 'lucide-react-native';
-import * as ImagePicker from 'expo-image-picker';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import { PageHeader } from '~/components/Header';
 import { useColorMode } from '~/hooks/useColorMode';
@@ -65,7 +64,17 @@ export default function EditProfile() {
     };
 
     const handlePhotoUpload = async () => {
+        if (Platform.OS !== 'ios' && Platform.OS !== 'android') {
+            Alert.alert(
+                'Unsupported Platform',
+                'Photo uploads are only supported on iOS and Android devices.'
+            );
+            return;
+        }
+
         try {
+            const ImagePicker = await import('expo-image-picker');
+
             const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
             if (!permissionResult.granted) {
                 Alert.alert('Permission Required', 'Please grant access to your photo library to upload a photo.');

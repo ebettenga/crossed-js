@@ -130,12 +130,28 @@ export default function (
     }
   });
 
-  fastify.get(
-    "/users",
-    async (request, reply) => {
+  const searchUsers = async (query: string) => {
+    return fastify.orm.getRepository(User).find({
+      where: {
+        username: ILike(`%${query}%`),
+      },
+      select: ["id", "username", "photo", "status"],
+      take: 5,
+    });
+  };
+
+  fastify.get<{
+    Querystring: {
+      query?: string;
+    };
+  }>("/users", async (request, reply) => {
+    const { query } = request.query;
+    if (!query || query.trim().length === 0) {
       return await fastify.orm.getRepository(User).find();
-    },
-  );
+    }
+
+    return await searchUsers(query);
+  });
 
   fastify.post("/users/change-password", async (request, reply) => {
     const { oldPassword, newPassword } = request.body as {
@@ -198,19 +214,11 @@ export default function (
     };
   }>("/users/search", async (request, reply) => {
     const { query } = request.query;
-    if (!query) {
+    if (!query || query.trim().length === 0) {
       return [];
     }
 
-    const users = await fastify.orm.getRepository(User).find({
-      where: {
-        username: ILike(`%${query}%`),
-      },
-      select: ["id", "username", "photo", "status"],
-      take: 5, // Limit to 5 results
-    });
-
-    return users;
+    return await searchUsers(query);
   });
 
   next();

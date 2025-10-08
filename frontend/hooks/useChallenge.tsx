@@ -4,7 +4,6 @@ import { useSocket } from "./socket";
 import { useEffect } from "react";
 import { Room } from "./useJoinRoom";
 import { useRouter } from "expo-router";
-import { useAds } from './useAds';
 
 interface ChallengeResponse {
     data: Room;
@@ -14,7 +13,6 @@ export const useChallenge = () => {
     const queryClient = useQueryClient();
     const { socket, isConnected } = useSocket();
     const router = useRouter();
-    const { showInterstitial } = useAds();
 
     useEffect(() => {
         if (!isConnected || !socket) return;
@@ -49,7 +47,6 @@ export const useChallenge = () => {
 
     const acceptChallenge = useMutation({
         mutationFn: async (roomId: number) => {
-            await showInterstitial();
 
             const response = await post(`/rooms/challenge/${roomId}/accept`, { roomId }) as ChallengeResponse;
             return response.data;

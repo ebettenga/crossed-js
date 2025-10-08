@@ -15,9 +15,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-               BuildableName = "reactnativerestate.app"
-               BlueprintName = "reactnativerestate"
-               ReferencedContainer = "container:reactnativerestate.xcodeproj">
+               BuildableName = "Crossed.app"
+               BlueprintName = "Crossed"
+               ReferencedContainer = "container:Crossed.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -33,9 +33,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "00E356ED1AD99517003FC87E"
-               BuildableName = "reactnativerestateTests.xctest"
-               BlueprintName = "reactnativerestateTests"
-               ReferencedContainer = "container:reactnativerestate.xcodeproj">
+               BuildableName = "CrossedTests.xctest"
+               BlueprintName = "CrossedTests"
+               ReferencedContainer = "container:Crossed.xcodeproj">
             </BuildableReference>
          </TestableReference>
       </Testables>
@@ -55,9 +55,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-            BuildableName = "reactnativerestate.app"
-            BlueprintName = "reactnativerestate"
-            ReferencedContainer = "container:reactnativerestate.xcodeproj">
+            BuildableName = "Crossed.app"
+            BlueprintName = "Crossed"
+            ReferencedContainer = "container:Crossed.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -72,9 +72,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-            BuildableName = "reactnativerestate.app"
-            BlueprintName = "reactnativerestate"
-            ReferencedContainer = "container:reactnativerestate.xcodeproj">
+            BuildableName = "Crossed.app"
+            BlueprintName = "Crossed"
+            ReferencedContainer = "container:Crossed.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

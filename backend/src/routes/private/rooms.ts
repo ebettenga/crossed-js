@@ -113,7 +113,11 @@ export default function (
       challengedId,
       difficulty,
     );
-    fastify.io.sockets.socketsJoin(room.id.toString());
+    for (const player of room.players) {
+      fastify.io
+        .in(`user_${player.id}`)
+        .socketsJoin(room.id.toString());
+    }
     fastify.io.to(room.id.toString()).emit("room", room.toJSON());
     reply.send(room.toJSON());
   });

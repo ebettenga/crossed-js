@@ -12,7 +12,6 @@ import { Link, useRouter } from 'expo-router';
 import { useActiveRooms, usePendingRooms } from '~/hooks/useActiveRooms';
 import { useUser } from '~/hooks/users';
 import { cn } from '~/lib/utils';
-import { useAds } from '~/hooks/useAds';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const PADDING = 6;
@@ -24,11 +23,11 @@ type GameMode = '1v1' | '2v2' | 'free4all' | 'time_trial';
 
 export default function Home() {
     const { mutate: join } = useJoinRoom();
+    const router = useRouter();
     const { data: activeRooms, isLoading: isLoadingRooms, refetch: refetchActiveRooms } = useActiveRooms();
     const { data: pendingRooms, isLoading: isLoadingPendingRooms, refetch: refetchPendingRooms } = usePendingRooms();
     const { data: user, isLoading: isLoadingUser, refetch: refetchUser } = useUser();
     const [refreshing, setRefreshing] = useState(false);
-    const { showInterstitial } = useAds();
 
     const isBottomSheetOpen = useSharedValue(false);
     const [selectedGameMode, setSelectedGameMode] = React.useState<GameMode | null>(null);
@@ -48,22 +47,27 @@ export default function Home() {
     }, [refetchUser, refetchActiveRooms, refetchPendingRooms]);
 
     const handleGameModePress = async (mode: GameMode) => {
-        // Show interstitial ad before opening difficulty selection
-        showInterstitial().then(() => {
-
-            setSelectedGameMode(mode);
-            isBottomSheetOpen.value = true;
-        });
+        setSelectedGameMode(mode);
+        isBottomSheetOpen.value = true;
     };
 
     const handleDifficultySelect = async (difficulty: 'easy' | 'medium' | 'hard') => {
         isBottomSheetOpen.value = false;
         if (!selectedGameMode) return;
 
+        const mode = selectedGameMode;
+
         join({
             difficulty,
-            type: selectedGameMode
+            type: mode
+        }, {
+            onSuccess: (room) => {
+                if (mode === 'time_trial') {
+                    router.push(`/game?roomId=${room.id}`);
+                }
+            }
         });
+        setSelectedGameMode(null);
     };
 
     const handleBottomSheetClose = () => {
