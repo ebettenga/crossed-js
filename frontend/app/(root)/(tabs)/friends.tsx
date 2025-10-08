@@ -182,7 +182,7 @@ export default function Friends() {
     const { data: user } = useUser();
     const [username, setUsername] = useState('');
     const [activeTab, setActiveTab] = useState<'friends' | 'challenges'>('friends');
-    const [selectedFriend, setSelectedFriend] = useState<Friend | null>(null);
+    const [challengeTarget, setChallengeTarget] = useState<{ id: number; name: string } | null>(null);
     const [refreshing, setRefreshing] = useState(false);
 
     const {
@@ -249,10 +249,6 @@ export default function Friends() {
         });
     }, [addFriend, clearSearchResults]);
 
-    const handleChallenge = useCallback((friend: Friend) => {
-        setSelectedFriend(friend);
-    }, []);
-
     const handleRemoveFriend = useCallback(async (friendId: number) => {
         try {
             await removeFriend(friendId);
@@ -318,6 +314,11 @@ export default function Friends() {
             status: otherUser.status || 'offline'
         };
     }, [user.id]);
+
+    const handleChallenge = useCallback((friend: Friend) => {
+        const target = getFriendStatus(friend);
+        setChallengeTarget({ id: target.id, name: target.username });
+    }, [getFriendStatus]);
 
     const isLoading = friendsLoading || pendingLoading;
     const error = friendsError;
@@ -511,10 +512,10 @@ export default function Friends() {
             )}
 
             <ChallengeDialog
-                isVisible={!!selectedFriend}
-                onClose={() => setSelectedFriend(null)}
-                friendId={selectedFriend?.receiver.id || 0}
-                friendName={selectedFriend?.receiver.username || ''}
+                isVisible={!!challengeTarget}
+                onClose={() => setChallengeTarget(null)}
+                friendId={challengeTarget?.id || 0}
+                friendName={challengeTarget?.name || ''}
             />
         </View>
     );
