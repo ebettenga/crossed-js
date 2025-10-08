@@ -4,9 +4,9 @@ import {
   Entity,
   JoinColumn,
   JoinTable,
+  ManyToOne,
   ManyToMany,
   OneToMany,
-  OneToOne,
   PrimaryGeneratedColumn,
 } from "typeorm";
 import { User } from "./User";
@@ -78,7 +78,7 @@ export class Room {
   })
   players: User[];
 
-  @OneToOne(() => Crossword, { eager: true })
+  @ManyToOne(() => Crossword, { eager: true })
   @JoinColumn()
   crossword: Crossword;
 

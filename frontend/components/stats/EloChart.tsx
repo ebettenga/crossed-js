@@ -18,7 +18,11 @@ export const EloChart: React.FC<EloChartProps> = ({ startDate }) => {
 
     // Sort by date and map to ELO values, then append current ELO
     const data = [...gameStats]
-        .sort((a, b) => new Date(a.room.created_at).getTime() - new Date(b.room.created_at).getTime())
+        .sort((a, b) => {
+            const aTime = new Date(a.room.completed_at ?? a.room.created_at).getTime();
+            const bTime = new Date(b.room.completed_at ?? b.room.created_at).getTime();
+            return aTime - bTime;
+        })
         .map(stat => stat.stats.eloAtGame);
 
     // Append current ELO if it's different from the last ELO in the stats

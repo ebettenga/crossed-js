@@ -531,6 +531,7 @@ export class RoomService {
       type: string;
       status: string;
       created_at: string;
+      completed_at: string | null;
       scores: Record<string, number>;
     };
     stats: {
@@ -570,6 +571,9 @@ export class RoomService {
         type: stats.room.type,
         status: stats.room.status,
         created_at: stats.room.created_at.toISOString(),
+        completed_at: stats.room.completed_at
+          ? stats.room.completed_at.toISOString()
+          : null,
         scores: stats.room.scores,
       },
       stats: {

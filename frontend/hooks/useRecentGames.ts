@@ -8,6 +8,7 @@ export interface RecentGame {
     type: string;
     status: string;
     created_at: string;
+    completed_at: string | null;
     scores: Record<string, number>;
   };
   stats: {
