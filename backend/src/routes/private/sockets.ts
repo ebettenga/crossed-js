@@ -2,7 +2,7 @@ import { FastifyInstance } from "fastify";
 import { RoomService } from "../../services/RoomService";
 import { AuthService } from "../../services/AuthService";
 import { User } from "../../entities/User";
-import { UserNotFoundError } from "../../errors/api";
+import { ForbiddenError, UserNotFoundError } from "../../errors/api";
 import { Socket } from "socket.io";
 import { redisService } from "../../services/RedisService";
 import { createSocketEventService } from "../../services/SocketEventService";
@@ -379,6 +379,9 @@ export default function (
       });
     } catch (error) {
       fastify.log.error(error);
+      if (error instanceof ForbiddenError) {
+        socket.emit("error", { code: "auth/invalid-token" });
+      }
       socket.disconnect();
     }
   });

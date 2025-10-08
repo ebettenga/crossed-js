@@ -29,7 +29,10 @@ export class RoomService {
     this.redisService = new RedisService();
   }
 
-  private async ensureGameStatsEntry(room: Room, user: User): Promise<GameStats> {
+  private async ensureGameStatsEntry(
+    room: Room,
+    user: User,
+  ): Promise<GameStats> {
     const gameStatsRepo = this.ormConnection.getRepository(GameStats);
 
     let stats = await gameStatsRepo.findOne({
@@ -111,12 +114,20 @@ export class RoomService {
     room.players.push(player);
     room.markModified();
 
+    // Ensure newly joined player's active sockets receive future room events
+    fastify.io
+      .in(`user_${player.id}`)
+      .socketsJoin(room.id.toString());
+
     await this.ensureGameStatsEntry(room, player);
 
     const cachedGameInfo = await this.redisService.getGame(room.id.toString());
     if (cachedGameInfo) {
       if (!cachedGameInfo.userGuessCounts[player.id]) {
-        cachedGameInfo.userGuessCounts[player.id] = { correct: 0, incorrect: 0 };
+        cachedGameInfo.userGuessCounts[player.id] = {
+          correct: 0,
+          incorrect: 0,
+        };
       }
       if (!cachedGameInfo.correctGuessDetails) {
         cachedGameInfo.correctGuessDetails = {};
@@ -195,6 +206,11 @@ export class RoomService {
     }
 
     const savedRoom = await this.ormConnection.getRepository(Room).save(room);
+
+    // Ensure the creating player's sockets are subscribed to the room channel
+    fastify.io
+      .in(`user_${player.id}`)
+      .socketsJoin(savedRoom.id.toString());
 
     const stats = await this.ensureGameStatsEntry(savedRoom, player);
     savedRoom.stats = [stats];
@@ -319,7 +335,8 @@ export class RoomService {
       stats.correctGuesses = guessCounts.correct;
       stats.incorrectGuesses = guessCounts.incorrect;
 
-      const guessDetails = cachedGameInfo?.correctGuessDetails?.[stats.userId] ||
+      const guessDetails =
+        cachedGameInfo?.correctGuessDetails?.[stats.userId] ||
         [];
       stats.correctGuessDetails = guessDetails.map((detail) => ({
         row: detail.row,
