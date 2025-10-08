@@ -4,6 +4,7 @@ import { useSocket } from "./socket";
 import { useEffect } from "react";
 import { Room } from "./useJoinRoom";
 import { useRouter } from "expo-router";
+import { useUser } from "./users";
 
 interface ChallengeResponse {
     data: Room;
@@ -13,6 +14,7 @@ export const useChallenge = () => {
     const queryClient = useQueryClient();
     const { socket, isConnected } = useSocket();
     const router = useRouter();
+    const { data: currentUser } = useUser();
 
     useEffect(() => {
         if (!isConnected || !socket) return;
@@ -27,6 +29,25 @@ export const useChallenge = () => {
             socket.off("challenge_received", handleChallengeReceived);
         };
     }, [socket, isConnected]);
+
+    useEffect(() => {
+        if (!socket || !isConnected) return;
+
+        const handleGameStarted = (data: { room: Room }) => {
+            if (!data?.room || !currentUser) return;
+
+            const isParticipant = data.room.players?.some(player => player.id === currentUser.id);
+            if (isParticipant) {
+                router.push(`/game?roomId=${data.room.id}`);
+            }
+        };
+
+        socket.on("game_started", handleGameStarted);
+
+        return () => {
+            socket.off("game_started", handleGameStarted);
+        };
+    }, [socket, isConnected, router, currentUser]);
 
     const { data: challenges = [], refetch: refetchChallenges } = useQuery<Room[]>({
         queryKey: ['challenges', 'pending'],

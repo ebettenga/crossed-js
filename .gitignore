@@ -5,3 +5,5 @@
 backend/dist
 
 /backend/coverage
+
+private_crosswords

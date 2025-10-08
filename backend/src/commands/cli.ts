@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 
 import { program } from "commander";
+import { DataSource } from "typeorm";
 import { loadTestData } from "../scripts/loadTestData";
+import { loadIpuzCrosswords } from "../scripts/loadIpuzCrosswords";
 import { CrosswordService } from "../services/CrosswordService";
 import { AppDataSource } from "../db";
 import { gameInactivityQueue } from "../jobs/queues";
@@ -19,6 +21,38 @@ program
       console.log("Crosswords loaded successfully");
     } catch (error) {
       console.error("Error loading crosswords:", error);
+    }
+  });
+
+program
+  .command("load-ipuz-crosswords")
+  .description("Load IPUZ crosswords into the database")
+  .option("-d, --dir <path>", "Directory that contains .ipuz files")
+  .option(
+    "-b, --base-date <date>",
+    "Base date to assign to the first crossword (YYYY-MM-DD)",
+    "2024-01-01",
+  )
+  .action(async (options) => {
+    let dataSource: DataSource | null = null;
+    try {
+      dataSource = await AppDataSource.initialize();
+      const result = await loadIpuzCrosswords(dataSource, {
+        directory: options.dir,
+        baseDate: options.baseDate,
+      });
+
+      console.log(
+        `Loaded ${result.inserted} crosswords (${result.skipped} skipped) from ${result.directory}`,
+      );
+      await dataSource.destroy();
+      process.exit(0);
+    } catch (error) {
+      if (dataSource) {
+        await dataSource.destroy().catch(() => {});
+      }
+      console.error("Error loading IPUZ crosswords:", error);
+      process.exit(1);
     }
   });
 
