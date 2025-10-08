@@ -315,12 +315,12 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
                                         onPress={() => Linking.openURL(room.crossword.creator_link!)}
                                     >
                                         <Text className="text-[#8B0000] dark:text-[#FF6B6B] underline">
-                                            {room.crossword.created_by}
+                                            {room.crossword.author}
                                         </Text>
                                     </TouchableOpacity>
                                 ) : (
                                     <Text className="text-[#1D2124] dark:text-[#DDE1E5]">
-                                        {room.crossword.created_by}
+                                        {room.crossword.author}
                                     </Text>
                                 )}
                             </Text>
