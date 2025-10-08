@@ -24,8 +24,36 @@ export class RoomService {
     this.eloService = new EloService(
       ormConnection.getRepository(User),
       ormConnection.getRepository(Room),
+      ormConnection.getRepository(GameStats),
     );
     this.redisService = new RedisService();
+  }
+
+  private async ensureGameStatsEntry(room: Room, user: User): Promise<GameStats> {
+    const gameStatsRepo = this.ormConnection.getRepository(GameStats);
+
+    let stats = await gameStatsRepo.findOne({
+      where: { roomId: room.id, userId: user.id },
+    });
+
+    if (!stats) {
+      stats = gameStatsRepo.create({
+        user,
+        room,
+        userId: user.id,
+        roomId: room.id,
+        eloAtGame: user.eloRating,
+        correctGuesses: 0,
+        incorrectGuesses: 0,
+        correctGuessDetails: [],
+        isWinner: false,
+        winStreak: 0,
+      });
+
+      stats = await gameStatsRepo.save(stats);
+    }
+
+    return stats;
   }
 
   async getRoomById(roomId: number): Promise<Room> {
@@ -68,19 +96,7 @@ export class RoomService {
       await this.joinExistingRoom(room, user.id);
       return room;
     } else {
-      const newRoom = await this.createRoom(user.id, difficulty, type);
-      //Create new GameStats object for the new room.
-      const gameStats = new GameStats();
-      gameStats.user = user;
-      gameStats.room = newRoom;
-      gameStats.userId = user.id;
-      gameStats.roomId = newRoom.id;
-      gameStats.eloAtGame = user.eloRating;
-      gameStats.correctGuesses = 0;
-      gameStats.incorrectGuesses = 0;
-      gameStats.correctGuessDetails = [];
-
-      return;
+      return await this.createRoom(user.id, difficulty, type);
     }
   }
 
@@ -94,6 +110,22 @@ export class RoomService {
 
     room.players.push(player);
     room.markModified();
+
+    await this.ensureGameStatsEntry(room, player);
+
+    const cachedGameInfo = await this.redisService.getGame(room.id.toString());
+    if (cachedGameInfo) {
+      if (!cachedGameInfo.userGuessCounts[player.id]) {
+        cachedGameInfo.userGuessCounts[player.id] = { correct: 0, incorrect: 0 };
+      }
+      if (!cachedGameInfo.correctGuessDetails) {
+        cachedGameInfo.correctGuessDetails = {};
+      }
+      if (!cachedGameInfo.correctGuessDetails[player.id]) {
+        cachedGameInfo.correctGuessDetails[player.id] = [];
+      }
+      this.redisService.cacheGame(room.id.toString(), cachedGameInfo);
+    }
 
     // If room is full based on game type, change status to playing
     const maxPlayers = config.game.maxPlayers[room.type];
@@ -163,6 +195,9 @@ export class RoomService {
     }
 
     const savedRoom = await this.ormConnection.getRepository(Room).save(room);
+
+    const stats = await this.ensureGameStatsEntry(savedRoom, player);
+    savedRoom.stats = [stats];
 
     // Only add timeout job for non-time trial games
     if (type !== "time_trial") {
@@ -272,10 +307,26 @@ export class RoomService {
       },
     });
 
+    const cachedGameInfo = await this.redisService.getGame(room.id.toString());
+
     // Update win streaks and winner status
     for (const stats of allGameStats) {
-      stats.correctGuesses = room.scores[stats.userId];
-      stats.incorrectGuesses = room.scores[stats.userId];
+      const guessCounts = cachedGameInfo?.userGuessCounts?.[stats.userId] || {
+        correct: 0,
+        incorrect: 0,
+      };
+
+      stats.correctGuesses = guessCounts.correct;
+      stats.incorrectGuesses = guessCounts.incorrect;
+
+      const guessDetails = cachedGameInfo?.correctGuessDetails?.[stats.userId] ||
+        [];
+      stats.correctGuessDetails = guessDetails.map((detail) => ({
+        row: detail.row,
+        col: detail.col,
+        letter: detail.letter,
+        timestamp: new Date(detail.timestamp),
+      }));
 
       // If game was forfeited, non-forfeiting players are winners
       const isWinner = forfeitedBy !== undefined
@@ -349,13 +400,9 @@ export class RoomService {
       throw new Error("User is not a participant in this room");
     }
 
-    // Create or update game stats for all players if they don't exist
-    const gameStatsRepo = this.ormConnection.getRepository(GameStats);
+    // Ensure game stats exist for all players before ending the game
     for (const player of room.players) {
-      let gameStats = await gameStatsRepo.findOne({
-        where: { userId: player.id, roomId },
-      });
-      //used to have gameStats created here
+      await this.ensureGameStatsEntry(room, player);
     }
 
     room.markModified();
@@ -406,6 +453,19 @@ export class RoomService {
       cachedGameInfo = room.createRoomCache();
     }
 
+    if (!cachedGameInfo.userGuessCounts[userId]) {
+      cachedGameInfo.userGuessCounts[userId] = { correct: 0, incorrect: 0 };
+    }
+    if (!cachedGameInfo.correctGuessDetails) {
+      cachedGameInfo.correctGuessDetails = {};
+    }
+    if (!cachedGameInfo.correctGuessDetails[userId]) {
+      cachedGameInfo.correctGuessDetails[userId] = [];
+    }
+    if (cachedGameInfo.scores[userId] === undefined) {
+      cachedGameInfo.scores[userId] = 0;
+    }
+
     // Check if letter is already found at this position
     const letterIndex = x * room.crossword.col_size + y;
     if (cachedGameInfo.foundLetters[letterIndex] !== "*") {
@@ -424,6 +484,12 @@ export class RoomService {
       cachedGameInfo.lastActivityAt = Date.now();
 
       cachedGameInfo.userGuessCounts[userId].correct++;
+      cachedGameInfo.correctGuessDetails[userId].push({
+        row: x,
+        col: y,
+        letter: guess,
+        timestamp: Date.now(),
+      });
 
       // Update room state
       cachedGameInfo.foundLetters[x * room.crossword.col_size + y] = guess;

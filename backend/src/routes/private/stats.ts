@@ -2,6 +2,7 @@ import { FastifyInstance } from "fastify";
 import { EloService } from "../../services/EloService";
 import { User } from "../../entities/User";
 import { Room } from "../../entities/Room";
+import { GameStats } from "../../entities/GameStats";
 
 export default function (
     fastify: FastifyInstance,
@@ -10,7 +11,8 @@ export default function (
 ): void {
     const eloService = new EloService(
         fastify.orm.getRepository(User),
-        fastify.orm.getRepository(Room)
+        fastify.orm.getRepository(Room),
+        fastify.orm.getRepository(GameStats)
     );
 
     fastify.get<{

@@ -8,4 +8,5 @@ export const useActiveUsers = () => useQuery({
         return response.count;
     },
     refetchInterval: 60000, // Refetch every minute
+    refetchIntervalInBackground: true,
 });

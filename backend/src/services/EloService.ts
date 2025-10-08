@@ -1,5 +1,5 @@
 import { User } from "../entities/User";
-import { Repository, In } from "typeorm";
+import { Repository } from "typeorm";
 import { config } from "../config/config";
 import { Room } from "../entities/Room";
 import { GameStats } from "../entities/GameStats";
@@ -11,9 +11,10 @@ export class EloService {
     private readonly GAMES_PLAYED_DAMPENING = config.game.elo.gamesPlayedDampening;
 
     constructor(
-        private userRepository: Repository<User>,
-        private roomRepository: Repository<Room>
-    ) {}
+    private userRepository: Repository<User>,
+    private roomRepository: Repository<Room>,
+    private gameStatsRepository: Repository<GameStats>
+  ) {}
 
     /**
      * Calculate the expected score (probability of winning)
@@ -37,7 +38,7 @@ export class EloService {
     /**
      * Calculate the K-factor based on games played and win streak
      */
-    private async calculateKFactor(stats: GameStats, userId: number): Promise<number> {
+    private async calculateKFactor(stats: GameStats | undefined, userId: number): Promise<number> {
         const gamesPlayed = await this.getGamesPlayed(userId);
         const winStreak = stats?.winStreak || 0;
 
@@ -58,6 +59,55 @@ export class EloService {
      */
     private calculateTeamRating(teamMembers: User[]): number {
         return teamMembers.reduce((sum, player) => sum + player.eloRating, 0) / teamMembers.length;
+    }
+
+    private getStatsForRoom(player: User, roomId: number): GameStats | undefined {
+        if (!player.gameStats || player.gameStats.length === 0) {
+            return undefined;
+        }
+
+        const currentGameStats = player.gameStats.find(stat => stat.roomId === roomId);
+        if (currentGameStats) {
+            return currentGameStats;
+        }
+
+        let latestStats: GameStats | undefined;
+
+        for (const stat of player.gameStats) {
+            if (!latestStats) {
+                latestStats = stat;
+                continue;
+            }
+
+            if (stat.createdAt && latestStats.createdAt) {
+                if (stat.createdAt > latestStats.createdAt) {
+                    latestStats = stat;
+                }
+            } else if (stat.createdAt && !latestStats.createdAt) {
+                latestStats = stat;
+            }
+        }
+
+        return latestStats;
+    }
+
+    async getUserGameStats(userId: number, startDate?: Date, endDate?: Date): Promise<GameStats[]> {
+        const query = this.gameStatsRepository
+            .createQueryBuilder('stats')
+            .leftJoinAndSelect('stats.room', 'room')
+            .where('stats.userId = :userId', { userId })
+            .andWhere('room.status = :status', { status: 'finished' })
+            .orderBy('stats.createdAt', 'DESC');
+
+        if (startDate) {
+            query.andWhere('stats.createdAt >= :startDate', { startDate });
+        }
+
+        if (endDate) {
+            query.andWhere('stats.createdAt <= :endDate', { endDate });
+        }
+
+        return query.getMany();
     }
 
 
@@ -88,7 +138,7 @@ export class EloService {
 
         switch (room.type) {
             case '1v1':
-                return this.update1v1Ratings(winners[0], losers[0]);
+                return this.update1v1Ratings(room, winners[0], losers[0]);
             case '2v2':
                 return this.update2v2Ratings(room, winners, losers);
             case 'free4all':
@@ -101,12 +151,12 @@ export class EloService {
     /**
      * Update ratings for 1v1 games
      */
-    private async update1v1Ratings(winner: User, loser: User): Promise<Map<number, number>> {
+    private async update1v1Ratings(room: Room, winner: User, loser: User): Promise<Map<number, number>> {
         const expectedWinnerScore = this.calculateExpectedScore(winner.eloRating, loser.eloRating);
         const expectedLoserScore = this.calculateExpectedScore(loser.eloRating, winner.eloRating);
 
-        const winnerStats = winner.gameStats[0];
-        const loserStats = loser.gameStats[0];
+        const winnerStats = this.getStatsForRoom(winner, room.id);
+        const loserStats = this.getStatsForRoom(loser, room.id);
 
         const [winnerK, loserK] = await Promise.all([
             this.calculateKFactor(winnerStats, winner.id),
@@ -149,7 +199,7 @@ export class EloService {
 
         // Update ratings for team 1 (winners)
         for (const player of team1) {
-            const stats = player.gameStats[0];
+            const stats = this.getStatsForRoom(player, room.id);
             const kFactor = await this.calculateKFactor(stats, player.id);
             const newRating = Math.round(
                 player.eloRating + kFactor * (1 - expectedTeam1Score)
@@ -159,7 +209,7 @@ export class EloService {
 
         // Update ratings for team 2 (losers)
         for (const player of team2) {
-            const stats = player.gameStats[0];
+            const stats = this.getStatsForRoom(player, room.id);
             const kFactor = await this.calculateKFactor(stats, player.id);
             const newRating = Math.round(
                 player.eloRating + kFactor * (0 - expectedTeam2Score)
@@ -214,7 +264,7 @@ export class EloService {
             const normalizedActualScore = actualScore / (sortedPlayers.length - 1);
 
             // Calculate new rating
-            const stats = player.gameStats[0];
+            const stats = this.getStatsForRoom(player, room.id);
             const kFactor = await this.calculateKFactor(stats, player.id);
 
             const newRating = Math.round(

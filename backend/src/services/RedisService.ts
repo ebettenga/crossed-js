@@ -2,7 +2,6 @@ import Redis from "ioredis";
 import { config } from "../config/config";
 import { v4 as uuidv4 } from "uuid";
 
-
 export type CachedGameInfo = {
   lastActivityAt: number;
   foundLetters: string[];
@@ -14,8 +13,16 @@ export type CachedGameInfo = {
       correct: number;
       incorrect: number;
     };
-  }
-}
+  };
+  correctGuessDetails: {
+    [key: string]: {
+      row: number;
+      col: number;
+      letter: string;
+      timestamp: number;
+    }[];
+  };
+};
 
 export class RedisService {
   private redis: Redis;
@@ -31,10 +38,7 @@ export class RedisService {
     this.publisher = new Redis(config.redis.default);
     this.subscriber = new Redis(config.redis.default);
     this.redis = new Redis(config.redis.default);
-
   }
-
-
 
   // Get the server ID
   getServerId(): string {

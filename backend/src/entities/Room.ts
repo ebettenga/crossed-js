@@ -120,24 +120,27 @@ export class Room {
   }
 
   createRoomCache(): CachedGameInfo {
+    const initialGuessCounts = this.players.reduce((acc, player) => {
+      acc[player.id] = {
+        correct: 0,
+        incorrect: 0,
+      };
+      return acc;
+    }, {} as CachedGameInfo["userGuessCounts"]);
+
+    const initialGuessDetails = this.players.reduce((acc, player) => {
+      acc[player.id] = [];
+      return acc;
+    }, {} as CachedGameInfo["correctGuessDetails"]);
+
     return {
       lastActivityAt: Date.now(),
-      foundLetters: this.found_letters,
-      scores: this.scores,
-      userGuessCounts: {
-        // Initialize user guess counts
-        ...this.players.reduce((acc, player) => {
-          return {
-            ...acc,
-            [player.id]: {
-              correct: 0,
-              incorrect: 0,
-            },
-          };
-        }, {}),
-      },
+      foundLetters: [...this.found_letters],
+      scores: { ...this.scores },
+      userGuessCounts: initialGuessCounts,
+      correctGuessDetails: initialGuessDetails,
+    };
   }
-}
 
   toJSON(foundLetters?: string[], scores?: any): any {
     // If cache exists and room hasn't been modified, return cached view
