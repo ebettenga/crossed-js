@@ -2,12 +2,12 @@ import "reflect-metadata";
 import fastifySecureSession from "@fastify/secure-session";
 import fastifyIO from "fastify-socket.io";
 import fastifyCors from "@fastify/cors";
-import { AppDataSource, registerDb } from "./db";
+import AppDataSource, { registerDb } from "./db";
 import { config } from "./config/config";
 import fs from "fs";
 import path, { join } from "path";
 import { fastify } from "./fastify";
-import fastifyPrintRoutes from 'fastify-print-routes'
+import fastifyPrintRoutes from "fastify-print-routes";
 
 // get the directory name of the current module
 import { fileURLToPath } from "url";
@@ -53,8 +53,8 @@ fastify.register(fastifyAutoload, {
 });
 
 async function startServer() {
-  if (config.mode === 'worker') {
-    console.log('Starting in worker mode...');
+  if (config.mode === "worker") {
+    console.log("Starting in worker mode...");
 
     // Ensure database is initialized
     if (!AppDataSource.isInitialized) {
@@ -67,8 +67,8 @@ async function startServer() {
     initializeWorkers(AppDataSource, fastify.io);
 
     // Handle graceful shutdown
-    process.on('SIGTERM', async () => {
-      console.log('Shutting down workers...');
+    process.on("SIGTERM", async () => {
+      console.log("Shutting down workers...");
       await closeWorkers();
       if (AppDataSource.isInitialized) {
         await AppDataSource.destroy();
@@ -96,6 +96,6 @@ declare module "fastify" {
 }
 
 startServer().catch((err) => {
-  console.error('Failed to start server:', err);
+  console.error("Failed to start server:", err);
   process.exit(1);
 });

@@ -6,10 +6,6 @@ import { Room } from "./useJoinRoom";
 import { useRouter } from "expo-router";
 import { useUser } from "./users";
 
-interface ChallengeResponse {
-    data: Room;
-}
-
 export const useChallenge = () => {
     const queryClient = useQueryClient();
     const { socket, isConnected } = useSocket();
@@ -57,8 +53,7 @@ export const useChallenge = () => {
 
     const sendChallenge = useMutation({
         mutationFn: async ({ challengedId, difficulty }: { challengedId: number; difficulty: string }) => {
-            const response = await post('/rooms/challenge', { challengedId, difficulty }) as ChallengeResponse;
-            return response.data;
+            return post<Room>('/rooms/challenge', { challengedId, difficulty });
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['rooms'] });
@@ -68,21 +63,20 @@ export const useChallenge = () => {
 
     const acceptChallenge = useMutation({
         mutationFn: async (roomId: number) => {
-
-            const response = await post(`/rooms/challenge/${roomId}/accept`, { roomId }) as ChallengeResponse;
-            return response.data;
+            return post<Room>(`/rooms/challenge/${roomId}/accept`, { roomId });
         },
         onSuccess: (room) => {
             queryClient.invalidateQueries({ queryKey: ['rooms'] });
             queryClient.invalidateQueries({ queryKey: ['challenges', 'pending'] });
-            router.push(`/game?roomId=${room.id}`);
+            if (room?.id) {
+                router.push(`/game?roomId=${room.id}`);
+            }
         },
     });
 
     const rejectChallenge = useMutation({
         mutationFn: async (roomId: number) => {
-            const response = await post(`/rooms/challenge/${roomId}/reject`, { roomId }) as ChallengeResponse;
-            return response.data;
+            return post<Room>(`/rooms/challenge/${roomId}/reject`, { roomId });
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['rooms'] });
