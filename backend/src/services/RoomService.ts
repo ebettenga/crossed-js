@@ -28,7 +28,7 @@ export class RoomService {
     );
     this.redisService = new RedisService();
   }
-  å;
+
   private async ensureGameStatsEntry(
     room: Room,
     user: User,
@@ -389,7 +389,7 @@ export class RoomService {
         });
       }
     } catch (error) {
-      fastify.log.error("Failed to update ELO ratings:", error);
+      fastify.log.error({ err: error }, "Failed to update ELO ratings");
     }
 
     await this.ormConnection.getRepository(Room).save(room);
@@ -455,7 +455,7 @@ export class RoomService {
   }
 
   async handleGuess(
-    room: Room,
+    roomId: number,
     userId: number,
     x: number,
     y: number,
@@ -464,12 +464,20 @@ export class RoomService {
   ): Promise<Room> {
     const manager = entityManager || this.ormConnection.manager;
 
+    // Load room (players and crossword are eager on the entity)
+    let room = await manager.getRepository(Room).findOne({
+      where: { id: roomId },
+    });
+    if (!room) throw new NotFoundError("Room not found");
+
+    // Load or initialize game cache
     let cachedGameInfo = await this.redisService.getGame(room.id.toString());
     if (!cachedGameInfo) {
-      // make a cache s
+      // Initialize cache from the current DB state
       cachedGameInfo = room.createRoomCache();
     }
 
+    // Ensure user tracking structures exist
     if (!cachedGameInfo.userGuessCounts[userId]) {
       cachedGameInfo.userGuessCounts[userId] = { correct: 0, incorrect: 0 };
     }
@@ -483,7 +491,7 @@ export class RoomService {
       cachedGameInfo.scores[userId] = 0;
     }
 
-    // Check if letter is already found at this position
+    // Compute letter index
     const letterIndex = x * room.crossword.col_size + y;
     if (cachedGameInfo.foundLetters[letterIndex] !== "*") {
       return room;
@@ -508,8 +516,8 @@ export class RoomService {
         timestamp: Date.now(),
       });
 
-      // Update room state
-      cachedGameInfo.foundLetters[x * room.crossword.col_size + y] = guess;
+      // Update board + score
+      cachedGameInfo.foundLetters[letterIndex] = guess;
       cachedGameInfo.scores[userId] = (cachedGameInfo.scores[userId] || 0) +
         config.game.points.correct;
     } else {
@@ -518,16 +526,31 @@ export class RoomService {
         config.game.points.incorrect;
     }
 
-    // Check if game is won
-    if (this.isGameFinished(room)) {
-      room = this.addCacheToRoom(room, cachedGameInfo);
+    // Persist authoritative state to DB to avoid cache reinitialization wiping progress
+    room.found_letters = cachedGameInfo.foundLetters;
+    room.scores = cachedGameInfo.scores;
+    if (cachedGameInfo.lastActivityAt) {
+      room.last_activity_at = new Date(cachedGameInfo.lastActivityAt);
+    }
+
+    // Determine if the game is finished based on the updated state
+    const finished = !cachedGameInfo.foundLetters.includes("*");
+
+    if (finished) {
+      // Mark modified so toJSON invalidates cache
+      room.markModified();
       await this.onGameEnd(room);
     } else {
       // Save room if game is not finished
-      this.redisService.cacheGame(room.id.toString(), cachedGameInfo);
+      await manager.getRepository(Room).save(room);
     }
 
-    return this.addCacheToRoom(room, cachedGameInfo);
+    // Update cache after DB write
+    this.redisService.cacheGame(room.id.toString(), cachedGameInfo);
+
+    // Invalidate view cache so clients receive updated view
+    room.markModified();
+    return room;
   }
 
   addCacheToRoom(room: Room, cachedGameInfo: CachedGameInfo): Room {

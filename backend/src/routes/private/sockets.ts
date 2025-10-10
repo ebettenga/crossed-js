@@ -100,7 +100,7 @@ export default function (
         });
       }
     } catch (error) {
-      fastify.log.error("Error handling Redis message:", error);
+      fastify.log.error({ err: error }, "Error handling Redis message");
     }
   });
 
@@ -222,71 +222,25 @@ export default function (
       });
 
       socket.on("guess", async ({ roomId, x, y, guess }) => {
-        // Start a transaction
-        const queryRunner = fastify.orm.createQueryRunner();
-        await queryRunner.connect();
-
         try {
-          // Start transaction before any database operations
-          await queryRunner.startTransaction();
-
-          // First get and lock just the room
-          const room = await queryRunner.manager
-            .getRepository(Room)
-            .createQueryBuilder("room")
-            .setLock("pessimistic_write")
-            .where("room.id = :roomId", { roomId })
-            .getOne();
-
-          if (!room) {
-            // Don't throw, just return after rolling back
-            await queryRunner.rollbackTransaction();
-            socket.emit("error", { message: "Room not found" });
-            return;
-          }
-
-          // Now get the related crossword data and players in a separate query
-          const roomWithRelations = await queryRunner.manager
-            .getRepository(Room)
-            .createQueryBuilder("room")
-            .leftJoinAndSelect("room.crossword", "crossword")
-            .leftJoinAndSelect("room.players", "players")
-            .where("room.id = :roomId", { roomId })
-            .getOne();
-
-          // Merge all the relations into our locked room object
-          Object.assign(room, {
-            crossword: roomWithRelations.crossword,
-            players: roomWithRelations.players
-          });
-
-          // Process the guess with the locked room
+          // Process guess without an explicit DB transaction here
           const updatedRoom = await roomService.handleGuess(
-            room,
+            roomId,
             user.id,
             x,
             y,
             guess,
-            queryRunner.manager
           );
 
-          // Commit the transaction
-          await queryRunner.commitTransaction();
-
           // Broadcast updated room state to all players
-          const roomJSON = updatedRoom.toJSON()
-          roomJSON.scores =
-          await socketEventService.emitToRoom(roomId, "room",roomJSON );
+          const roomJSON = updatedRoom.toJSON();
+          // Emit locally to connected clients on this server
+          fastify.io.to(roomId.toString()).emit("room", roomJSON);
+          // Also publish to other servers
+          await socketEventService.emitToRoom(roomId, "room", roomJSON);
         } catch (error) {
-          // Only try to rollback if we successfully started the transaction
-          if (queryRunner.isTransactionActive) {
-            await queryRunner.rollbackTransaction();
-          }
-          console.error("Error handling guess:", error);
+          fastify.log.error({ err: error }, "Error handling guess");
           socket.emit("error", { message: "Failed to process guess" });
-        } finally {
-          // Always release the queryRunner
-          await queryRunner.release();
         }
       });
 
@@ -346,7 +300,7 @@ export default function (
           socket.join(room.id.toString());
           fastify.io.to(room.id.toString()).emit("room", room.toJSON());
         } catch (error) {
-          fastify.log.error(error);
+          fastify.log.error({ err: error });
           socket.emit("error", { message: "Failed to create challenge" });
         }
       });
@@ -358,7 +312,7 @@ export default function (
           socket.join(room.id.toString());
           fastify.io.to(room.id.toString()).emit("room", room.toJSON());
         } catch (error) {
-          fastify.log.error(error);
+          fastify.log.error({ err: error });
           socket.emit("error", { message: "Failed to accept challenge" });
         }
       });
@@ -369,7 +323,7 @@ export default function (
           const room = await roomService.rejectChallenge(roomId);
           fastify.io.to(room.id.toString()).emit("room", room.toJSON());
         } catch (error) {
-          fastify.log.error(error);
+          fastify.log.error({ err: error });
           socket.emit("error", { message: "Failed to reject challenge" });
         }
       });
@@ -378,7 +332,7 @@ export default function (
         socket.emit("pong");
       });
     } catch (error) {
-      fastify.log.error(error);
+      fastify.log.error({ err: error });
       if (error instanceof ForbiddenError) {
         socket.emit("error", { code: "auth/invalid-token" });
       }

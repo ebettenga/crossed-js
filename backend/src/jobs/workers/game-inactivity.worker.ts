@@ -95,7 +95,6 @@ export const createGameInactivityWorker = (
         const room = await queryRunner.manager
           .getRepository(Room)
           .createQueryBuilder("room")
-          .setLock("pessimistic_write")
           .where("room.id = :roomId", { roomId: job.data.roomId })
           .getOne();
 
@@ -104,27 +103,26 @@ export const createGameInactivityWorker = (
           throw new NotFoundError("Room not found");
         }
 
-          // Now get the related crossword data and players in a separate query
-          const roomWithRelations = await queryRunner.manager
-            .getRepository(Room)
-            .createQueryBuilder("room")
-            .leftJoinAndSelect("room.crossword", "crossword")
-            .leftJoinAndSelect("room.players", "players")
-            .where("room.id = :roomId", { roomId: room.id })
-            .getOne();
+        // Now get the related crossword data and players in a separate query
+        const roomWithRelations = await queryRunner.manager
+          .getRepository(Room)
+          .createQueryBuilder("room")
+          .leftJoinAndSelect("room.crossword", "crossword")
+          .leftJoinAndSelect("room.players", "players")
+          .where("room.id = :roomId", { roomId: room.id })
+          .getOne();
 
-          // Merge all the relations into our locked room object
-          Object.assign(room, {
-            crossword: roomWithRelations.crossword,
-            players: roomWithRelations.players
-          });
+        // Merge all the relations into our locked room object
+        Object.assign(room, {
+          crossword: roomWithRelations.crossword,
+          players: roomWithRelations.players,
+        });
 
         let cachedGameInfo = await redisService.getGame(room.id.toString());
         if (!cachedGameInfo) {
           // handle creating new cache
           cachedGameInfo = room.createRoomCache();
         }
-
 
         // Only process if the game is still active
         if (room.status === "playing") {
@@ -163,14 +161,14 @@ export const createGameInactivityWorker = (
               `Room ${room.id} has no last_activity_at, setting to now`,
             );
             cachedGameInfo.lastActivityAt = Date.now();
+            room.last_activity_at = new Date(cachedGameInfo.lastActivityAt);
             await queryRunner.manager.save(room);
           }
 
-          // If there's been no activity since the last check OR if the job's timestamp is older than the activity timestamp
-          const isInactive =
-            job.data.lastActivityTimestamp === cachedGameInfo.lastActivityAt ||
-            (job.data.lastActivityTimestamp && cachedGameInfo.lastActivityAt &&
-              job.data.lastActivityTimestamp < cachedGameInfo.lastActivityAt);
+          // Reveal only if no new activity has occurred since this job was scheduled
+          const isInactive = job.data.lastActivityTimestamp !== undefined &&
+            cachedGameInfo.lastActivityAt !== undefined &&
+            job.data.lastActivityTimestamp === cachedGameInfo.lastActivityAt;
 
           if (isInactive) {
             console.log(
@@ -184,7 +182,8 @@ export const createGameInactivityWorker = (
 
             if (letterToReveal) {
               // Reveal the letter
-              cachedGameInfo.foundLetters[letterToReveal.index] = letterToReveal.letter;
+              cachedGameInfo.foundLetters[letterToReveal.index] =
+                letterToReveal.letter;
               cachedGameInfo.lastActivityAt = Date.now();
 
               // Check if all letters have been revealed
@@ -194,10 +193,10 @@ export const createGameInactivityWorker = (
                 isGameFinished,
               );
               if (isGameFinished) {
-                roomService.onGameEnd(room);
+                await roomService.onGameEnd(room);
               }
 
-              await queryRunner.manager.save(room);
+              // Save moved after state updates below
 
               // Notify players about inactivity and revealed letter
               await socketEventService.emitToRoom(room.id, "game_inactive", {
@@ -213,14 +212,19 @@ export const createGameInactivityWorker = (
               room.last_activity_at = new Date(cachedGameInfo.lastActivityAt);
               room.found_letters = cachedGameInfo.foundLetters;
               room.scores = cachedGameInfo.scores;
+              room.markModified();
+              await queryRunner.manager.save(room);
 
               // Send updated room state to all players
               console.log(
                 `Sending updated room state to all players for room ${room.id}`,
               );
               await socketEventService.emitToRoom(room.id, "room", {
-                ...room.toJSON(),
-                revealedLetterIndex: letterToReveal.index
+                ...room.toJSON(
+                  cachedGameInfo.foundLetters,
+                  cachedGameInfo.scores,
+                ),
+                revealedLetterIndex: letterToReveal.index,
               });
             } else {
               console.log(`No unsolved letters found for room ${room.id}`);
