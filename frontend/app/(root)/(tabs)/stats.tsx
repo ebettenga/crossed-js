@@ -41,6 +41,7 @@ const GameRow: React.FC<GameRowProps> = ({ game, userId }) => {
     const { isEloVisible } = useEloVisibility();
     const isWinner = game.room.scores[userId] === Math.max(...Object.values(game.room.scores));
     const userScore = game.room.scores[userId];
+    const completedAt = game.room.completed_at ?? game.room.created_at;
 
     return (
         <View className="bg-neutral-50 dark:bg-neutral-800 p-4 rounded-xl border border-neutral-200 dark:border-neutral-700">
@@ -50,7 +51,7 @@ const GameRow: React.FC<GameRowProps> = ({ game, userId }) => {
                         {isWinner ? 'Victory' : 'Defeat'}
                     </Text>
                     <Text className="text-sm text-[#666666] dark:text-neutral-400 font-['Times_New_Roman']">
-                        {formatDistanceToNow(new Date(game.room.created_at), { addSuffix: true })}
+                        {formatDistanceToNow(new Date(completedAt), { addSuffix: true })}
                     </Text>
                 </View>
                 <View className="flex-row items-center gap-2">

@@ -41,7 +41,7 @@ export const CluesButton: React.FC<CluesButtonProps> = ({
                     onCluePress(square, isAcrossMode);
                     setIsCluesModalVisible(false);
                 }}
-            /> }
+            />}
         </View>
     );
 };

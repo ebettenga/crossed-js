@@ -26,7 +26,11 @@ export const PageHeader = () => {
 
     // Calculate ELO difference and games played
     const { eloChange, isEloUp, eloChangeColor } = useMemo(() => {
-        const oldestGame = weeklyStats?.length ? weeklyStats.reduce((min, game) => new Date(game.room.created_at) < new Date(min.room.created_at) ? game : min, weeklyStats[0]) : null;
+        const oldestGame = weeklyStats?.length ? weeklyStats.reduce((min, game) => {
+            const gameTime = new Date(game.room.completed_at ?? game.room.created_at);
+            const minTime = new Date(min.room.completed_at ?? min.room.created_at);
+            return gameTime < minTime ? game : min;
+        }, weeklyStats[0]) : null;
         const change = oldestGame ? user.eloRating - oldestGame.stats.eloAtGame : 0;
         const up = change > 0;
         return {

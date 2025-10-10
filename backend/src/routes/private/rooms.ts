@@ -148,5 +148,32 @@ export default function (
     }));
   });
 
+  // Get time-trial leaderboard for a specific room's crossword
+  fastify.get<{
+    Params: { roomId: string };
+    Querystring: { limit?: string };
+  }>("/rooms/:roomId/leaderboard/time-trial", async (request, reply) => {
+    const { roomId } = request.params;
+    const { limit } = request.query;
+    const limitNum = limit ? parseInt(limit, 10) : 10;
+
+    const room = await roomService.getRoomById(parseInt(roomId, 10));
+    if (!room) {
+      reply.code(404).send({ error: "Room not found" });
+      return;
+    }
+    if (room.type !== "time_trial") {
+      reply.code(400).send({
+        error: "Leaderboard is only available for time_trial games",
+      });
+      return;
+    }
+
+    const leaderboard = await roomService.getTimeTrialLeaderboard(
+      room.id,
+      limitNum,
+    );
+    reply.send(leaderboard);
+  });
   next();
 }

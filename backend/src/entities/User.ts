@@ -1,4 +1,12 @@
-import { Column, Entity, PrimaryGeneratedColumn, OneToOne, ManyToMany, OneToMany, AfterLoad } from "typeorm";
+import {
+  AfterLoad,
+  Column,
+  Entity,
+  ManyToMany,
+  OneToMany,
+  OneToOne,
+  PrimaryGeneratedColumn,
+} from "typeorm";
 import { Room } from "./Room";
 import { GameStats } from "./GameStats";
 
@@ -45,16 +53,16 @@ export class User {
   @Column("text", { nullable: true })
   photoContentType?: string;
 
-  @Column("enum", { enum: ['online', 'offline'], default: 'offline' })
-  status!: 'online' | 'offline';
+  @Column("enum", { enum: ["online", "offline"], default: "offline" })
+  status!: "online" | "offline";
 
   @Column("simple-json", { nullable: true, select: false })
   attributes?: { key: string; value: string }[];
 
-  @Column({ type: 'integer', default: 1200 })
+  @Column({ type: "integer", default: 1200 })
   eloRating!: number;
 
-  @OneToMany(() => GameStats, stats => stats.user, { eager: true })
+  @OneToMany(() => GameStats, (stats) => stats.user, { eager: true })
   gameStats!: GameStats[];
 
   // Virtual properties for statistics
@@ -69,15 +77,21 @@ export class User {
 
     // Calculate games won and lost
     const totalGames = this.gameStats.length;
-    this.gamesWon = this.gameStats.filter(stat => stat.isWinner).length;
+    this.gamesWon = this.gameStats.filter((stat) => stat.isWinner).length;
     this.gamesLost = totalGames - this.gamesWon;
 
     // Calculate guess accuracy
-    const totalGuesses = this.gameStats.reduce((sum, stat) =>
-        sum + stat.correctGuesses + stat.incorrectGuesses, 0);
-    const correctGuesses = this.gameStats.reduce((sum, stat) =>
-        sum + stat.correctGuesses, 0);
-    this.guessAccuracy = totalGuesses > 0 ? (correctGuesses / totalGuesses) * 100 : 0;
+    const totalGuesses = this.gameStats.reduce(
+      (sum, stat) => sum + stat.correctGuesses + stat.incorrectGuesses,
+      0,
+    );
+    const correctGuesses = this.gameStats.reduce(
+      (sum, stat) => sum + stat.correctGuesses,
+      0,
+    );
+    this.guessAccuracy = totalGuesses > 0
+      ? (correctGuesses / totalGuesses) * 100
+      : 0;
 
     // Calculate win rate
     this.winRate = totalGames > 0 ? (this.gamesWon / totalGames) * 100 : 0;
@@ -91,12 +105,16 @@ export class User {
       gamesLost: this.gamesLost || 0,
       guessAccuracy: Math.round(this.guessAccuracy || 0),
       winRate: Math.round(this.winRate || 0),
-      photo: this.photo ? `data:${this.photoContentType};base64,${this.photo.toString('base64')}` : null,
+      photo: this.photo
+        ? `data:${this.photoContentType};base64,${
+          this.photo.toString("base64")
+        }`
+        : null,
       photoContentType: undefined,
-      status: this.status || 'offline',
+      status: this.status || "offline",
     };
   }
 
-  @ManyToMany(() => Room, room => room.players)
+  @ManyToMany(() => Room, (room) => room.players)
   rooms!: Room[];
 }

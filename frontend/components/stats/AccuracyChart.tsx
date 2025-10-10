@@ -18,7 +18,11 @@ export const AccuracyChart: React.FC<AccuracyChartProps> = ({ startDate }) => {
 
     // Sort by date and calculate accuracy for each game
     const data = [...gameStats]
-        .sort((a, b) => new Date(a.room.created_at).getTime() - new Date(b.room.created_at).getTime())
+        .sort((a, b) => {
+            const aTime = new Date(a.room.completed_at ?? a.room.created_at).getTime();
+            const bTime = new Date(b.room.completed_at ?? b.room.created_at).getTime();
+            return aTime - bTime;
+        })
         .map(stat => {
             const total = stat.stats.correctGuesses + stat.stats.incorrectGuesses;
             return total > 0 ? (stat.stats.correctGuesses / total) * 100 : 0;

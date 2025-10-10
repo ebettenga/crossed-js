@@ -24,8 +24,39 @@ export class RoomService {
     this.eloService = new EloService(
       ormConnection.getRepository(User),
       ormConnection.getRepository(Room),
+      ormConnection.getRepository(GameStats),
     );
     this.redisService = new RedisService();
+  }
+
+  private async ensureGameStatsEntry(
+    room: Room,
+    user: User,
+  ): Promise<GameStats> {
+    const gameStatsRepo = this.ormConnection.getRepository(GameStats);
+
+    let stats = await gameStatsRepo.findOne({
+      where: { roomId: room.id, userId: user.id },
+    });
+
+    if (!stats) {
+      stats = gameStatsRepo.create({
+        user,
+        room,
+        userId: user.id,
+        roomId: room.id,
+        eloAtGame: user.eloRating,
+        correctGuesses: 0,
+        incorrectGuesses: 0,
+        correctGuessDetails: [],
+        isWinner: false,
+        winStreak: 0,
+      });
+
+      stats = await gameStatsRepo.save(stats);
+    }
+
+    return stats;
   }
 
   async getRoomById(roomId: number): Promise<Room> {
@@ -68,19 +99,7 @@ export class RoomService {
       await this.joinExistingRoom(room, user.id);
       return room;
     } else {
-      const newRoom = await this.createRoom(user.id, difficulty, type);
-      //Create new GameStats object for the new room.
-      const gameStats = new GameStats();
-      gameStats.user = user;
-      gameStats.room = newRoom;
-      gameStats.userId = user.id;
-      gameStats.roomId = newRoom.id;
-      gameStats.eloAtGame = user.eloRating;
-      gameStats.correctGuesses = 0;
-      gameStats.incorrectGuesses = 0;
-      gameStats.correctGuessDetails = [];
-
-      return;
+      return await this.createRoom(user.id, difficulty, type);
     }
   }
 
@@ -94,6 +113,30 @@ export class RoomService {
 
     room.players.push(player);
     room.markModified();
+
+    // Ensure newly joined player's active sockets receive future room events
+    fastify.io
+      .in(`user_${player.id}`)
+      .socketsJoin(room.id.toString());
+
+    await this.ensureGameStatsEntry(room, player);
+
+    const cachedGameInfo = await this.redisService.getGame(room.id.toString());
+    if (cachedGameInfo) {
+      if (!cachedGameInfo.userGuessCounts[player.id]) {
+        cachedGameInfo.userGuessCounts[player.id] = {
+          correct: 0,
+          incorrect: 0,
+        };
+      }
+      if (!cachedGameInfo.correctGuessDetails) {
+        cachedGameInfo.correctGuessDetails = {};
+      }
+      if (!cachedGameInfo.correctGuessDetails[player.id]) {
+        cachedGameInfo.correctGuessDetails[player.id] = [];
+      }
+      this.redisService.cacheGame(room.id.toString(), cachedGameInfo);
+    }
 
     // If room is full based on game type, change status to playing
     const maxPlayers = config.game.maxPlayers[room.type];
@@ -163,6 +206,14 @@ export class RoomService {
     }
 
     const savedRoom = await this.ormConnection.getRepository(Room).save(room);
+
+    // Ensure the creating player's sockets are subscribed to the room channel
+    fastify.io
+      .in(`user_${player.id}`)
+      .socketsJoin(savedRoom.id.toString());
+
+    const stats = await this.ensureGameStatsEntry(savedRoom, player);
+    savedRoom.stats = [stats];
 
     // Only add timeout job for non-time trial games
     if (type !== "time_trial") {
@@ -272,10 +323,27 @@ export class RoomService {
       },
     });
 
+    const cachedGameInfo = await this.redisService.getGame(room.id.toString());
+
     // Update win streaks and winner status
     for (const stats of allGameStats) {
-      stats.correctGuesses = room.scores[stats.userId];
-      stats.incorrectGuesses = room.scores[stats.userId];
+      const guessCounts = cachedGameInfo?.userGuessCounts?.[stats.userId] || {
+        correct: 0,
+        incorrect: 0,
+      };
+
+      stats.correctGuesses = guessCounts.correct;
+      stats.incorrectGuesses = guessCounts.incorrect;
+
+      const guessDetails =
+        cachedGameInfo?.correctGuessDetails?.[stats.userId] ||
+        [];
+      stats.correctGuessDetails = guessDetails.map((detail) => ({
+        row: detail.row,
+        col: detail.col,
+        letter: detail.letter,
+        timestamp: new Date(detail.timestamp),
+      }));
 
       // If game was forfeited, non-forfeiting players are winners
       const isWinner = forfeitedBy !== undefined
@@ -321,7 +389,7 @@ export class RoomService {
         });
       }
     } catch (error) {
-      fastify.log.error("Failed to update ELO ratings:", error);
+      fastify.log.error({ err: error }, "Failed to update ELO ratings");
     }
 
     await this.ormConnection.getRepository(Room).save(room);
@@ -349,13 +417,9 @@ export class RoomService {
       throw new Error("User is not a participant in this room");
     }
 
-    // Create or update game stats for all players if they don't exist
-    const gameStatsRepo = this.ormConnection.getRepository(GameStats);
+    // Ensure game stats exist for all players before ending the game
     for (const player of room.players) {
-      let gameStats = await gameStatsRepo.findOne({
-        where: { userId: player.id, roomId },
-      });
-      //used to have gameStats created here
+      await this.ensureGameStatsEntry(room, player);
     }
 
     room.markModified();
@@ -391,7 +455,7 @@ export class RoomService {
   }
 
   async handleGuess(
-    room: Room,
+    roomId: number,
     userId: number,
     x: number,
     y: number,
@@ -400,13 +464,34 @@ export class RoomService {
   ): Promise<Room> {
     const manager = entityManager || this.ormConnection.manager;
 
+    // Load room (players and crossword are eager on the entity)
+    let room = await manager.getRepository(Room).findOne({
+      where: { id: roomId },
+    });
+    if (!room) throw new NotFoundError("Room not found");
+
+    // Load or initialize game cache
     let cachedGameInfo = await this.redisService.getGame(room.id.toString());
     if (!cachedGameInfo) {
-      // make a cache s
+      // Initialize cache from the current DB state
       cachedGameInfo = room.createRoomCache();
     }
 
-    // Check if letter is already found at this position
+    // Ensure user tracking structures exist
+    if (!cachedGameInfo.userGuessCounts[userId]) {
+      cachedGameInfo.userGuessCounts[userId] = { correct: 0, incorrect: 0 };
+    }
+    if (!cachedGameInfo.correctGuessDetails) {
+      cachedGameInfo.correctGuessDetails = {};
+    }
+    if (!cachedGameInfo.correctGuessDetails[userId]) {
+      cachedGameInfo.correctGuessDetails[userId] = [];
+    }
+    if (cachedGameInfo.scores[userId] === undefined) {
+      cachedGameInfo.scores[userId] = 0;
+    }
+
+    // Compute letter index
     const letterIndex = x * room.crossword.col_size + y;
     if (cachedGameInfo.foundLetters[letterIndex] !== "*") {
       return room;
@@ -424,9 +509,15 @@ export class RoomService {
       cachedGameInfo.lastActivityAt = Date.now();
 
       cachedGameInfo.userGuessCounts[userId].correct++;
+      cachedGameInfo.correctGuessDetails[userId].push({
+        row: x,
+        col: y,
+        letter: guess,
+        timestamp: Date.now(),
+      });
 
-      // Update room state
-      cachedGameInfo.foundLetters[x * room.crossword.col_size + y] = guess;
+      // Update board + score
+      cachedGameInfo.foundLetters[letterIndex] = guess;
       cachedGameInfo.scores[userId] = (cachedGameInfo.scores[userId] || 0) +
         config.game.points.correct;
     } else {
@@ -435,16 +526,31 @@ export class RoomService {
         config.game.points.incorrect;
     }
 
-    // Check if game is won
-    if (this.isGameFinished(room)) {
-      room = this.addCacheToRoom(room, cachedGameInfo);
+    // Persist authoritative state to DB to avoid cache reinitialization wiping progress
+    room.found_letters = cachedGameInfo.foundLetters;
+    room.scores = cachedGameInfo.scores;
+    if (cachedGameInfo.lastActivityAt) {
+      room.last_activity_at = new Date(cachedGameInfo.lastActivityAt);
+    }
+
+    // Determine if the game is finished based on the updated state
+    const finished = !cachedGameInfo.foundLetters.includes("*");
+
+    if (finished) {
+      // Mark modified so toJSON invalidates cache
+      room.markModified();
       await this.onGameEnd(room);
     } else {
       // Save room if game is not finished
-      this.redisService.cacheGame(room.id.toString(), cachedGameInfo);
+      await manager.getRepository(Room).save(room);
     }
 
-    return this.addCacheToRoom(room, cachedGameInfo);
+    // Update cache after DB write
+    this.redisService.cacheGame(room.id.toString(), cachedGameInfo);
+
+    // Invalidate view cache so clients receive updated view
+    room.markModified();
+    return room;
   }
 
   addCacheToRoom(room: Room, cachedGameInfo: CachedGameInfo): Room {
@@ -465,6 +571,7 @@ export class RoomService {
       type: string;
       status: string;
       created_at: string;
+      completed_at: string | null;
       scores: Record<string, number>;
     };
     stats: {
@@ -504,6 +611,9 @@ export class RoomService {
         type: stats.room.type,
         status: stats.room.status,
         created_at: stats.room.created_at.toISOString(),
+        completed_at: stats.room.completed_at
+          ? stats.room.completed_at.toISOString()
+          : null,
         scores: stats.room.scores,
       },
       stats: {
@@ -603,10 +713,9 @@ export class RoomService {
       .andWhere((qb) => {
         const subQuery = qb
           .subQuery()
-          .select("r.id")
-          .from(Room, "r")
-          .innerJoin("r.players", "p")
-          .where("p.id = :userId")
+          .select("rp.room_id")
+          .from("room_players", "rp")
+          .where("rp.user_id = :userId")
           .getQuery();
         return "room.id IN " + subQuery;
       })
@@ -617,5 +726,85 @@ export class RoomService {
       });
 
     return query.getMany();
+  }
+  async getTimeTrialLeaderboard(
+    roomId: number,
+    limit: number = 10,
+  ): Promise<
+    Array<{
+      rank: number;
+      roomId: number;
+      score: number;
+      user: { id: number; username: string; eloRating: number } | null;
+      created_at: string;
+      completed_at: string | null;
+      timeTakenMs: number | null;
+    }>
+  > {
+    const room = await this.getRoomById(roomId);
+    if (!room) {
+      throw new NotFoundError("Room not found");
+    }
+
+    const crosswordId = room.crossword.id;
+
+    // Fetch finished time-trial games on the same crossword
+    const rooms = await this.ormConnection.getRepository(Room).find({
+      where: {
+        type: "time_trial",
+        status: "finished",
+        crossword: { id: crosswordId },
+      },
+      order: { completed_at: "DESC" },
+    });
+
+    // Build leaderboard entries
+    const entries = rooms.map((r) => {
+      const scoresObj = r.scores || {};
+      const scoreValues = Object.values(scoresObj);
+      const score = scoreValues.length > 0 ? Math.max(...scoreValues) : 0;
+
+      const player = r.players && r.players.length > 0 ? r.players[0] : null;
+
+      const timeTakenMs = r.completed_at && r.created_at
+        ? r.completed_at.getTime() - r.created_at.getTime()
+        : null;
+
+      return {
+        roomId: r.id,
+        user: player
+          ? {
+            id: player.id,
+            username: player.username,
+            eloRating: player.eloRating,
+          }
+          : null,
+        score,
+        created_at: r.created_at,
+        completed_at: r.completed_at,
+        timeTakenMs,
+      };
+    });
+
+    // Sort by score (desc), then by time taken (asc if available)
+    entries.sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      const ta = a.timeTakenMs ?? Number.MAX_SAFE_INTEGER;
+      const tb = b.timeTakenMs ?? Number.MAX_SAFE_INTEGER;
+      return ta - tb;
+    });
+
+    // Limit and format dates to ISO strings
+    const top = entries.slice(0, limit).map((e, idx) => ({
+      rank: idx + 1,
+      roomId: e.roomId,
+      score: e.score,
+      user: e.user,
+      created_at: e.created_at.toISOString(),
+      completed_at: e.completed_at ? e.completed_at.toISOString() : null,
+      timeTakenMs: e.timeTakenMs,
+    }));
+
+    return top;
   }
 }

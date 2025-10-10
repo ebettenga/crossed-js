@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { post } from "./api";
+import { useSocket } from "./socket";
 
 export enum SquareType {
     SOLVED,
@@ -71,12 +72,16 @@ type JoinRoomParams = {
 
 export const useJoinRoom = () => {
     const queryClient = useQueryClient();
+    const { emit } = useSocket();
     return useMutation({
         mutationFn: async (params: JoinRoomParams) => {
             return await post<Room>('/rooms/join', params);
         },
         onSettled: () => {
             queryClient.invalidateQueries({ queryKey: ['rooms'] });
-        }
+        },
+        onSuccess: (room) => {
+            emit("loadRoom", JSON.stringify({ roomId: room.id }));
+        },
     });
 };

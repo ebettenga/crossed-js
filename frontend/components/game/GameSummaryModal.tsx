@@ -5,6 +5,7 @@ import { Room } from '~/hooks/useJoinRoom';
 import { useUser } from '~/hooks/users';
 import { Home, Star } from 'lucide-react-native';
 import { useRateDifficulty, useRateQuality } from '~/hooks/useRatings';
+import { useTimeTrialLeaderboard } from '~/hooks/useLeaderboard';
 import Animated, {
     useAnimatedStyle,
     withSpring,
@@ -13,6 +14,14 @@ import Animated, {
     withDelay
 } from 'react-native-reanimated';
 import { DifficultyRating } from '~/types/crossword';
+
+const formatMs = (ms: number | null) => {
+    if (ms == null || ms < 0) return '—';
+    const totalSeconds = Math.floor(ms / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+};
 
 interface GameSummaryModalProps {
     isVisible: boolean;
@@ -55,6 +64,16 @@ export const GameSummaryModal: React.FC<GameSummaryModalProps> = ({
     const rateDifficulty = useRateDifficulty();
     const rateQuality = useRateQuality();
 
+    // Fetch leaderboard data using React Query
+    const {
+        data: leaderboard,
+        isLoading: lbLoading,
+        error: lbError
+    } = useTimeTrialLeaderboard(
+        isVisible && room?.type === 'time_trial' ? room.id : undefined,
+        10
+    );
+
     if (!room || !currentUser) return null;
 
     // Find the current user's stats in the room
@@ -84,43 +103,78 @@ export const GameSummaryModal: React.FC<GameSummaryModalProps> = ({
             <DialogContent className="bg-[#F5F5F5] w-96 h-[500px] dark:bg-[#1A2227]">
                 <View className="flex-1 p-4">
                     <Text className="text-2xl font-semibold text-center text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman'] mb-6">
-                        Game Summary
+                        {room.type === 'time_trial' ? 'Time Trial Complete' : 'Game Summary'}
                     </Text>
 
-                    <View className="bg-[#F5F5F5] dark:bg-[#1A2227] rounded-lg p-6 mb-6">
-                        <Text className="text-xl text-center text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman'] mb-4">
-                            {isWinner ? 'Victory!' : 'Better luck next time!'}
-                        </Text>
+                    {room.type !== 'time_trial' && (
+                        <View className="bg-[#F5F5F5] dark:bg-[#1A2227] rounded-lg p-6 mb-6">
+                            <Text className="text-xl text-center text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman'] mb-4">
+                                {isWinner ? 'Victory!' : 'Better luck next time!'}
+                            </Text>
 
-                        <View className="space-y-4">
-                            <View className="flex-row justify-between">
-                                <Text className="text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">
-                                    Score:
-                                </Text>
-                                <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman']">
-                                    {room.scores[currentUser.id]}
-                                </Text>
-                            </View>
+                            <View className="space-y-4">
+                                <View className="flex-row justify-between">
+                                    <Text className="text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">
+                                        Score:
+                                    </Text>
+                                    <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman']">
+                                        {room.scores[currentUser.id]}
+                                    </Text>
+                                </View>
 
-                            <View className="flex-row justify-between">
-                                <Text className="text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">
-                                    Rating:
-                                </Text>
-                                <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman']">
-                                    {userStats?.eloRating || 0}
-                                </Text>
-                            </View>
+                                <View className="flex-row justify-between">
+                                    <Text className="text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">
+                                        Rating:
+                                    </Text>
+                                    <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman']">
+                                        {userStats?.eloRating || 0}
+                                    </Text>
+                                </View>
 
-                            <View className="flex-row justify-between">
-                                <Text className="text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">
-                                    Game Type:
-                                </Text>
-                                <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman']">
-                                    {room.type === '1v1' ? '1 vs 1' : room.type === '2v2' ? '2 vs 2' : 'Free for All'}
-                                </Text>
+                                <View className="flex-row justify-between">
+                                    <Text className="text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">
+                                        Game Type:
+                                    </Text>
+                                    <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman']">
+                                        {room.type === '1v1' ? '1 vs 1' : room.type === '2v2' ? '2 vs 2' : room.type === 'free4all' ? 'Free for All' : 'Time Trial'}
+                                    </Text>
+                                </View>
                             </View>
                         </View>
-                    </View>
+                    )}
+
+                    {room.type === 'time_trial' && (
+                        <View className="bg-[#F5F5F5] dark:bg-[#1A2227] rounded-lg p-4 mb-6">
+                            <Text className="text-lg text-center text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman'] mb-3">
+                                Top Scores
+                            </Text>
+                            {lbLoading ? (
+                                <Text className="text-center text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">Loading...</Text>
+                            ) : lbError ? (
+                                <Text className="text-center text-[#8B0000] dark:text-[#FF6B6B] font-['Times_New_Roman']">
+                                    {lbError instanceof Error ? lbError.message : 'Failed to load leaderboard'}
+                                </Text>
+                            ) : leaderboard && leaderboard.length > 0 ? (
+                                <View className="space-y-2">
+                                    {leaderboard.map((entry) => {
+                                        const isYou = entry.user?.id === currentUser.id;
+                                        return (
+                                            <View key={entry.roomId} className="flex-row justify-between">
+                                                <Text className={`text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman'] ${isYou ? 'font-semibold' : ''}`}>
+                                                    {entry.rank}. {entry.user?.username ?? 'Anonymous'}
+                                                </Text>
+                                                <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman']">
+                                                    {entry.score} pts • {formatMs(entry.timeTakenMs)}
+                                                </Text>
+                                            </View>
+                                        );
+                                    })}
+                                </View>
+                            ) : (
+                                <Text className="text-center text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">No results yet</Text>
+                            )}
+                        </View>
+                    )}
 
                     <View className="space-y-6 mb-6">
                         <View className="mb-4">

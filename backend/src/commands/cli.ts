@@ -5,7 +5,7 @@ import { DataSource } from "typeorm";
 import { loadTestData } from "../scripts/loadTestData";
 import { loadIpuzCrosswords } from "../scripts/loadIpuzCrosswords";
 import { CrosswordService } from "../services/CrosswordService";
-import { AppDataSource } from "../db";
+import AppDataSource from "../db";
 import { gameInactivityQueue } from "../jobs/queues";
 import { v4 as uuidv4 } from "uuid";
 import { AuthService } from "../services/AuthService";

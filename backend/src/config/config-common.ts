@@ -1,6 +1,6 @@
 import { RedisOptions } from "ioredis";
 
-const redisURL = new URL(process.env.REDIS_URL);
+const redisURL = process.env.REDIS_URL ? new URL(process.env.REDIS_URL) : null;
 
 export const commonConfig = {
   api: {
@@ -56,10 +56,10 @@ export const commonConfig = {
   },
   redis: {
     default: {
-      host: redisURL.hostname || "localhost",
-      port: redisURL.port || 6379,
-      username: redisURL.username || "default",
-      password: redisURL.password || "",
+      host: redisURL?.hostname || "localhost",
+      port: parseInt(redisURL?.port || "6379"),
+      username: redisURL?.username || "default",
+      password: redisURL?.password || "",
     } as RedisOptions,
     gameTTL: 86400, // 1 day in seconds
   },
