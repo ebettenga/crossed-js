@@ -18,7 +18,7 @@ export const config = {
     username: "test_user",
     password: "test_password",
     database: "test_db",
-    synchronize: true,
+    synchronize: false,
     logging: false,
     entities: ["./src/entities/**/*.ts"],
     migrations: ["./src/migrations/**/*.ts"],

@@ -14,7 +14,7 @@ export const config = {
     username: "postgres",
     password: "postgres",
     database: "crossed",
-    synchronize: true,
+    synchronize: false,
     logging: false,
     entities: ["./src/entities/**/*.ts"],
     migrations: ["./src/migrations/**/*.ts"],
