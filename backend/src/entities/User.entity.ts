@@ -7,8 +7,8 @@ import {
   OneToOne,
   PrimaryGeneratedColumn,
 } from "typeorm";
-import { Room } from "./Room";
-import { GameStats } from "./GameStats";
+import { Room } from "./Room.entity";
+import { GameStats } from "./GameStats.entity";
 
 @Entity()
 export class User {

@@ -1,5 +1,5 @@
 import { AuthService } from '../../services/AuthService';
-import { User } from '../../entities/User';
+import { User } from '../../entities/User.entity';
 
 export default async function (fastify, opts) {
   const authService = new AuthService(fastify.orm);

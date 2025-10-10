@@ -1,5 +1,5 @@
 import { FastifyInstance } from "fastify";
-import { Log } from "../../entities/Log";
+import { Log } from "../../entities/Log.entity";
 
 export default function (
   fastify: FastifyInstance,

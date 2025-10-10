@@ -1,5 +1,5 @@
 import { FastifyInstance } from "fastify";
-import { User } from "../../entities/User";
+import { User } from "../../entities/User.entity";
 import { PhotoService } from "../../services/PhotoService";
 import multipart from "@fastify/multipart";
 import { ILike } from "typeorm";
@@ -88,13 +88,6 @@ export default function (
         return;
       }
 
-      fastify.log.info("File upload details:", {
-        mimetype: data.mimetype,
-        filename: data.filename,
-        encoding: data.encoding,
-        fieldname: data.fieldname,
-      });
-
       // Validate file type
       if (!data.mimetype.startsWith("image/")) {
         reply.code(400).send({ error: "Only image files are allowed" });
@@ -102,12 +95,8 @@ export default function (
       }
 
       const buffer = await data.toBuffer();
-      fastify.log.info("File size:", { bytes: buffer.length });
 
       const processedPhoto = await photoService.processPhoto(buffer);
-      fastify.log.info("Processed photo size:", {
-        bytes: processedPhoto.length,
-      });
 
       // Update user's photo in database
       const userRepository = fastify.orm.getRepository(User);
@@ -121,7 +110,6 @@ export default function (
       });
       reply.send(updatedUser);
     } catch (error) {
-      fastify.log.error("Error uploading photo:", error);
       if (error.code === "FST_REQ_FILE_TOO_LARGE") {
         reply.code(413).send({ error: "File too large. Maximum size is 5MB." });
         return;

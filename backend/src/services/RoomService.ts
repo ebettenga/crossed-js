@@ -1,11 +1,11 @@
 import { And, DataSource, In, LessThan, Not } from "typeorm";
-import { Room } from "../entities/Room";
-import { User } from "../entities/User";
+import { Room } from "../entities/Room.entity";
+import { User } from "../entities/User.entity";
 import { CrosswordService } from "./CrosswordService";
 import { EloService } from "./EloService";
 import { config } from "../config/config";
 import { fastify } from "../fastify";
-import { GameStats } from "../entities/GameStats";
+import { GameStats } from "../entities/GameStats.entity";
 import { NotFoundError } from "../errors/api";
 import { gameInactivityQueue, gameTimeoutQueue } from "../jobs/queues";
 import { v4 as uuidv4 } from "uuid";

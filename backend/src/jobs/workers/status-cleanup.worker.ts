@@ -1,7 +1,7 @@
-import { Worker } from 'bullmq';
-import { config } from '../../config/config';
+import { Worker } from "bullmq";
+import { config } from "../../config/config";
 import { DataSource } from "typeorm";
-import { User } from "../../entities/User";
+import { User } from "../../entities/User.entity";
 
 export const createStatusCleanupWorker = (dataSource: DataSource) => {
   // Ensure the dataSource is initialized
@@ -22,24 +22,28 @@ export const createStatusCleanupWorker = (dataSource: DataSource) => {
         .createQueryBuilder("user")
         .where("user.status = :status", { status: "online" })
         .andWhere("user.lastActiveAt < :threshold", {
-          threshold: new Date(Date.now() - config.status.cleanup.heartbeatTimeout),
+          threshold: new Date(
+            Date.now() - config.status.cleanup.heartbeatTimeout,
+          ),
         })
         .getMany();
 
       if (staleUsers.length > 0) {
-        console.log(`Found ${staleUsers.length} stale users to mark as offline`);
+        console.log(
+          `Found ${staleUsers.length} stale users to mark as offline`,
+        );
         // Update stale users to offline status
         await userRepository.update(
-          staleUsers.map(user => user.id),
-          { status: "offline" }
+          staleUsers.map((user) => user.id),
+          { status: "offline" },
         );
 
         // Return status change events for each user
         return {
-          usersUpdated: staleUsers.map(user => ({
+          usersUpdated: staleUsers.map((user) => ({
             userId: user.id,
-            status: 'offline' as const
-          }))
+            status: "offline" as const,
+          })),
         };
       }
 
@@ -47,14 +51,14 @@ export const createStatusCleanupWorker = (dataSource: DataSource) => {
     },
     {
       connection: config.redis.default,
-    }
+    },
   );
 
-  worker.on('completed', (job) => {
+  worker.on("completed", (job) => {
     console.log(`Status cleanup job ${job.id} completed`);
   });
 
-  worker.on('failed', (job, err) => {
+  worker.on("failed", (job, err) => {
     console.error(`Status cleanup job ${job?.id} failed:`, err);
   });
 

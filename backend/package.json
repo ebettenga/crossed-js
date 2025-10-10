@@ -8,17 +8,17 @@
     "start": "tsx ./src/index.ts",
     "dev": "tsx --env-file .env --watch ./src/index.ts",
     "dev:worker": "SERVER_MODE=worker tsx --env-file .env --watch ./src/index.ts",
-    "build": "pkgroll",
+    "build": "rm -rf ./dist && tsc --project tsconfig.build.json && resolve-tspaths -p tsconfig.build.json -s ./src -o ./dist",
     "commands": "tsx --env-file .env ./src/commands/cli.ts",
     "prepare": "if [ \"$CI\" != \"true\" ]; then pre-commit install; fi",
     "ci:load-test-data": "yarn commands load-test-data",
     "test": "tsx --experimental-vm-modules node_modules/jest/bin/jest.js --verbose --coverage",
     "serve:coverage": "npx serve coverage/lcov-report",
-    "typeorm": "ts-node -r tsconfig-paths/register --project ./tsconfig.json ./node_modules/.bin/typeorm",
-    "migration:generate": "npm run typeorm migration:generate -- -d ./src/data-source.ts",
-    "migration:create": "npm run typeorm migration:create --",
-    "migration:run": "npm run typeorm migration:run -- -d ./src/data-source.ts",
-    "migration:revert": "npm run typeorm migration:revert -- -d ./src/data-source.ts"
+    "typeorm": "typeorm-ts-node-commonjs -d db/datasource.ts",
+    "migration:generate": "yarn run build && yarn run typeorm -- migration:generate",
+    "migration:run": "yarn run typeorm -- migration:run",
+    "migration:revert": "yarn run typeorm -- migration:revert",
+    "migration:show": "yarn run typeorm -- migration:show"
   },
   "dependencies": {
     "@fastify/autoload": "^6.0.2",
@@ -53,9 +53,11 @@
     "ts-node": "^10.9.2",
     "typeorm": "^0.3.20",
     "typeorm-fastify-plugin": "^3.0.0",
+    "typeorm-ts-node-commonjs": "^0.3.20",
     "uuid": "^11.0.5"
   },
   "devDependencies": {
+    "@tsconfig/node22": "^22.0.2",
     "@types/jest": "^29.0.0",
     "@types/node": "^22.10.1",
     "@types/passport": "^1.0.17",
@@ -65,6 +67,7 @@
     "pkgroll": "^2.5.1",
     "pre-commit": "^1.2.2",
     "prettier": "^3.0.0",
+    "resolve-tspaths": "^0.8.23",
     "ts-jest": "^29.0.0",
     "tsconfig-paths": "^4.2.0",
     "tsx": "^4.19.2",

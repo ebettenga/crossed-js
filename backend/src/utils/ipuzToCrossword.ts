@@ -1,4 +1,4 @@
-import { Crossword } from "../entities/Crossword";
+import { Crossword } from "../entities/Crossword.entity";
 import { decodeHtmlEntities } from "./decodeHtmlEntities";
 
 type IpuzClue = {
@@ -18,9 +18,9 @@ type IpuzData = {
     Array<
       | string
       | {
-          value: string;
-          cell: string | number;
-        }
+        value: string;
+        cell: string | number;
+      }
     >
   >;
   clues: {
@@ -51,17 +51,15 @@ const getClueList = (clues?: IpuzClue[] | null): string[] => {
     return [];
   }
   return clues.map((clue) =>
-    `${clue.number}. ${decodeHtmlEntities(clue.clue)}`.trim(),
+    `${clue.number}. ${decodeHtmlEntities(clue.clue)}`.trim()
   );
 };
 
 const toLetter = (value: string): string =>
-  value === "#"
-    ? "#"
-    : value
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .toUpperCase();
+  value === "#" ? "#" : value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toUpperCase();
 
 export const ipuzToCrossword = (
   ipuz: IpuzData,
@@ -89,24 +87,22 @@ export const ipuzToCrossword = (
   for (let row = 0; row < rows; row += 1) {
     for (let col = 0; col < cols; col += 1) {
       const entry = ipuz.solution[row][col];
-      const value =
-        typeof entry === "string"
-          ? entry
-          : entry && typeof entry.value === "string"
-            ? entry.value
-            : "#";
+      const value = typeof entry === "string"
+        ? entry
+        : entry && typeof entry.value === "string"
+        ? entry.value
+        : "#";
 
       const normalizedValue = toLetter(value);
       letterGrid[row][col] = normalizedValue;
       grid.push(normalizedValue === "#" ? "." : normalizedValue);
 
       const puzzleEntry = ipuz.puzzle?.[row]?.[col];
-      const clueNumber =
-        typeof puzzleEntry === "number"
-          ? puzzleEntry
-          : puzzleEntry && typeof (puzzleEntry as any).cell === "number"
-            ? (puzzleEntry as any).cell
-            : 0;
+      const clueNumber = typeof puzzleEntry === "number"
+        ? puzzleEntry
+        : puzzleEntry && typeof (puzzleEntry as any).cell === "number"
+        ? (puzzleEntry as any).cell
+        : 0;
 
       gridnums.push(clueNumber.toString());
       circles.push(0);
@@ -123,8 +119,7 @@ export const ipuzToCrossword = (
         continue;
       }
 
-      const isStartOfAcross =
-        col === 0 || letterGrid[row][col - 1] === "#";
+      const isStartOfAcross = col === 0 || letterGrid[row][col - 1] === "#";
       if (isStartOfAcross) {
         let word = "";
         let pointer = col;
@@ -135,8 +130,7 @@ export const ipuzToCrossword = (
         acrossAnswers.push(word);
       }
 
-      const isStartOfDown =
-        row === 0 || letterGrid[row - 1][col] === "#";
+      const isStartOfDown = row === 0 || letterGrid[row - 1][col] === "#";
       if (isStartOfDown) {
         let word = "";
         let pointer = row;
@@ -149,10 +143,9 @@ export const ipuzToCrossword = (
     }
   }
 
-  const acrossClues =
-    getClueList(ipuz.clues?.Across ?? ipuz.clues?.across) ?? [];
-  const downClues =
-    getClueList(ipuz.clues?.Down ?? ipuz.clues?.down) ?? [];
+  const acrossClues = getClueList(ipuz.clues?.Across ?? ipuz.clues?.across) ??
+    [];
+  const downClues = getClueList(ipuz.clues?.Down ?? ipuz.clues?.down) ?? [];
 
   if (
     acrossClues.length > 0 &&
@@ -182,7 +175,6 @@ export const ipuzToCrossword = (
   return {
     title: decodeHtmlEntities(ipuz.title),
     author: decodeHtmlEntities(ipuz.author),
-    copyright: decodeHtmlEntities(ipuz.copyright),
     created_by: decodeHtmlEntities(ipuz.origin),
     notepad: decodeHtmlEntities(ipuz.notes),
     jnote: decodeHtmlEntities(ipuz.intro),

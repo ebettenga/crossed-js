@@ -1,20 +1,22 @@
 {
+  "extends": "@tsconfig/node22/tsconfig.json",
   "compilerOptions": {
-    "target": "ESNext",
-    "module": "ESNext",
-    "moduleResolution": "node",
-    "esModuleInterop": true,
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ]
+    },
+    "module": "preserve",
+    "moduleResolution": "bundler",
     "strict": false,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "outDir": "dist",
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
-    "jsx": "react",
-    "allowJs": true,
     "resolveJsonModule": true
   },
   "include": [
+    "src",
     "src/**/*",
     "src/routes/private/.autohooks.ts"
   ],

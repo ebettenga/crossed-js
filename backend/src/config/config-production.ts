@@ -1,7 +1,7 @@
 // src/config/config-production.ts
 import "reflect-metadata";
-import { PostgresConnectionOptions } from "typeorm/driver/postgres/PostgresConnectionOptions";
 import * as dotenv from "dotenv";
+import { PostgresConnectionOptions } from "typeorm/driver/postgres/PostgresConnectionOptions.js";
 
 dotenv.config();
 
@@ -22,6 +22,8 @@ export const config = {
     synchronize: false,
     logging: false,
     entities: ["./src/entities/**/*.ts"],
+    migrations: ["./src/migrations/**/*.ts"],
+    subscribers: ["./src/subscribers/**/*.ts"],
   } as PostgresConnectionOptions,
   auth: {
     secretAccessToken: process.env.SECRET_ACCESS_TOKEN!,

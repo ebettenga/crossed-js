@@ -1,7 +1,7 @@
 import { FastifyInstance } from "fastify";
 import { CrosswordService } from "../../services/CrosswordService";
 import { CrosswordRatingService } from "../../services/CrosswordRatingService";
-import { DifficultyRating } from "../../entities/CrosswordRating";
+import { DifficultyRating } from "../../entities/CrosswordRating.entity";
 
 type CrosswordQueryParams = {
   page?: number;
@@ -58,7 +58,11 @@ export default function (
     const crosswordId = parseInt(request.params.crosswordId);
     const userId = request.user.id;
 
-    const result = await ratingService.rateDifficulty(userId, crosswordId, rating);
+    const result = await ratingService.rateDifficulty(
+      userId,
+      crosswordId,
+      rating,
+    );
     return { success: true, rating: result };
   });
 

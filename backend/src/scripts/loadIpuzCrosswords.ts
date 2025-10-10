@@ -2,7 +2,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { DataSource } from "typeorm";
-import { Crossword } from "../entities/Crossword";
+import { Crossword } from "../entities/Crossword.entity";
 import { ipuzToCrossword } from "../utils/ipuzToCrossword";
 
 export type LoadIpuzCrosswordsOptions = {

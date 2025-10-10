@@ -1,12 +1,12 @@
 import { FastifyInstance } from "fastify";
 import { RoomService } from "../../services/RoomService";
 import { AuthService } from "../../services/AuthService";
-import { User } from "../../entities/User";
+import { User } from "../../entities/User.entity";
 import { ForbiddenError, UserNotFoundError } from "../../errors/api";
 import { Socket } from "socket.io";
 import { redisService } from "../../services/RedisService";
 import { createSocketEventService } from "../../services/SocketEventService";
-import { Room } from "../../entities/Room";
+import { Room } from "../../entities/Room.entity";
 
 export type Guess = {
   roomId: number;

@@ -12,7 +12,7 @@ import fastifyPrintRoutes from "fastify-print-routes";
 // get the directory name of the current module
 import { fileURLToPath } from "url";
 import fastifyAutoload from "@fastify/autoload";
-import { User } from "./entities/User";
+import { User } from "./entities/User.entity";
 import { Server } from "socket.io";
 import { closeWorkers, initializeWorkers } from "./jobs/workers/index";
 
@@ -64,6 +64,7 @@ async function startServer() {
     await fastify.ready();
 
     // Initialize workers with database connection
+    // @ts-ignore
     initializeWorkers(AppDataSource, fastify.io);
 
     // Handle graceful shutdown

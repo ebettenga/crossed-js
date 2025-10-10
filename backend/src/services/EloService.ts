@@ -1,8 +1,8 @@
-import { User } from "../entities/User";
+import { User } from "../entities/User.entity";
 import { Repository } from "typeorm";
 import { config } from "../config/config";
-import { Room } from "../entities/Room";
-import { GameStats } from "../entities/GameStats";
+import { Room } from "../entities/Room.entity";
+import { GameStats } from "../entities/GameStats.entity";
 
 export class EloService {
   private readonly K_FACTOR_BASE = config.game.elo.kFactorBase;

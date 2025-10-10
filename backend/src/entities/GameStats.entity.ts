@@ -5,8 +5,8 @@ import {
   ManyToOne,
   PrimaryGeneratedColumn,
 } from "typeorm";
-import { User } from "./User";
-import { Room } from "./Room";
+import { User } from "./User.entity";
+import { Room } from "./Room.entity";
 
 @Entity()
 export class GameStats {

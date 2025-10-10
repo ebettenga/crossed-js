@@ -1,14 +1,17 @@
 import { Worker } from "bullmq";
 import { config } from "../../config/config";
 import { DataSource } from "typeorm";
-import { Room } from "../../entities/Room";
+import { Room } from "../../entities/Room.entity";
 import { NotFoundError } from "../../errors/api";
 import { Server } from "socket.io";
 import { redisService } from "../../services/RedisService";
 import { createSocketEventService } from "../../services/SocketEventService";
 import { FastifyInstance } from "fastify";
 
-export const createGameTimeoutWorker = (dataSource: DataSource, fastify: FastifyInstance) => {
+export const createGameTimeoutWorker = (
+  dataSource: DataSource,
+  fastify: FastifyInstance,
+) => {
   const socketEventService = createSocketEventService(fastify);
 
   // Ensure the dataSource is initialized
@@ -40,17 +43,17 @@ export const createGameTimeoutWorker = (dataSource: DataSource, fastify: Fastify
 
         // Notify all players in the room using the SocketEventService
         await socketEventService.emitToRoom(room.id, "room_cancelled", {
-          message: 'Game was cancelled due to inactivity',
+          message: "Game was cancelled due to inactivity",
           roomId: room.id,
-          reason: 'timeout'
+          reason: "timeout",
         });
 
         // Also notify each player individually to ensure they receive the message
-        const playerIds = room.players.map(p => p.id);
+        const playerIds = room.players.map((p) => p.id);
         await socketEventService.emitToUsers(playerIds, "room_cancelled", {
-          message: 'Game was cancelled due to inactivity',
+          message: "Game was cancelled due to inactivity",
           roomId: room.id,
-          reason: 'timeout'
+          reason: "timeout",
         });
       }
     },

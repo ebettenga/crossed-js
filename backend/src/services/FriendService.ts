@@ -1,6 +1,6 @@
 import { DataSource, ILike } from "typeorm";
-import { Friend, FriendshipStatus } from "../entities/Friend";
-import { User } from "../entities/User";
+import { Friend, FriendshipStatus } from "../entities/Friend.entity";
+import { User } from "../entities/User.entity";
 import { NotFoundError } from "../errors/api";
 
 export class FriendService {

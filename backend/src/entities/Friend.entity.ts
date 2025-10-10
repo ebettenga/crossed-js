@@ -1,10 +1,16 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn } from "typeorm";
-import { User } from "./User";
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from "typeorm";
+import { User } from "./User.entity";
 
 export enum FriendshipStatus {
   PENDING = "pending",
   ACCEPTED = "accepted",
-  REJECTED = "rejected"
+  REJECTED = "rejected",
 }
 
 @Entity()
@@ -27,7 +33,7 @@ export class Friend {
   @Column({
     type: "enum",
     enum: FriendshipStatus,
-    default: FriendshipStatus.PENDING
+    default: FriendshipStatus.PENDING,
   })
   status: FriendshipStatus;
 
@@ -36,4 +42,4 @@ export class Friend {
 
   @Column({ type: "timestamp", nullable: true })
   acceptedAt: Date;
-} 
+}

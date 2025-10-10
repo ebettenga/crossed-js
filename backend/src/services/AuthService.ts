@@ -1,5 +1,5 @@
 import { DataSource } from "typeorm";
-import { User } from "../entities/User";
+import { User } from "../entities/User.entity";
 import {
   ForbiddenError,
   NotFoundError,
@@ -9,7 +9,6 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import { config } from "../config/config";
 import fastify, { FastifyInstance } from "fastify";
-import { emailService } from "./EmailService";
 import crypto from "crypto";
 
 export class AuthService {
@@ -20,6 +19,7 @@ export class AuthService {
   }
 
   private generateAccessToken(user: User) {
+    // @ts-ignore
     return jwt.sign(
       { sub: user.id, roles: user.roles },
       config.auth.secretAccessToken,
@@ -28,6 +28,7 @@ export class AuthService {
   }
 
   private generateRefreshToken(user: User) {
+    // @ts-ignore
     return jwt.sign(
       { sub: user.id, roles: user.roles, aud: "/refresh" },
       config.auth.secretAccessToken,
@@ -167,38 +168,6 @@ export class AuthService {
     } catch (err) {
       throw new Error("auth/invalid-refresh-token");
     }
-  }
-
-  async forgotPassword(email: string): Promise<void> {
-    const userRepository = this.ormConnection.getRepository(User);
-    const user = await userRepository.findOne({ where: { email } });
-
-    if (!user) {
-      // Return silently to prevent email enumeration
-      return;
-    }
-
-    // Generate reset token
-    const resetToken = crypto.randomBytes(32).toString("hex");
-    const resetTokenExpiry = new Date(Date.now() + 3600000); // 1 hour from now
-
-    // Save reset token to user
-    await userRepository.update(user.id, {
-      attributes: [
-        ...(user.attributes || []).filter((attr) =>
-          attr.key !== "resetToken" && attr.key !== "resetTokenExpiry"
-        ),
-        { key: "resetToken", value: resetToken },
-        { key: "resetTokenExpiry", value: resetTokenExpiry.toISOString() },
-      ],
-    });
-
-    // Send reset email
-    await emailService.sendPasswordResetEmail(
-      user.email,
-      user.username || "User",
-      resetToken,
-    );
   }
 
   async updatePassword(userId: number, newPassword: string): Promise<void> {

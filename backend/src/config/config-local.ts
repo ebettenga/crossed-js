@@ -1,4 +1,4 @@
-import { PostgresConnectionOptions } from "typeorm/driver/postgres/PostgresConnectionOptions";
+import { PostgresConnectionOptions } from "typeorm/driver/postgres/PostgresConnectionOptions.js";
 
 export const config = {
   logger: {
@@ -16,7 +16,7 @@ export const config = {
     database: "crossed",
     synchronize: false,
     logging: false,
-    entities: ["./src/entities/**/*.ts"],
+    entities: ["./src/entities/**/*.ts", "./"],
     migrations: ["./src/migrations/**/*.ts"],
     subscribers: ["./src/subscribers/**/*.ts"],
   } as PostgresConnectionOptions,

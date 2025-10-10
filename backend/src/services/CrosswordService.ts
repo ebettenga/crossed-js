@@ -1,6 +1,6 @@
 import { DataSource } from "typeorm";
-import { Crossword } from "../entities/Crossword";
-import { Room } from "../entities/Room";
+import { Crossword } from "../entities/Crossword.entity";
+import { Room } from "../entities/Room.entity";
 import { NotFoundError } from "../errors/api";
 import * as fs from "fs";
 import * as path from "path";

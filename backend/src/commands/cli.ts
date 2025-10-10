@@ -9,7 +9,7 @@ import AppDataSource from "../db";
 import { gameInactivityQueue } from "../jobs/queues";
 import { v4 as uuidv4 } from "uuid";
 import { AuthService } from "../services/AuthService";
-import { User } from "../entities/User";
+import { User } from "../entities/User.entity";
 
 program
   .command("load-crosswords")

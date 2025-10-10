@@ -1,13 +1,13 @@
 import { Worker } from "bullmq";
 import { config } from "../../config/config";
 import { DataSource } from "typeorm";
-import { Room } from "../../entities/Room";
+import { Room } from "../../entities/Room.entity";
 import { NotFoundError } from "../../errors/api";
 import { FastifyInstance } from "fastify";
 import { createSocketEventService } from "../../services/SocketEventService";
 import { gameInactivityQueue } from "../queues";
 import { v4 as uuidv4 } from "uuid";
-import { Crossword } from "../../entities/Crossword";
+import { Crossword } from "../../entities/Crossword.entity";
 import { RedisService } from "../../services/RedisService";
 import { RoomService } from "../../services/RoomService";
 /**

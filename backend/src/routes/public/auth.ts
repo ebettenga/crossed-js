@@ -24,22 +24,5 @@ export default function (
     reply.send(result);
   });
 
-  fastify.post("/forgot-password", async (request, reply) => {
-    const { email } = request.body as { email: string };
-
-    try {
-      await authService.forgotPassword(email);
-      reply.send({
-        message:
-          "If an account exists with that email, you will receive a password reset link",
-      });
-    } catch (error) {
-      fastify.log.error("Error in forgot password:", error);
-      reply.code(500).send({
-        error: "Failed to process password reset request",
-      });
-    }
-  });
-
   next();
 }

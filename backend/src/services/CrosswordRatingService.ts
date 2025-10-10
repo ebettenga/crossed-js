@@ -1,7 +1,10 @@
 import { DataSource } from "typeorm";
-import { CrosswordRating, DifficultyRating } from "../entities/CrosswordRating";
-import { User } from "../entities/User";
-import { Crossword } from "../entities/Crossword";
+import {
+  CrosswordRating,
+  DifficultyRating,
+} from "../entities/CrosswordRating.entity";
+import { User } from "../entities/User.entity";
+import { Crossword } from "../entities/Crossword.entity";
 import { NotFoundError } from "../errors/api";
 
 export class CrosswordRatingService {
@@ -14,11 +17,13 @@ export class CrosswordRatingService {
   async rateDifficulty(
     userId: number,
     crosswordId: number,
-    rating: DifficultyRating
+    rating: DifficultyRating,
   ): Promise<CrosswordRating> {
     const [user, crossword] = await Promise.all([
       this.ormConnection.getRepository(User).findOneBy({ id: userId }),
-      this.ormConnection.getRepository(Crossword).findOneBy({ id: crosswordId }),
+      this.ormConnection.getRepository(Crossword).findOneBy({
+        id: crosswordId,
+      }),
     ]);
 
     if (!user || !crossword) {
@@ -55,7 +60,7 @@ export class CrosswordRatingService {
   async rateQuality(
     userId: number,
     crosswordId: number,
-    rating: number
+    rating: number,
   ): Promise<CrosswordRating> {
     if (rating < 1 || rating > 5) {
       throw new Error("Rating must be between 1 and 5");
@@ -63,7 +68,9 @@ export class CrosswordRatingService {
 
     const [user, crossword] = await Promise.all([
       this.ormConnection.getRepository(User).findOneBy({ id: userId }),
-      this.ormConnection.getRepository(Crossword).findOneBy({ id: crosswordId }),
+      this.ormConnection.getRepository(Crossword).findOneBy({
+        id: crosswordId,
+      }),
     ]);
 
     if (!user || !crossword) {
@@ -128,9 +135,10 @@ export class CrosswordRatingService {
     }
 
     // Calculate average quality rating
-    const qualityRatings = ratings.filter(r => r.qualityRating);
+    const qualityRatings = ratings.filter((r) => r.qualityRating);
     const averageQuality = qualityRatings.length > 0
-      ? qualityRatings.reduce((sum, r) => sum + r.qualityRating, 0) / qualityRatings.length
+      ? qualityRatings.reduce((sum, r) => sum + r.qualityRating, 0) /
+        qualityRatings.length
       : 0;
 
     // Calculate difficulty breakdown
@@ -140,7 +148,7 @@ export class CrosswordRatingService {
       too_hard: 0,
     };
 
-    ratings.forEach(rating => {
+    ratings.forEach((rating) => {
       if (rating.difficultyRating) {
         difficultyBreakdown[rating.difficultyRating]++;
       }
