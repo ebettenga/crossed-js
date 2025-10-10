@@ -4,15 +4,15 @@ import {
   Entity,
   JoinColumn,
   JoinTable,
-  ManyToOne,
   ManyToMany,
+  ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
 } from "typeorm";
-import { User } from "./User";
-import { Crossword } from "./Crossword";
-import { GameStats } from "./GameStats";
-import { CachedGameInfo } from "../services/RedisService";
+import type { User } from "./User";
+import type { Crossword } from "./Crossword";
+import type { GameStats } from "./GameStats";
+import type { CachedGameInfo } from "../services/RedisService";
 
 export type GameType = "1v1" | "2v2" | "free4all" | "time_trial";
 export type GameStatus = "playing" | "pending" | "finished" | "cancelled";
@@ -70,7 +70,7 @@ export class Room {
   })
   status: GameStatus;
 
-  @ManyToMany(() => User, { eager: true })
+  @ManyToMany("User", { eager: true })
   @JoinTable({
     name: "room_players",
     joinColumn: { name: "room_id", referencedColumnName: "id" },
@@ -78,7 +78,7 @@ export class Room {
   })
   players: User[];
 
-  @ManyToOne(() => Crossword, { eager: true })
+  @ManyToOne("Crossword", { eager: true })
   @JoinColumn()
   crossword: Crossword;
 
@@ -89,7 +89,7 @@ export class Room {
   @CreateDateColumn()
   created_at: Date;
 
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ type: "timestamp", nullable: true })
   completed_at: Date;
 
   @Column("text")
@@ -98,10 +98,11 @@ export class Room {
   @Column("char", { array: true, default: "{}" })
   found_letters: string[];
 
-  @OneToMany(() => GameStats, (gameStats) => gameStats.room)
+  // @ts-ignore
+  @OneToMany("GameStats", (gameStats) => gameStats.room)
   stats: GameStats[];
 
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ type: "timestamp", nullable: true })
   last_activity_at: Date;
 
   // Cache for toView result
@@ -170,12 +171,12 @@ export class Room {
         gridnums: this.crossword.gridnums,
         clues: {
           across: this.crossword.clues.across,
-          down: this.crossword.clues.down
+          down: this.crossword.clues.down,
         },
         title: this.crossword.title,
         author: this.crossword.author,
         created_by: this.crossword.created_by,
-        creator_link: this.crossword.creator_link
+        creator_link: this.crossword.creator_link,
       },
       found_letters: foundLetters ? foundLetters : this.found_letters,
       board: this.createBoard(),
@@ -212,12 +213,11 @@ export class Room {
         squareType: this.getSquareType(
           /[a-zA-z]/.test(letterCharacter),
           this.crossword.circles ? this.crossword.circles[index] === 1 : false,
-          letterCharacter === "."
+          letterCharacter === ".",
         ),
-        gridnumber:
-          parseInt(this.crossword.gridnums[index]) !== 0
-            ? parseInt(this.crossword.gridnums[index])
-            : null,
+        gridnumber: parseInt(this.crossword.gridnums[index]) !== 0
+          ? parseInt(this.crossword.gridnums[index])
+          : null,
         letter: letterCharacter !== "*" ? letterCharacter : undefined,
       } as Square;
     });
@@ -269,7 +269,10 @@ export class Room {
         }
 
         if (lastNonBlackSquare) {
-        square.acrossQuestion = this.getClueByQuestionNumber(acrossClues, lastNonBlackSquare.gridnumber)?.hint;
+          square.acrossQuestion = this.getClueByQuestionNumber(
+            acrossClues,
+            lastNonBlackSquare.gridnumber,
+          )?.hint;
         }
       });
     });
@@ -288,7 +291,10 @@ export class Room {
           }
         }
         if (lastNonBlackSquare) {
-          square.downQuestion = this.getClueByQuestionNumber(downClues, lastNonBlackSquare.gridnumber)?.hint;
+          square.downQuestion = this.getClueByQuestionNumber(
+            downClues,
+            lastNonBlackSquare.gridnumber,
+          )?.hint;
         }
       });
     });

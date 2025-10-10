@@ -1,6 +1,13 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, OneToOne } from "typeorm";
-import { User } from "./User";
-import { Crossword } from "./Crossword";
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  ManyToOne,
+  OneToOne,
+  PrimaryGeneratedColumn,
+} from "typeorm";
+import type { User } from "./User";
+import type { Crossword } from "./Crossword";
 
 export type DifficultyRating = "too_easy" | "just_right" | "too_hard";
 
@@ -9,13 +16,13 @@ export class CrosswordRating {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @ManyToOne(() => User, { eager: true })
+  @ManyToOne("User", { eager: true })
   user: User;
 
   @Column({ type: "int" })
   userId: number;
 
-  @ManyToOne(() => Crossword, { eager: true })
+  @ManyToOne("Crossword", { eager: true })
   crossword: Crossword;
 
   @Column({ type: "int" })
@@ -24,14 +31,13 @@ export class CrosswordRating {
   @Column({
     type: "enum",
     enum: ["too_easy", "just_right", "too_hard"],
-    nullable: true
+    nullable: true,
   })
   difficultyRating: DifficultyRating;
 
   @Column({
     type: "int",
     nullable: true,
-    check: "quality_rating >= 1 AND quality_rating <= 5"
   })
   qualityRating: number;
 

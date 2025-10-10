@@ -7,8 +7,8 @@ import {
   OneToOne,
   PrimaryGeneratedColumn,
 } from "typeorm";
-import { Room } from "./Room";
-import { GameStats } from "./GameStats";
+import type { Room } from "./Room";
+import type { GameStats } from "./GameStats";
 
 @Entity()
 export class User {
@@ -62,8 +62,13 @@ export class User {
   @Column({ type: "integer", default: 1200 })
   eloRating!: number;
 
-  @OneToMany(() => GameStats, (stats) => stats.user, { eager: true })
+  // @ts-ignore
+  @OneToMany("GameStats", (stats) => stats.user, { eager: true })
   gameStats!: GameStats[];
+
+  // @ts-ignore
+  @ManyToMany("Room", (room) => room.players)
+  rooms!: Room[];
 
   // Virtual properties for statistics
   gamesWon!: number;
@@ -114,7 +119,4 @@ export class User {
       status: this.status || "offline",
     };
   }
-
-  @ManyToMany(() => Room, (room) => room.players)
-  rooms!: Room[];
 }

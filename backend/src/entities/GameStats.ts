@@ -5,21 +5,22 @@ import {
   ManyToOne,
   PrimaryGeneratedColumn,
 } from "typeorm";
-import { User } from "./User";
-import { Room } from "./Room";
+import type { User } from "./User";
+import type { Room } from "./Room";
 
 @Entity()
 export class GameStats {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @ManyToOne(() => User, (user) => user.gameStats)
+  // @ts-ignore
+  @ManyToOne("User", (user) => user.gameStats)
   user: User;
 
   @Column("integer")
   userId: number;
 
-  @ManyToOne(() => Room)
+  @ManyToOne("Room")
   room: Room;
 
   @Column("integer")
