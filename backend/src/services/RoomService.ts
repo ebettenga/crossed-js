@@ -28,7 +28,7 @@ export class RoomService {
     );
     this.redisService = new RedisService();
   }
-
+  å;
   private async ensureGameStatsEntry(
     room: Room,
     user: User,
@@ -690,10 +690,9 @@ export class RoomService {
       .andWhere((qb) => {
         const subQuery = qb
           .subQuery()
-          .select("r.id")
-          .from(Room, "r")
-          .innerJoin("r.players", "p")
-          .where("p.id = :userId")
+          .select("rp.room_id")
+          .from("room_players", "rp")
+          .where("rp.user_id = :userId")
           .getQuery();
         return "room.id IN " + subQuery;
       })
