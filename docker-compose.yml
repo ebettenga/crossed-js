@@ -26,29 +26,6 @@ services:
     networks:
       - app-network
 
-  # backend:
-  #   build:
-  #     context: ./backend
-  #     dockerfile: Dockerfile
-  #   environment:
-  #     NODE_ENV: production
-  #     PGHOST: db
-  #     PGUSER: postgres
-  #     PGPORT: 5432
-  #     PGPASSWORD: postgres
-  #     POSTGRES_DB: crossed
-  #     SECRET_ACCESS_TOKEN: adfhadfhadfh2j51jk
-  #     SECRET_KEY_PATH: "../src/config/secret-key"
-  #     REDIS_HOST: redis
-  #   ports:
-  #     - "3000:3000"
-  #   command: ["yarn", "start"]
-  #   networks:
-  #     - app-network
-  #   depends_on:
-  #     - db
-  #     - redis
-
   worker:
     build:
       context: ./backend
