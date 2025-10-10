@@ -35,9 +35,9 @@ export class RedisService {
     this.serverId = uuidv4();
 
     // Create separate connections for pub/sub
-    this.publisher = new Redis(config.redis.default);
-    this.subscriber = new Redis(config.redis.default);
-    this.redis = new Redis(config.redis.default);
+    this.publisher = new Redis(config.redis.default + "?family=0");
+    this.subscriber = new Redis(config.redis.default + "?family=0");
+    this.redis = new Redis(config.redis.default + "?family=0");
   }
 
   // Get the server ID

@@ -38,13 +38,16 @@ export const gameTimeoutQueue = new Queue<GameTimeoutJobData>("game-timeout", {
   },
 });
 
-export const gameInactivityQueue = new Queue<GameInactivityJobData>("game-inactivity", {
-  connection: config.redis.default,
-  defaultJobOptions: {
-    removeOnComplete: true,
-    removeOnFail: 1000,
+export const gameInactivityQueue = new Queue<GameInactivityJobData>(
+  "game-inactivity",
+  {
+    connection: config.redis.default,
+    defaultJobOptions: {
+      removeOnComplete: true,
+      removeOnFail: 1000,
+    },
   },
-});
+);
 
 // Add initial repeatable job
 statusCleanupQueue.upsertJobScheduler(

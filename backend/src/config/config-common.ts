@@ -56,6 +56,7 @@ export const commonConfig = {
   },
   redis: {
     default: {
+      family: 0,
       host: redisURL?.hostname || "localhost",
       port: parseInt(redisURL?.port || "6379"),
       username: redisURL?.username || "default",

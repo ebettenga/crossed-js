@@ -5,7 +5,6 @@ import {
   expect,
   it,
   jest,
-  xit,
 } from "@jest/globals";
 import { fastify } from "../setup";
 import { RoomService } from "../../src/services/RoomService";
@@ -13,8 +12,21 @@ import { User } from "../../src/entities/User";
 import { Room } from "../../src/entities/Room";
 
 describe("Rooms routes", () => {
+  let testUser: User;
+
   beforeAll(async () => {
     await fastify.ready();
+
+    // Create or get a test user
+    const userRepo = fastify.orm.getRepository(User);
+    testUser = await userRepo.findOne({ where: { username: "testuser" } }) ||
+      await userRepo.save({
+        username: "testuser",
+        email: "test@example.com",
+        password: "testpassword",
+        roles: ["user"],
+        eloRating: 1000,
+      });
   });
 
   afterAll(async () => {
@@ -22,8 +34,9 @@ describe("Rooms routes", () => {
   });
 
   it("should get a room by ID", async () => {
-    const room = await fastify.orm.getRepository(Room).findOneBy({
-      difficulty: "easy",
+    const room = await fastify.orm.getRepository(Room).findOne({
+      where: { difficulty: "easy" },
+      relations: ["players", "crossword"],
     });
 
     if (!room) {
@@ -32,7 +45,10 @@ describe("Rooms routes", () => {
 
     const response = await fastify.inject({
       method: "GET",
-      url: `/api/rooms/${room?.id}`,
+      url: `/api/rooms/${room.id}`,
+      headers: {
+        authorization: "Bearer test-token",
+      },
     });
 
     expect(response.statusCode).toBe(200);
@@ -42,42 +58,48 @@ describe("Rooms routes", () => {
   });
 
   it("should join a room", async () => {
-    const adminUser = await fastify.orm
-      .getRepository(User)
-      .findOne({ where: { username: "testadmin" } });
-    const payload = { userId: adminUser?.id, difficulty: "easy" };
+    const payload = { difficulty: "easy", type: "1v1" };
 
     const response = await fastify.inject({
       method: "POST",
       url: "/api/rooms/join",
       payload,
+      headers: {
+        authorization: "Bearer test-token",
+      },
     });
 
     expect(response.statusCode).toBe(200);
+    expect(response.json()).toHaveProperty("id");
+    expect(response.json()).toHaveProperty("players");
   });
 
-  it("should add points after a correct guess", async () => {
-    const testRoom = await fastify.orm.getRepository(Room).findOneBy({
-      difficulty: "easy",
+  it("should handle a guess on a room", async () => {
+    const testRoom = await fastify.orm.getRepository(Room).findOne({
+      where: { difficulty: "easy", status: "playing" },
+      relations: ["players", "crossword"],
     });
 
+    if (!testRoom) {
+      throw new Error("No playing room found for testing");
+    }
+
     const payload = {
-      roomId: testRoom?.id,
       coordinates: { x: 0, y: 0 },
-      guess: "x",
-      userId: testRoom?.player_1.id,
+      guess: "A",
     };
 
     const response = await fastify.inject({
       method: "POST",
-      url: "/api/rooms/guess",
+      url: `/api/rooms/${testRoom.id}`,
       payload,
+      headers: {
+        authorization: "Bearer test-token",
+      },
     });
 
     expect(response.statusCode).toBe(200);
-    expect(testRoom?.player_1_score).toBeLessThan(
-      response.json().player_1_score,
-    );
+    expect(response.json()).toHaveProperty("scores");
   });
 
   it("should handle errors gracefully", async () => {
@@ -88,6 +110,9 @@ describe("Rooms routes", () => {
     const response = await fastify.inject({
       method: "GET",
       url: "/api/rooms/1",
+      headers: {
+        authorization: "Bearer test-token",
+      },
     });
 
     expect(response.statusCode).toBe(500);

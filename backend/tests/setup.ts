@@ -1,4 +1,5 @@
 import "reflect-metadata";
+import { jest } from "@jest/globals";
 import fastifySecureSession from "@fastify/secure-session";
 import fastifyIO from "fastify-socket.io";
 import { registerDb } from "../src/db";
@@ -14,7 +15,23 @@ import { findDir } from "../src/scripts/findConfigDir";
 
 const dirname = path.resolve(__dirname, "../");
 
-// Remove the findConfigDir function from here
+// Mock AuthService before it's imported by the autohook
+// @ts-ignore - Mocking for tests
+jest.mock("../src/services/AuthService", () => {
+  return {
+    AuthService: jest.fn().mockImplementation(() => {
+      return {
+        // @ts-ignore - Mock return value
+        verify: jest.fn().mockResolvedValue({ sub: 1, roles: ["user"] }),
+        signup: jest.fn(),
+        signin: jest.fn(),
+        refresh: jest.fn(),
+        forgotPassword: jest.fn(),
+        updatePassword: jest.fn(),
+      };
+    }),
+  };
+});
 
 let configDir = findDir(dirname, "config", {
   ignoreDirs: testConfig.ignoreDirs,
@@ -35,37 +52,15 @@ if (fs.existsSync(secretKeyPath)) {
   });
 }
 
-// register all the plugins that our app uses
-
+// Register database
 registerDb(fastify);
 
-// Mock authentication by adding a preHandler hook
-fastify.addHook("preHandler", async (request, reply) => {
-  // Create a mock user for all requests
-  const userRepo = fastify.orm.getRepository(User);
-  let testUser = await userRepo.findOne({ where: { username: "testuser" } });
-
-  if (!testUser) {
-    testUser = userRepo.create({
-      username: "testuser",
-      email: "test@example.com",
-      password: "testpassword",
-      roles: ["user"],
-      eloRating: 1000,
-      gamesWon: 0,
-      gamesLost: 0,
-      guessAccuracy: 0,
-      winRate: 0,
-    });
-    testUser = await userRepo.save(testUser);
-  }
-
-  // @ts-ignore - Adding user property for testing
-  request.user = testUser;
-});
+// Register socket.io
 fastify.register(fastifyIO);
+
+// Register routes - the autohook will use our mocked AuthService
 fastify.register(fastifyAutoload, {
-  dir: join(dirname, "src/routes"), // Corrected path
+  dir: join(dirname, "src/routes"),
   dirNameRoutePrefix: true,
   options: { prefix: config.api.prefix },
 });
