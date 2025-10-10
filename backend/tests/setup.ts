@@ -33,6 +33,32 @@ jest.mock("../src/services/AuthService", () => {
   };
 });
 
+// Mock RedisService to avoid Redis connection issues in tests
+// @ts-ignore - Mocking for tests
+jest.mock("../src/services/RedisService", () => {
+  const mockRedisService = {
+    getServerId: jest.fn().mockReturnValue("test-server-id"),
+    cacheGame: jest.fn(),
+    // @ts-ignore - Mock return value
+    getGame: jest.fn().mockResolvedValue(null),
+    registerUserSocket: jest.fn(),
+    unregisterUserSocket: jest.fn(),
+    // @ts-ignore - Mock return value
+    isUserOnThisServer: jest.fn().mockResolvedValue(true),
+    // @ts-ignore - Mock return value
+    getUserServer: jest.fn().mockResolvedValue("test-server-id"),
+    publish: jest.fn(),
+    subscribe: jest.fn(),
+    unsubscribe: jest.fn(),
+    close: jest.fn(),
+  };
+
+  return {
+    RedisService: jest.fn().mockImplementation(() => mockRedisService),
+    redisService: mockRedisService,
+  };
+});
+
 let configDir = findDir(dirname, "config", {
   ignoreDirs: testConfig.ignoreDirs,
 });
