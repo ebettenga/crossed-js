@@ -142,7 +142,7 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
             return;
         }
         guess(roomId, { x: selectedCell.x, y: selectedCell.y }, key);
-        setLastGuessCell({ x: selectedCell.x, y: selectedCell.y, playerId: currentUser?.id || '' });
+        setLastGuessCell({ x: selectedCell.x, y: selectedCell.y, playerId: String(currentUser?.id ?? "") });
         // Move to next cell based on direction
         const nextCell = getNextCell(selectedCell);
         if (nextCell) {
@@ -202,6 +202,70 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
         return null;
     };
 
+    // Helpers for clue navigation to ensure deterministic sequencing by direction
+    const isStartOfWord = (cell: Square, board: Square[][], across: boolean): boolean => {
+        const { x, y } = cell;
+        if (across) {
+            if (!cell.acrossQuestion) return false;
+            return y === 0 || board[x][y - 1].squareType === SquareType.BLACK;
+        } else {
+            if (!cell.downQuestion) return false;
+            return x === 0 || board[x - 1][y].squareType === SquareType.BLACK;
+        }
+    };
+
+    const getWordStart = (cell: Square, board: Square[][], across: boolean): Square => {
+        let { x, y } = cell;
+        if (across) {
+            while (y > 0 && board[x][y - 1].squareType !== SquareType.BLACK) y--;
+        } else {
+            while (x > 0 && board[x - 1][y].squareType !== SquareType.BLACK) x--;
+        }
+        return board[x][y];
+    };
+
+    const getWordCells = (start: Square, board: Square[][], across: boolean): Square[] => {
+        const cells: Square[] = [];
+        const startX = start.x;
+        const startY = start.y;
+        if (across) {
+            let yy = startY;
+            while (yy < board[startX].length && board[startX][yy].squareType !== SquareType.BLACK) {
+                cells.push(board[startX][yy]);
+                yy++;
+            }
+        } else {
+            let xx = startX;
+            while (xx < board.length && board[xx][startY].squareType !== SquareType.BLACK) {
+                cells.push(board[xx][startY]);
+                xx++;
+            }
+        }
+        return cells;
+    };
+
+    const buildClueStartList = (board: Square[][], across: boolean): Square[] => {
+        const starts: Square[] = [];
+        for (let x = 0; x < board.length; x++) {
+            for (let y = 0; y < board[x].length; y++) {
+                const cell = board[x][y];
+                if (cell.squareType === SquareType.BLACK) continue;
+                if (isStartOfWord(cell, board, across)) {
+                    const cells = getWordCells(cell, board, across);
+                    const anyUnsolved = cells.some(c => c.squareType !== SquareType.SOLVED);
+                    if (anyUnsolved) starts.push(cell);
+                }
+            }
+        }
+        starts.sort((a, b) => {
+            const ag = a.gridnumber ?? Number.MAX_SAFE_INTEGER;
+            const bg = b.gridnumber ?? Number.MAX_SAFE_INTEGER;
+            if (ag !== bg) return ag - bg;
+            return a.x === b.x ? a.y - b.y : a.x - b.x;
+        });
+        return starts;
+    };
+
     const handleForfeit = () => {
         forfeit(roomId);
     };
@@ -251,40 +315,26 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
         if (!selectedCell || !room?.board) return;
 
         const board = room.board;
-        // Get all squares with clues, filtering out duplicates and solved squares
-        const clueSquares = board.flat().filter(square => {
-            const clue = isAcrossMode ? square.acrossQuestion : square.downQuestion;
-            const isUnsolved = square.squareType !== SquareType.SOLVED;
-            // Only include squares that have a clue and are unsolved
-            return clue && isUnsolved;
-        }).reduce((unique, square) => {
-            const clue = isAcrossMode ? square.acrossQuestion : square.downQuestion;
-            // For each clue, only keep the first unsolved square
-            const existingSquare = unique.find(s =>
-                isAcrossMode ? s.acrossQuestion === clue : s.downQuestion === clue
-            );
-            if (!existingSquare) {
-                unique.push(square);
-            }
-            return unique;
-        }, [] as Square[]).sort((a, b) => (a.gridnumber || 0) - (b.gridnumber || 0));
+        const across = isAcrossMode;
 
-        const currentClue = isAcrossMode ? selectedCell.acrossQuestion : selectedCell.downQuestion;
-        const currentIndex = clueSquares.findIndex(square => {
-            const squareClue = isAcrossMode ? square.acrossQuestion : square.downQuestion;
-            return squareClue === currentClue;
-        });
+        // Build an ordered list of clue starts for the current direction, only including clues with any unsolved cells
+        const starts = buildClueStartList(board, across);
+        if (starts.length === 0) return;
 
-        if (currentIndex === -1) return;
+        // Find the start of the currently selected clue (by walking to the beginning of the word)
+        const currentStart = getWordStart(selectedCell, board, across);
+        const currentIndex = starts.findIndex(s => s.x === currentStart.x && s.y === currentStart.y);
 
-        let nextIndex;
-        if (direction === 'next') {
-            nextIndex = currentIndex + 1 >= clueSquares.length ? 0 : currentIndex + 1;
-        } else {
-            nextIndex = currentIndex - 1 < 0 ? clueSquares.length - 1 : currentIndex - 1;
-        }
+        const baseIndex = currentIndex === -1 ? 0 : currentIndex;
+        const nextIndex = direction === 'next'
+            ? (baseIndex + 1) % starts.length
+            : (baseIndex - 1 + starts.length) % starts.length;
 
-        setSelectedCell(clueSquares[nextIndex]);
+        const nextStart = starts[nextIndex];
+        const wordCells = getWordCells(nextStart, board, across);
+        const firstUnsolved = wordCells.find(c => c.squareType !== SquareType.SOLVED);
+
+        setSelectedCell(firstUnsolved ?? nextStart);
     };
 
     return (
