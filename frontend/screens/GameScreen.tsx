@@ -251,9 +251,8 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
                 const cell = board[x][y];
                 if (cell.squareType === SquareType.BLACK) continue;
                 if (isStartOfWord(cell, board, across)) {
-                    const cells = getWordCells(cell, board, across);
-                    const anyUnsolved = cells.some(c => c.squareType !== SquareType.SOLVED);
-                    if (anyUnsolved) starts.push(cell);
+                    // Include all clue starts; we'll filter solved words during navigation
+                    starts.push(cell);
                 }
             }
         }
@@ -317,7 +316,7 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
         const board = room.board;
         const across = isAcrossMode;
 
-        // Build an ordered list of clue starts for the current direction, only including clues with any unsolved cells
+        // Build an ordered list of ALL clue starts for the current direction
         const starts = buildClueStartList(board, across);
         if (starts.length === 0) return;
 
@@ -326,15 +325,29 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
         const currentIndex = starts.findIndex(s => s.x === currentStart.x && s.y === currentStart.y);
 
         const baseIndex = currentIndex === -1 ? 0 : currentIndex;
-        const nextIndex = direction === 'next'
-            ? (baseIndex + 1) % starts.length
-            : (baseIndex - 1 + starts.length) % starts.length;
+        const step = direction === 'next' ? 1 : -1;
 
-        const nextStart = starts[nextIndex];
-        const wordCells = getWordCells(nextStart, board, across);
-        const firstUnsolved = wordCells.find(c => c.squareType !== SquareType.SOLVED);
+        // Iterate until we find a clue with an unsolved letter, wrapping as needed.
+        let idx = (baseIndex + step + starts.length) % starts.length;
+        let visited = 0;
+        let target: Square | null = null;
 
-        setSelectedCell(firstUnsolved ?? nextStart);
+        while (visited < starts.length) {
+            const start = starts[idx];
+            const wordCells = getWordCells(start, board, across);
+            const firstUnsolved = wordCells.find(c => c.squareType !== SquareType.SOLVED);
+            if (firstUnsolved) {
+                target = firstUnsolved;
+                break;
+            }
+            idx = (idx + step + starts.length) % starts.length;
+            visited++;
+        }
+
+        // If all words are solved, keep current selection; otherwise move to the found unsolved letter
+        if (target) {
+            setSelectedCell(target);
+        }
     };
 
     return (
