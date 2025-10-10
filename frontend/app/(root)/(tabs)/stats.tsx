@@ -37,21 +37,37 @@ interface GameRowProps {
     userId: number;
 }
 
+// Normalize API timestamps that occasionally arrive without timezone info.
+const parseServerDate = (value?: string | null) => {
+    if (!value) return null;
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+        return null;
+    }
+    const hasTimezone = /([zZ]|[+-]\d{2}:?\d{2})$/.test(value);
+    if (!hasTimezone) {
+        const offsetMinutes = date.getTimezoneOffset();
+        return new Date(date.getTime() - offsetMinutes * 60 * 1000);
+    }
+    return date;
+};
+
 const GameRow: React.FC<GameRowProps> = ({ game, userId }) => {
     const { isEloVisible } = useEloVisibility();
+    const isTimeTrial = game.room.type === 'time_trial';
     const isWinner = game.room.scores[userId] === Math.max(...Object.values(game.room.scores));
     const userScore = game.room.scores[userId];
-    const completedAt = game.room.completed_at ?? game.room.created_at;
+    const completedAt = parseServerDate(game.room.completed_at ?? game.room.created_at);
 
     return (
         <View className="bg-neutral-50 dark:bg-neutral-800 p-4 rounded-xl border border-neutral-200 dark:border-neutral-700">
             <View className="gap-2">
                 <View className="flex-row justify-between items-center">
                     <Text className="text-base font-semibold text-[#1D2124] dark:text-[#DDE1E5] font-['Times_New_Roman']">
-                        {isWinner ? 'Victory' : 'Defeat'}
+                        {isTimeTrial ? 'Time Trial' : (isWinner ? 'Victory' : 'Defeat')}
                     </Text>
                     <Text className="text-sm text-[#666666] dark:text-neutral-400 font-['Times_New_Roman']">
-                        {formatDistanceToNow(new Date(completedAt), { addSuffix: true })}
+                        {completedAt ? formatDistanceToNow(completedAt, { addSuffix: true }) : 'Unknown time'}
                     </Text>
                 </View>
                 <View className="flex-row items-center gap-2">
