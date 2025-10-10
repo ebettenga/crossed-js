@@ -331,7 +331,7 @@ export const useSocket = () => {
     socket.on("reconnect_failed", handleReconnectFailed);
 
     // Initial connection
-    if (!socket.connected && socket.auth?.authToken && !shouldBlockReconnect.current) {
+    if (!socket.connected && (socket as any).auth?.authToken && !shouldBlockReconnect.current) {
       setIsConnecting(true);
       socket.connect();
     } else {
@@ -483,6 +483,71 @@ export const useRoom = (roomId?: number) => {
   const { data: activeRooms, refetch: refetchActiveRooms } = useActiveRooms();
   const [revealedLetterIndex, setRevealedLetterIndex] = useState<number | undefined>(undefined);
 
+  // Guess queue to ensure sequential processing and prevent race conditions
+  const guessQueue = useRef<Array<{ roomId: number; x: number; y: number; guess: string }>>([]);
+  const isProcessingGuess = useRef(false);
+  const TIMEOUT_MS = 3000;
+
+  const processNextGuess = useCallback(() => {
+    if (isProcessingGuess.current) return;
+    if (!socket || !isConnected) return;
+
+    const next = guessQueue.current.shift();
+    if (!next) return;
+
+    isProcessingGuess.current = true;
+
+    let timeoutId: ReturnType<typeof setTimeout>;
+
+    // Fallback: if server doesn't support acks, consider a "room" update as acknowledgment
+    const onRoom = () => {
+      socket.off("room", onRoom);
+      clearTimeout(timeoutId);
+      isProcessingGuess.current = false;
+      processNextGuess();
+    };
+
+    timeoutId = setTimeout(() => {
+      socket.off("room", onRoom);
+      isProcessingGuess.current = false;
+      console.warn("Guess ack timeout, continuing...");
+      processNextGuess();
+    }, TIMEOUT_MS);
+
+    try {
+      socket.emit("guess", JSON.stringify(next), (ack?: { success: boolean }) => {
+        // Ack path (preferred)
+        socket.off("room", onRoom);
+        clearTimeout(timeoutId);
+        isProcessingGuess.current = false;
+
+        if (!ack?.success) {
+          console.warn("Guess failed, requeueing:", next);
+          guessQueue.current.unshift(next);
+          setTimeout(processNextGuess, 200);
+          return;
+        }
+
+        processNextGuess();
+      });
+
+      // Fallback path (if the backend doesn't call the ack callback)
+      socket.on("room", onRoom);
+    } catch (e) {
+      socket.off("room", onRoom);
+      clearTimeout(timeoutId);
+      isProcessingGuess.current = false;
+      console.warn("Guess emit error, requeueing:", next, e);
+      guessQueue.current.unshift(next);
+      setTimeout(processNextGuess, 500);
+    }
+  }, [socket, isConnected]);
+
+  const queueGuess = useCallback((roomId: number, coordinates: { x: number; y: number }, letter: string) => {
+    guessQueue.current.push({ roomId, x: coordinates.x, y: coordinates.y, guess: letter });
+    processNextGuess();
+  }, [processNextGuess]);
+
   useEffect(() => {
     if (!isConnected) {
       return;
@@ -570,13 +635,22 @@ export const useRoom = (roomId?: number) => {
     };
   }, [socket, isConnected, roomId, isInitialized, currentUser]);
 
+  // When we (re)connect, attempt to flush any queued guesses
+  useEffect(() => {
+    if (!socket || !isConnected) return;
+    if (guessQueue.current.length > 0) {
+      processNextGuess();
+    }
+  }, [socket, isConnected, processNextGuess]);
+
   const handleGameSummaryClose = () => {
     setShowGameSummary(false);
     router.push('/(root)/(tabs)');
   };
 
-  const guess = (roomId: number, coordinates: { x: number; y: number }, guess: string) => {
-    emit("guess", JSON.stringify({ roomId, x: coordinates.x, y: coordinates.y, guess }));
+  const guess = (roomId: number, coordinates: { x: number; y: number }, letter: string) => {
+    // Queue the guess and process sequentially with server acknowledgment
+    queueGuess(roomId, coordinates, letter);
   };
 
   const refresh = (roomId: number) => {
