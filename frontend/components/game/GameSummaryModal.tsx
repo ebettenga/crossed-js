@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, Pressable } from 'react-native';
 import { Dialog, DialogContent } from '~/components/ui/dialog';
 import { Room } from '~/hooks/useJoinRoom';
@@ -13,6 +13,24 @@ import Animated, {
     withDelay
 } from 'react-native-reanimated';
 import { DifficultyRating } from '~/types/crossword';
+
+type LeaderboardEntry = {
+    rank: number;
+    roomId: number;
+    score: number;
+    user: { id: number; username: string; eloRating: number } | null;
+    created_at: string;
+    completed_at: string | null;
+    timeTakenMs: number | null;
+};
+
+const formatMs = (ms: number | null) => {
+    if (ms == null || ms < 0) return '—';
+    const totalSeconds = Math.floor(ms / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+};
 
 interface GameSummaryModalProps {
     isVisible: boolean;
@@ -54,6 +72,36 @@ export const GameSummaryModal: React.FC<GameSummaryModalProps> = ({
     const [difficultyRating, setDifficultyRating] = useState<DifficultyRating | null>(null);
     const rateDifficulty = useRateDifficulty();
     const rateQuality = useRateQuality();
+
+    // Leaderboard state for time_trial
+    const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[] | null>(null);
+    const [lbLoading, setLbLoading] = useState(false);
+    const [lbError, setLbError] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (!isVisible || !room || room.type !== 'time_trial') {
+            setLeaderboard(null);
+            setLbLoading(false);
+            setLbError(null);
+            return;
+        }
+        setLbLoading(true);
+        setLbError(null);
+        fetch(`/api/rooms/${room.id}/leaderboard/time-trial?limit=10`)
+            .then(async (res) => {
+                if (!res.ok) {
+                    const txt = await res.text().catch(() => '');
+                    throw new Error(`Failed to load leaderboard ${res.status} ${txt}`);
+                }
+                return res.json();
+            })
+            .then((data: LeaderboardEntry[]) => setLeaderboard(data))
+            .catch((err) => {
+                console.error('Leaderboard fetch failed', err);
+                setLbError('Failed to load leaderboard');
+            })
+            .finally(() => setLbLoading(false));
+    }, [isVisible, room?.id, room?.type]);
 
     if (!room || !currentUser) return null;
 
@@ -116,11 +164,42 @@ export const GameSummaryModal: React.FC<GameSummaryModalProps> = ({
                                     Game Type:
                                 </Text>
                                 <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman']">
-                                    {room.type === '1v1' ? '1 vs 1' : room.type === '2v2' ? '2 vs 2' : 'Free for All'}
+                                    {room.type === '1v1' ? '1 vs 1' : room.type === '2v2' ? '2 vs 2' : room.type === 'free4all' ? 'Free for All' : 'Time Trial'}
                                 </Text>
                             </View>
                         </View>
                     </View>
+
+                    {room.type === 'time_trial' && (
+                        <View className="bg-[#F5F5F5] dark:bg-[#1A2227] rounded-lg p-4 mb-6">
+                            <Text className="text-lg text-center text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman'] mb-3">
+                                Top Scores
+                            </Text>
+                            {lbLoading ? (
+                                <Text className="text-center text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">Loading...</Text>
+                            ) : lbError ? (
+                                <Text className="text-center text-[#8B0000] dark:text-[#FF6B6B] font-['Times_New_Roman']">{lbError}</Text>
+                            ) : leaderboard && leaderboard.length > 0 ? (
+                                <View className="space-y-2">
+                                    {leaderboard.map((entry) => {
+                                        const isYou = entry.user?.id === currentUser.id;
+                                        return (
+                                            <View key={entry.roomId} className="flex-row justify-between">
+                                                <Text className={`text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman'] ${isYou ? 'font-semibold' : ''}`}>
+                                                    {entry.rank}. {entry.user?.username ?? 'Anonymous'}
+                                                </Text>
+                                                <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman']">
+                                                    {entry.score} pts • {formatMs(entry.timeTakenMs)}
+                                                </Text>
+                                            </View>
+                                        );
+                                    })}
+                                </View>
+                            ) : (
+                                <Text className="text-center text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">No results yet</Text>
+                            )}
+                        </View>
+                    )}
 
                     <View className="space-y-6 mb-6">
                         <View className="mb-4">

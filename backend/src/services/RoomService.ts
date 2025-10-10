@@ -727,4 +727,84 @@ export class RoomService {
 
     return query.getMany();
   }
+  async getTimeTrialLeaderboard(
+    roomId: number,
+    limit: number = 10,
+  ): Promise<
+    Array<{
+      rank: number;
+      roomId: number;
+      score: number;
+      user: { id: number; username: string; eloRating: number } | null;
+      created_at: string;
+      completed_at: string | null;
+      timeTakenMs: number | null;
+    }>
+  > {
+    const room = await this.getRoomById(roomId);
+    if (!room) {
+      throw new NotFoundError("Room not found");
+    }
+
+    const crosswordId = room.crossword.id;
+
+    // Fetch finished time-trial games on the same crossword
+    const rooms = await this.ormConnection.getRepository(Room).find({
+      where: {
+        type: "time_trial",
+        status: "finished",
+        crossword: { id: crosswordId },
+      },
+      order: { completed_at: "DESC" },
+    });
+
+    // Build leaderboard entries
+    const entries = rooms.map((r) => {
+      const scoresObj = r.scores || {};
+      const scoreValues = Object.values(scoresObj);
+      const score = scoreValues.length > 0 ? Math.max(...scoreValues) : 0;
+
+      const player = r.players && r.players.length > 0 ? r.players[0] : null;
+
+      const timeTakenMs = r.completed_at && r.created_at
+        ? r.completed_at.getTime() - r.created_at.getTime()
+        : null;
+
+      return {
+        roomId: r.id,
+        user: player
+          ? {
+            id: player.id,
+            username: player.username,
+            eloRating: player.eloRating,
+          }
+          : null,
+        score,
+        created_at: r.created_at,
+        completed_at: r.completed_at,
+        timeTakenMs,
+      };
+    });
+
+    // Sort by score (desc), then by time taken (asc if available)
+    entries.sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      const ta = a.timeTakenMs ?? Number.MAX_SAFE_INTEGER;
+      const tb = b.timeTakenMs ?? Number.MAX_SAFE_INTEGER;
+      return ta - tb;
+    });
+
+    // Limit and format dates to ISO strings
+    const top = entries.slice(0, limit).map((e, idx) => ({
+      rank: idx + 1,
+      roomId: e.roomId,
+      score: e.score,
+      user: e.user,
+      created_at: e.created_at.toISOString(),
+      completed_at: e.completed_at ? e.completed_at.toISOString() : null,
+      timeTakenMs: e.timeTakenMs,
+    }));
+
+    return top;
+  }
 }
