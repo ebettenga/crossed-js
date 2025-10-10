@@ -13,11 +13,7 @@
     "prepare": "if [ \"$CI\" != \"true\" ]; then pre-commit install; fi",
     "ci:load-test-data": "yarn commands load-test-data",
     "test": "tsx --experimental-vm-modules node_modules/jest/bin/jest.js --verbose --coverage",
-    "serve:coverage": "npx serve coverage/lcov-report",
-    "typeorm": "typeorm-ts-node-commonjs",
-    "migration:generate": "typeorm-ts-node-commonjs migration:generate",
-    "migration:run": "typeorm-ts-node-commonjs migration:run",
-    "migration:revert": "typeorm-ts-node-commonjs migration:revert"
+    "serve:coverage": "npx serve coverage/lcov-report"
   },
   "dependencies": {
     "@fastify/autoload": "^6.0.2",
