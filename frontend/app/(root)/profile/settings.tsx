@@ -4,13 +4,13 @@ import { PageHeader } from '~/components/Header';
 import { Switch } from '~/components/ui/switch';
 import { Moon, Sun, ChevronLeft, Volume2, VolumeX, Eye, EyeOff } from 'lucide-react-native';
 import { useColorMode } from '~/hooks/useColorMode';
-import { useSound } from '~/hooks/useSound';
+import { useSoundPreference } from '~/hooks/useSoundPreference';
 import { useEloVisibility } from '~/hooks/useEloVisibility';
 import { useRouter } from 'expo-router';
 
 export default function Settings() {
     const { isDark } = useColorMode();
-    const { isSoundEnabled, setSoundEnabled } = useSound();
+    const { isSoundEnabled, setSoundEnabled } = useSoundPreference();
     const { isEloVisible, setEloVisibility } = useEloVisibility();
     const router = useRouter();
 

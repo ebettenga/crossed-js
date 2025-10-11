@@ -13,7 +13,7 @@ export default async function (fastify, opts) {
         const user = await authService.verify(fastify, { token });
         const userRecord = await fastify.orm
           .getRepository(User)
-          .findOneById(user.sub);
+          .findOne({ where: { id: user.sub } });
 
         if (!userRecord) {
           reply.code(403).send({ error: 'Unauthorized' });

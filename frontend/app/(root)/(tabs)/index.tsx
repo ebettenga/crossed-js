@@ -12,6 +12,9 @@ import { Link, useRouter } from 'expo-router';
 import { useActiveRooms, usePendingRooms } from '~/hooks/useActiveRooms';
 import { useUser } from '~/hooks/users';
 import { cn } from '~/lib/utils';
+import { useSound } from "~/hooks/useSound";
+import { pencilSounds, randomPencilKey } from '~/assets/sounds/randomButtonSound';
+import { useSoundPreference } from '~/hooks/useSoundPreference';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const PADDING = 6;
@@ -31,6 +34,8 @@ export default function Home() {
 
     const isBottomSheetOpen = useSharedValue(false);
     const [selectedGameMode, setSelectedGameMode] = React.useState<GameMode | null>(null);
+    const { isSoundEnabled } = useSoundPreference();
+    const { play } = useSound(pencilSounds, { enabled: isSoundEnabled });
 
     const onRefresh = React.useCallback(async () => {
         setRefreshing(true);
@@ -56,6 +61,10 @@ export default function Home() {
         if (!selectedGameMode) return;
 
         const mode = selectedGameMode;
+
+        try {
+            await play(randomPencilKey());
+        } catch { }
 
         join({
             difficulty,

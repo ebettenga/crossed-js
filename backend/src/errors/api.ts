@@ -32,7 +32,7 @@ export class UserNotFoundError extends Error {
   }
 }
 
- export class UniqueConstraintError extends Error {
+export class UniqueConstraintError extends Error {
   statusCode: number;
   constructor(message: string) {
     super(message);
