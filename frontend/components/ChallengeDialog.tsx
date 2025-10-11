@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { View, Text, Modal, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useChallenge } from '~/hooks/useChallenge';
 import { Swords, X } from 'lucide-react-native';
+import { useSound } from '~/hooks/useSound';
+import { useSoundPreference } from '~/hooks/useSoundPreference';
+import { pencilSounds, randomPencilKey } from '~/assets/sounds/randomButtonSound';
 
 type ChallengeDialogProps = {
   isVisible: boolean;
@@ -13,6 +16,8 @@ type ChallengeDialogProps = {
 export const ChallengeDialog = ({ isVisible, onClose, friendId, friendName }: ChallengeDialogProps) => {
   const { sendChallenge } = useChallenge();
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>('easy');
+  const { isSoundEnabled } = useSoundPreference();
+  const { play } = useSound(pencilSounds, { enabled: isSoundEnabled });
 
   const handleChallenge = async () => {
 
@@ -20,6 +25,7 @@ export const ChallengeDialog = ({ isVisible, onClose, friendId, friendName }: Ch
       challengedId: friendId,
       difficulty: selectedDifficulty,
     });
+    await play(randomPencilKey());
     onClose();
   };
 
@@ -57,7 +63,9 @@ export const ChallengeDialog = ({ isVisible, onClose, friendId, friendName }: Ch
                     ? 'bg-[#8B0000] border-[#8B0000]'
                     : 'border-[#E5E5E5] dark:border-[#2A3136]'
                     }`}
-                  onPress={() => setSelectedDifficulty(value)}
+                  onPress={async () => {
+                    setSelectedDifficulty(value);
+                  }}
                 >
                   <Text
                     className={`text-center text-sm font-['Times New Roman'] ${selectedDifficulty === value
