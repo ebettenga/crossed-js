@@ -1,12 +1,11 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { View, ScrollView, ActivityIndicator, Dimensions, RefreshControl } from 'react-native';
 import { Users, Timer, Swords } from 'lucide-react-native';
 import { HomeSquareButton } from '~/components/home/HomeSquareButton';
 import { PageHeader } from '~/components/Header';
 import { SocialSquare } from '~/components/home/SocialSquare';
 import { GameBanner } from '~/components/home/GameBanner';
-import { DifficultyBottomSheet } from '~/components/game/DifficultyBottomSheet';
-import { useSharedValue } from 'react-native-reanimated';
+import { DifficultyDialog } from '~/components/home/DifficultyDialog';
 import { useJoinRoom, Room } from '~/hooks/useJoinRoom';
 import { Link, useRouter } from 'expo-router';
 import { useActiveRooms, usePendingRooms } from '~/hooks/useActiveRooms';
@@ -32,7 +31,7 @@ export default function Home() {
     const { data: user, isLoading: isLoadingUser, refetch: refetchUser } = useUser();
     const [refreshing, setRefreshing] = useState(false);
 
-    const isBottomSheetOpen = useSharedValue(false);
+    const [isDifficultyDialogVisible, setDifficultyDialogVisible] = useState(false);
     const [selectedGameMode, setSelectedGameMode] = React.useState<GameMode | null>(null);
     const { isSoundEnabled } = useSoundPreference();
     const { play } = useSound(pencilSounds, { enabled: isSoundEnabled });
@@ -53,11 +52,11 @@ export default function Home() {
 
     const handleGameModePress = async (mode: GameMode) => {
         setSelectedGameMode(mode);
-        isBottomSheetOpen.value = true;
+        setDifficultyDialogVisible(true);
     };
 
     const handleDifficultySelect = async (difficulty: 'easy' | 'medium' | 'hard') => {
-        isBottomSheetOpen.value = false;
+        setDifficultyDialogVisible(false);
         if (!selectedGameMode) return;
 
         const mode = selectedGameMode;
@@ -79,8 +78,8 @@ export default function Home() {
         setSelectedGameMode(null);
     };
 
-    const handleBottomSheetClose = () => {
-        isBottomSheetOpen.value = false;
+    const handleDialogClose = () => {
+        setDifficultyDialogVisible(false);
         setSelectedGameMode(null);
     };
 
@@ -188,9 +187,9 @@ export default function Home() {
                     </View>
                 </ScrollView>
             </View>
-            <DifficultyBottomSheet
-                isOpen={isBottomSheetOpen}
-                onClose={handleBottomSheetClose}
+            <DifficultyDialog
+                isVisible={isDifficultyDialogVisible}
+                onClose={handleDialogClose}
                 onSelect={handleDifficultySelect}
             />
         </View>
