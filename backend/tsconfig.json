@@ -9,14 +9,17 @@
     "forceConsistentCasingInFileNames": true,
     "outDir": "dist",
     "experimentalDecorators": true,
+    "sourceMap": true,
     "emitDecoratorMetadata": true,
     "jsx": "react",
     "allowJs": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "types": ["node", "jest"]
   },
   "include": [
     "src/**/*",
-    "src/routes/private/.autohooks.ts"
+    "src/routes/private/.autohooks.ts",
+    "tests/**/*"
   ],
   "exclude": [
     "node_modules",
