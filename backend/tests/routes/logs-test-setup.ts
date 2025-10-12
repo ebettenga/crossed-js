@@ -14,20 +14,30 @@ export async function setupTestEnvironment(
   app: FastifyInstance,
   dataSource: DataSource,
 ): Promise<TestContext> {
-  // Create a test user
+  // Create a test user (let database auto-generate ID)
   const userRepository = dataSource.getRepository(User);
   const testUser = await userRepository.save({
-    email: "test@example.com",
-    username: "testuser",
+    email: "test-logs@example.com",
+    username: "testuser-logs",
     password: "hashedpassword",
     confirmed_mail: true,
     roles: ["user"],
-    description: "Test user",
+    description: "Test user for logs",
     attributes: [],
     eloRating: 1200,
   });
 
-  // Use a mock token (mocked in the test file)
+  // Update the JWT mock to return this user's ID
+  const jwt = require("jsonwebtoken");
+  jwt.verify.mockImplementation((token: string) => {
+    if (token === "mock-jwt-token") {
+      return { sub: testUser.id, roles: ["user"] };
+    }
+    const error: any = new Error("jwt malformed");
+    error.name = "JsonWebTokenError";
+    throw error;
+  });
+
   const authToken = "mock-jwt-token";
 
   return {
@@ -44,6 +54,19 @@ export async function cleanupTestEnvironment(
 ): Promise<void> {
   // Clean up all logs
   await dataSource.getRepository(Log).clear();
+
+  // Clean up related entities that reference the user
+  await dataSource.query(
+    'DELETE FROM crossword_rating WHERE "userId" = $1',
+    [testUser?.id],
+  );
+  await dataSource.query('DELETE FROM game_stats WHERE "userId" = $1', [
+    testUser?.id,
+  ]);
+  await dataSource.query(
+    'DELETE FROM friend WHERE "senderId" = $1 OR "receiverId" = $1',
+    [testUser?.id],
+  );
 
   // Clean up test user
   if (testUser?.id) {

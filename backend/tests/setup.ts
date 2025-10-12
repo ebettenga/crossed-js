@@ -5,9 +5,12 @@ jest.mock("jsonwebtoken", () => {
     ...actualJwt,
     sign: jest.fn(() => "mock-jwt-token"),
     verify: jest.fn((token: string, secret: string) => {
-      // Only accept our mock token
+      // Accept mock tokens for regular user and admin
       if (token === "mock-jwt-token") {
         return { sub: 1, roles: ["user"] };
+      }
+      if (token === "mock-admin-token") {
+        return { sub: 2, roles: ["user", "admin"] };
       }
       // Throw error for any other token (including "invalid-token")
       const error: any = new Error("jwt malformed");

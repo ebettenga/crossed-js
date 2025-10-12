@@ -1,27 +1,16 @@
 import { FastifyInstance } from "fastify";
 import { DataSource } from "typeorm";
 import { Log } from "../../src/entities/Log";
-import { User } from "../../src/entities/User";
 import {
   cleanupTestEnvironment,
   createTestLogs,
   setupTestEnvironment,
   TestContext,
 } from "./logs-test-setup";
-import { fastify as createFastify } from "../../src/fastify";
-import { registerDb } from "../../src/db";
-import fastifySecureSession from "@fastify/secure-session";
-import fastifyAutoload from "@fastify/autoload";
-import { config } from "../../src/config/config-ci";
-import fs from "fs";
-import path from "path";
-import { redisService } from "../../src/services/RedisService";
 import {
-  emailQueue,
-  gameInactivityQueue,
-  gameTimeoutQueue,
-  statusCleanupQueue,
-} from "../../src/jobs/queues";
+  cleanupFastifyTest,
+  setupFastifyTest,
+} from "../helpers/fastify-test-helper";
 
 describe("Log Endpoints", () => {
   let app: FastifyInstance;
@@ -30,65 +19,12 @@ describe("Log Endpoints", () => {
 
   beforeAll(async () => {
     try {
-      // Create and configure Fastify app
-      app = createFastify;
-
-      // Register database
-      await registerDb(app);
-
-      // Register secure session
-      await app.register(fastifySecureSession, {
-        key: fs.readFileSync(
-          path.join(process.cwd(), "src", config.secretKeyPath),
-        ),
-      });
-
-      // Manually register authentication hook (instead of using .autohooks.js)
-      const { AuthService } = await import("../../src/services/AuthService");
-      const authService = new AuthService(app.orm);
-
-      app.decorateRequest("user", null);
-      app.addHook("preHandler", async (request, reply) => {
-        const authHeader = request.headers["authorization"] ||
-          request.headers["Authorization"];
-        const authHeaderStr = Array.isArray(authHeader)
-          ? authHeader[0]
-          : authHeader;
-
-        if (authHeaderStr && authHeaderStr.startsWith("Bearer ")) {
-          const token = authHeaderStr.slice(7, authHeaderStr.length);
-          try {
-            const user = await authService.verify(app, { token });
-            const userId = typeof user.sub === "function"
-              ? user.sub()
-              : user.sub;
-            const userRecord = await app.orm
-              .getRepository(User)
-              .findOne({ where: { id: Number(userId) } });
-
-            if (!userRecord) {
-              reply.code(403).send({ error: "Unauthorized" });
-              return;
-            }
-            request.user = userRecord as User;
-          } catch (err) {
-            app.log.error(err, "Token verification failed");
-            reply.code(403).send({ error: "Unauthorized" });
-          }
-        } else {
-          app.log.warn("Authorization header missing or malformed");
-          reply.code(403).send({ error: "Unauthorized" });
-        }
-      });
-
-      // Register only the logs route to avoid socket.io dependencies
-      const logsRoute = await import("../../src/routes/private/logs");
-      await app.register(logsRoute.default, { prefix: "/api" });
-
-      await app.ready();
-
-      // Get the data source from the app
-      dataSource = app.orm;
+      // Setup Fastify with logs route
+      const fastifyContext = await setupFastifyTest(
+        "../../src/routes/private/logs",
+      );
+      app = fastifyContext.app;
+      dataSource = fastifyContext.dataSource;
 
       // Setup test environment
       testContext = await setupTestEnvironment(app, dataSource);
@@ -105,19 +41,8 @@ describe("Log Endpoints", () => {
         await cleanupTestEnvironment(dataSource, testContext.testUser);
       }
 
-      // Close all Redis connections
-      await redisService.close();
-
-      // Close all BullMQ queues
-      await emailQueue.close();
-      await statusCleanupQueue.close();
-      await gameTimeoutQueue.close();
-      await gameInactivityQueue.close();
-
-      // Close Fastify app
-      if (app) {
-        await app.close();
-      }
+      // Cleanup Fastify and connections
+      await cleanupFastifyTest(app);
     } catch (error) {
       console.error("Error in afterAll:", error);
       throw error;
@@ -135,7 +60,7 @@ describe("Log Endpoints", () => {
         method: "GET",
         url: "/api/logs",
         headers: {
-          authorization: `Bearer ${testContext.authToken}`,
+          authorization: `Bearer ${testContext!.authToken}`,
         },
       });
 
@@ -153,7 +78,7 @@ describe("Log Endpoints", () => {
         method: "GET",
         url: "/api/logs",
         headers: {
-          authorization: `Bearer ${testContext.authToken}`,
+          authorization: `Bearer ${testContext!.authToken}`,
         },
       });
 
@@ -186,7 +111,7 @@ describe("Log Endpoints", () => {
         method: "GET",
         url: "/api/logs",
         headers: {
-          authorization: `Bearer ${testContext.authToken}`,
+          authorization: `Bearer ${testContext!.authToken}`,
         },
       });
 
@@ -252,7 +177,7 @@ describe("Log Endpoints", () => {
         method: "POST",
         url: "/api/logs",
         headers: {
-          authorization: `Bearer ${testContext.authToken}`,
+          authorization: `Bearer ${testContext!.authToken}`,
           "content-type": "application/json",
         },
         payload: newLog,
@@ -296,7 +221,7 @@ describe("Log Endpoints", () => {
         method: "POST",
         url: "/api/logs",
         headers: {
-          authorization: `Bearer ${testContext.authToken}`,
+          authorization: `Bearer ${testContext!.authToken}`,
           "content-type": "application/json",
         },
         payload: complexLog,
@@ -316,7 +241,7 @@ describe("Log Endpoints", () => {
           method: "POST",
           url: "/api/logs",
           headers: {
-            authorization: `Bearer ${testContext.authToken}`,
+            authorization: `Bearer ${testContext!.authToken}`,
             "content-type": "application/json",
           },
           payload: {
@@ -380,7 +305,7 @@ describe("Log Endpoints", () => {
         method: "POST",
         url: "/api/logs",
         headers: {
-          authorization: `Bearer ${testContext.authToken}`,
+          authorization: `Bearer ${testContext!.authToken}`,
           "content-type": "application/json",
         },
         payload: {
@@ -404,7 +329,7 @@ describe("Log Endpoints", () => {
         method: "POST",
         url: "/api/logs",
         headers: {
-          authorization: `Bearer ${testContext.authToken}`,
+          authorization: `Bearer ${testContext!.authToken}`,
           "content-type": "application/json",
         },
         payload: logData,
@@ -418,7 +343,7 @@ describe("Log Endpoints", () => {
         method: "GET",
         url: "/api/logs",
         headers: {
-          authorization: `Bearer ${testContext.authToken}`,
+          authorization: `Bearer ${testContext!.authToken}`,
         },
       });
 
