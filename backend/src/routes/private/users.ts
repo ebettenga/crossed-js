@@ -88,12 +88,12 @@ export default function (
         return;
       }
 
-      fastify.log.info("File upload details:", {
+      fastify.log.info({
         mimetype: data.mimetype,
         filename: data.filename,
         encoding: data.encoding,
         fieldname: data.fieldname,
-      });
+      }, "File upload details");
 
       // Validate file type
       if (!data.mimetype.startsWith("image/")) {
@@ -102,12 +102,12 @@ export default function (
       }
 
       const buffer = await data.toBuffer();
-      fastify.log.info("File size:", { bytes: buffer.length });
+      fastify.log.info({ bytes: buffer.length }, "File size");
 
       const processedPhoto = await photoService.processPhoto(buffer);
-      fastify.log.info("Processed photo size:", {
+      fastify.log.info({
         bytes: processedPhoto.length,
-      });
+      }, "Processed photo size");
 
       // Update user's photo in database
       const userRepository = fastify.orm.getRepository(User);
@@ -121,7 +121,7 @@ export default function (
       });
       reply.send(updatedUser);
     } catch (error) {
-      fastify.log.error("Error uploading photo:", error);
+      fastify.log.error(error, "Error uploading photo");
       if (error.code === "FST_REQ_FILE_TOO_LARGE") {
         reply.code(413).send({ error: "File too large. Maximum size is 5MB." });
         return;

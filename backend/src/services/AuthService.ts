@@ -23,7 +23,7 @@ export class AuthService {
     return jwt.sign(
       { sub: user.id, roles: user.roles },
       config.auth.secretAccessToken,
-      { expiresIn: config.auth.authTokenExpiry },
+      { expiresIn: config.auth.authTokenExpiry } as jwt.SignOptions,
     );
   }
 
@@ -31,7 +31,7 @@ export class AuthService {
     return jwt.sign(
       { sub: user.id, roles: user.roles, aud: "/refresh" },
       config.auth.secretAccessToken,
-      { expiresIn: config.auth.authRefreshTokenExpiry },
+      { expiresIn: config.auth.authRefreshTokenExpiry } as jwt.SignOptions,
     );
   }
 
