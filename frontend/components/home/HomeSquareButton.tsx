@@ -8,11 +8,20 @@ interface IconProps {
     color?: string;
 }
 
-interface HomeSquareButtonProps {
+interface SquareButtonSize {
+    size?: number;
+}
+
+interface RectButtonSize {
+    height: number;
+    width: number;
+}
+
+interface HomeSquareButtonProps extends SquareButtonSize {
     name?: string;
     icon?: React.ReactElement<IconProps>;
     onPress: () => void;
-    size?: number;
+
     number?: number;
     customStyle?: {
         wrapper?: string;
@@ -22,6 +31,8 @@ interface HomeSquareButtonProps {
     iconColor?: string;
     darkIconColor?: string;
 }
+
+interface RectButtonProps extends HomeSquareButtonProps, RectButtonSize { }
 
 export const HomeSquareButton: React.FC<HomeSquareButtonProps> = ({
     name,
@@ -45,6 +56,71 @@ export const HomeSquareButton: React.FC<HomeSquareButtonProps> = ({
     return (
         <View
             style={{ width: size, height: size }}
+            className={cn(
+                "border-[1.5px] border-[#343434] dark:border-neutral-600 bg-[#FAFAF7] dark:bg-neutral-800",
+                customStyle?.wrapper
+            )}
+        >
+            <Pressable
+                onPress={onPress}
+                style={({ pressed }) => ({
+                    backgroundColor: pressed
+                        ? '#F0F0ED'
+                        : '#FAFAF7'
+                })}
+                className={cn(
+                    "flex-1 justify-center items-center relative dark:bg-neutral-800",
+                    "active:bg-[#F0F0ED] active:dark:bg-neutral-700",
+                    customStyle?.container
+                )}
+            >
+                {number !== undefined && (
+                    <Text className="absolute top-1 left-1 text-xs font-['Times_New_Roman'] text-[#666666] dark:text-neutral-400 font-medium">
+                        {number}
+                    </Text>
+                )}
+                <View className="w-full h-full flex flex-col items-center justify-center">
+                    {themedIcon && (
+                        <View className="mb-1">
+                            {themedIcon}
+                        </View>
+                    )}
+                    {name && (
+                        <Text className="text-[#2B2B2B] dark:text-neutral-200 text-base font-['Times_New_Roman'] text-center px-1">
+                            {name}
+                        </Text>
+                    )}
+                </View>
+            </Pressable>
+        </View>
+    );
+};
+
+
+
+export const RectButton: React.FC<RectButtonProps> = ({
+    name,
+    icon,
+    onPress,
+    height,
+    width,
+    number,
+    customStyle,
+    iconColor = "#E2E2E2",
+    darkIconColor = "#262626"
+}) => {
+    const colorScheme = useColorScheme();
+
+    // Clone the icon element with dark mode color if it exists
+    const themedIcon = icon
+        ? React.cloneElement(icon, {
+            color: colorScheme === 'dark' ? iconColor : darkIconColor
+        })
+        : null;
+
+    return (
+        <View
+            style={{ width, height }}
             className={cn(
                 "border-[1.5px] border-[#343434] dark:border-neutral-600 bg-[#FAFAF7] dark:bg-neutral-800",
                 customStyle?.wrapper

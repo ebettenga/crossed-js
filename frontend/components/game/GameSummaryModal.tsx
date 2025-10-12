@@ -14,6 +14,9 @@ import Animated, {
     withDelay
 } from 'react-native-reanimated';
 import { DifficultyRating } from '~/types/crossword';
+import { RectButton } from '../home/HomeSquareButton';
+import { cn } from '~/lib/utils';
+import { ScrollView } from 'react-native-gesture-handler';
 
 const formatMs = (ms: number | null) => {
     if (ms == null || ms < 0) return '—';
@@ -53,6 +56,95 @@ const AnimatedStar = ({ filled, onPress, delay }: { filled: boolean; onPress: ()
     );
 };
 
+interface CompetitiveResultsProps {
+    room: Room;
+    currentUserId: number;
+    userStats: any;
+}
+
+const CompetitiveResults: React.FC<CompetitiveResultsProps> = ({ room, currentUserId, userStats }) => {
+    const isWinner = room.scores[currentUserId as any] === Math.max(...Object.values(room.scores));
+
+    return (
+        <View className="rounded-sm border-[1.5px] border-[#343434] dark:border-neutral-600 bg-[#FAFAF7] dark:bg-neutral-800 w-full py-6 px-4">
+            <Text className="text-xl text-center text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman'] mb-4">
+                {isWinner ? 'Victory!' : 'Better luck next time!'}
+            </Text>
+
+            <View className="space-y-4">
+                <View className="flex-row justify-between">
+                    <Text className="text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">
+                        Score:
+                    </Text>
+                    <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman']">
+                        {room.scores[currentUserId as any]}
+                    </Text>
+                </View>
+
+                <View className="flex-row justify-between">
+                    <Text className="text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">
+                        Rating:
+                    </Text>
+                    <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman']">
+                        {userStats?.eloRating || 0}
+                    </Text>
+                </View>
+
+                <View className="flex-row justify-between">
+                    <Text className="text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">
+                        Game Type:
+                    </Text>
+                    <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman']">
+                        {room.type === '1v1' ? '1 vs 1' : room.type === '2v2' ? '2 vs 2' : room.type === 'free4all' ? 'Free for All' : 'Time Trial'}
+                    </Text>
+                </View>
+            </View>
+        </View>
+    );
+};
+
+interface TimeTrialResultsProps {
+    leaderboard: any[] | undefined;
+    isLoading: boolean;
+    error: Error | null;
+    currentUserId: number;
+}
+
+const TimeTrialResults: React.FC<TimeTrialResultsProps> = ({ leaderboard, isLoading, error, currentUserId }) => {
+    return (
+        <View className="bg-[#F5F5F5] dark:bg-[#1A2227] rounded-lg p-4 mb-6">
+            <Text className="text-lg text-center text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman'] mb-3">
+                Top Scores
+            </Text>
+            {isLoading ? (
+                <Text className="text-center text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">Loading...</Text>
+            ) : error ? (
+                <Text className="text-center text-[#8B0000] dark:text-[#FF6B6B] font-['Times_New_Roman']">
+                    {error instanceof Error ? error.message : 'Failed to load leaderboard'}
+                </Text>
+            ) : leaderboard && leaderboard.length > 0 ? (
+                <View className="space-y-2">
+                    {leaderboard.map((entry) => {
+                        const isYou = entry.user?.id === currentUserId;
+                        return (
+                            <View key={entry.roomId} className="flex-row justify-between">
+                                <Text className={`text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman'] ${isYou ? 'font-semibold' : ''}`}>
+                                    {entry.rank}. {entry.user?.username ?? 'Anonymous'}
+                                </Text>
+                                <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman']">
+                                    {entry.score} pts • {formatMs(entry.timeTakenMs)}
+                                </Text>
+                            </View>
+                        );
+                    })}
+                </View>
+            ) : (
+                <Text className="text-center text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">No results yet</Text>
+            )}
+        </View>
+    );
+};
+
 export const GameSummaryModal: React.FC<GameSummaryModalProps> = ({
     isVisible,
     onClose,
@@ -78,7 +170,6 @@ export const GameSummaryModal: React.FC<GameSummaryModalProps> = ({
 
     // Find the current user's stats in the room
     const userStats = room.players.find(player => player.id === currentUser.id);
-    const isWinner = room.scores[currentUser.id] === Math.max(...Object.values(room.scores));
 
     const handleDifficultyRate = async (rating: DifficultyRating) => {
         try {
@@ -98,137 +189,102 @@ export const GameSummaryModal: React.FC<GameSummaryModalProps> = ({
         }
     };
 
+    const renderResults = () => {
+        if (room.type === 'time_trial') {
+            return (
+                <TimeTrialResults
+                    leaderboard={leaderboard}
+                    isLoading={lbLoading}
+                    error={lbError}
+                    currentUserId={currentUser.id}
+                />
+            );
+        }
+
+        // For 1v1 and free4all modes
+        return (
+            <CompetitiveResults
+                room={room}
+                currentUserId={currentUser.id}
+                userStats={userStats}
+            />
+        );
+    };
+
     return (
-        <Dialog style={{ borderRadius: 4 }} open={isVisible} onOpenChange={onClose}>
-            <DialogContent className="bg-[#F5F5F5] w-96 h-[500px] dark:bg-[#1A2227]">
-                <View className="flex-1 p-4">
-                    <Text className="text-2xl font-semibold text-center text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman'] mb-6">
-                        {room.type === 'time_trial' ? 'Time Trial Complete' : 'Game Summary'}
-                    </Text>
+        <Dialog open={isVisible} onOpenChange={onClose}>
+            <DialogContent className="bg-[#F5F5F5] flex w-96 h-[500px] dark:bg-[#1A2227]">
+                <View className="flex-1 flex justify-between p-4">
+                    <ScrollView contentContainerClassName='flex flex-col flex-1 justify-between'>
+                        {renderResults()}
 
-                    {room.type !== 'time_trial' && (
-                        <View className="bg-[#F5F5F5] dark:bg-[#1A2227] rounded-lg p-6 mb-6">
-                            <Text className="text-xl text-center text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman'] mb-4">
-                                {isWinner ? 'Victory!' : 'Better luck next time!'}
-                            </Text>
-
-                            <View className="space-y-4">
-                                <View className="flex-row justify-between">
-                                    <Text className="text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">
-                                        Score:
-                                    </Text>
-                                    <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman']">
-                                        {room.scores[currentUser.id]}
-                                    </Text>
-                                </View>
-
-                                <View className="flex-row justify-between">
-                                    <Text className="text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">
-                                        Rating:
-                                    </Text>
-                                    <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman']">
-                                        {userStats?.eloRating || 0}
-                                    </Text>
-                                </View>
-
-                                <View className="flex-row justify-between">
-                                    <Text className="text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">
-                                        Game Type:
-                                    </Text>
-                                    <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman']">
-                                        {room.type === '1v1' ? '1 vs 1' : room.type === '2v2' ? '2 vs 2' : room.type === 'free4all' ? 'Free for All' : 'Time Trial'}
-                                    </Text>
-                                </View>
-                            </View>
-                        </View>
-                    )}
-
-                    {room.type === 'time_trial' && (
-                        <View className="bg-[#F5F5F5] dark:bg-[#1A2227] rounded-lg p-4 mb-6">
-                            <Text className="text-lg text-center text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman'] mb-3">
-                                Top Scores
-                            </Text>
-                            {lbLoading ? (
-                                <Text className="text-center text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">Loading...</Text>
-                            ) : lbError ? (
-                                <Text className="text-center text-[#8B0000] dark:text-[#FF6B6B] font-['Times_New_Roman']">
-                                    {lbError instanceof Error ? lbError.message : 'Failed to load leaderboard'}
-                                </Text>
-                            ) : leaderboard && leaderboard.length > 0 ? (
-                                <View className="space-y-2">
-                                    {leaderboard.map((entry) => {
-                                        const isYou = entry.user?.id === currentUser.id;
-                                        return (
-                                            <View key={entry.roomId} className="flex-row justify-between">
-                                                <Text className={`text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman'] ${isYou ? 'font-semibold' : ''}`}>
-                                                    {entry.rank}. {entry.user?.username ?? 'Anonymous'}
-                                                </Text>
-                                                <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman']">
-                                                    {entry.score} pts • {formatMs(entry.timeTakenMs)}
-                                                </Text>
-                                            </View>
-                                        );
-                                    })}
-                                </View>
-                            ) : (
-                                <Text className="text-center text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">No results yet</Text>
-                            )}
-                        </View>
-                    )}
-
-                    <View className="space-y-6 mb-6">
-                        <View className="mb-4">
-                            <Text className="text-lg text-center text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman'] mb-3">
-                                Rate the Difficulty
-                            </Text>
-                            <View className="flex-row justify-center gap-x-3">
+                        <View className={cn(
+                            "rounded-sm border-[1.5px] border-[#343434] dark:border-neutral-600 bg-[#FAFAF7] dark:bg-neutral-800 w-full mb-4",
+                        )}>
+                            <View className="flex-row justify-center gap-x-3 my-4">
                                 <TouchableOpacity
                                     onPress={() => handleDifficultyRate('too_easy')}
-                                    className={`px-4 py-2 rounded-lg ${difficultyRating === 'too_easy' ? 'bg-[#8B0000]' : 'bg-[#666666]'}`}
+                                    className={`border-[1.5px] rounded-sm dark:bg-neutral-800 px-4 py-2 ${difficultyRating === 'too_easy' ? 'border-[#8B0000]' : 'border-[#FAFAF7]'}`}
                                 >
-                                    <Text className="text-white font-['Times_New_Roman']">Too Easy</Text>
+                                    <Text className={`text-white font-['Times_New_Roman'] ${difficultyRating === 'too_easy' ? 'color-[#8B0000]' : 'color-[#FAFAF7]'}`}>Easy</Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity
                                     onPress={() => handleDifficultyRate('just_right')}
-                                    className={`px-4 py-2 rounded-lg ${difficultyRating === 'just_right' ? 'bg-[#8B0000]' : 'bg-[#666666]'}`}
+                                    className={`border-[1.5px] rounded-sm dark:bg-neutral-800 px-4 py-2  ${difficultyRating === 'just_right' ? 'border-[#8B0000]' : 'border-[#FAFAF7]'}`}
                                 >
-                                    <Text className="text-white font-['Times_New_Roman']">Just Right</Text>
+                                    <Text className={`text-white font-['Times_New_Roman'] ${difficultyRating === 'just_right' ? 'color-[#8B0000]' : 'color-[#FAFAF7]'}`}>Perfect</Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity
                                     onPress={() => handleDifficultyRate('too_hard')}
-                                    className={`px-4 py-2 rounded-lg ${difficultyRating === 'too_hard' ? 'bg-[#8B0000]' : 'bg-[#666666]'}`}
+                                    className={`border-[1.5px] rounded-sm dark:bg-neutral-800 px-4 py-2  ${difficultyRating === 'too_hard' ? 'border-[#8B0000]' : 'border-[#FAFAF7]'}`}
                                 >
-                                    <Text className="text-white font-['Times_New_Roman']">Too Hard</Text>
+                                    <Text className={`text-white font-['Times_New_Roman'] ${difficultyRating === 'too_hard' ? 'color-[#8B0000]' : 'color-[#FAFAF7]'}`}>Hard</Text>
                                 </TouchableOpacity>
                             </View>
-                        </View>
 
-                        <View>
-                            <Text className="text-lg text-center text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman'] mb-3">
-                                Rate the Quality
-                            </Text>
-                            <View className="flex-row justify-center space-x-2">
-                                {[1, 2, 3, 4, 5].map((star) => (
-                                    <AnimatedStar
-                                        key={star}
-                                        filled={star <= qualityRating}
-                                        onPress={() => handleQualityRate(star as 1 | 2 | 3 | 4 | 5)}
-                                        delay={star * 100}
-                                    />
-                                ))}
+                            <View className='my-4'>
+                                <View className="flex-row justify-center space-x-2">
+                                    {[1, 2, 3, 4, 5].map((star) => (
+                                        <AnimatedStar
+                                            key={star}
+                                            filled={star <= qualityRating}
+                                            onPress={() => handleQualityRate(star as 1 | 2 | 3 | 4 | 5)}
+                                            delay={star * 100}
+                                        />
+                                    ))}
+                                </View>
                             </View>
                         </View>
-                    </View>
 
-                    <TouchableOpacity
-                        onPress={onClose}
-                        className="flex-row items-center justify-center bg-[#8B0000] p-4 rounded-lg"
+                    </ScrollView>
+                    <View
+                        className={cn(
+                            "border-[1.5px] border-[#343434] dark:border-neutral-600 bg-[#FAFAF7] dark:bg-neutral-800 w-full h-16 rounded-sm",
+                        )}
                     >
-                        <Home size={20} color="#FFFFFF" className="mr-2" />
-                        <Text className="text-white font-['Times_New_Roman']">
-                            Return Home
-                        </Text>
-                    </TouchableOpacity>
+                        <Pressable
+                            onPress={onClose}
+                            style={({ pressed }) => ({
+                                backgroundColor: pressed
+                                    ? '#F0F0ED'
+                                    : '#FAFAF7'
+                            })}
+                            className={cn(
+                                "flex-1 justify-center items-center relative dark:bg-neutral-800",
+                                "active:bg-[#F0F0ED] active:dark:bg-neutral-700",
+                            )}
+                        >
+
+                            <Text className="absolute top-1 left-1 text-xs font-['Times_New_Roman'] text-[#666666] dark:text-neutral-400 font-medium">
+                                1
+                            </Text>
+                            <View className="w-full h-full flex flex-col items-center justify-center">
+                                <View className="mb-1">
+                                    <Home color='#FFFFFF' />
+                                </View>
+                            </View>
+                        </Pressable>
+                    </View>
                 </View>
             </DialogContent>
         </Dialog>
