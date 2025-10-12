@@ -436,9 +436,9 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
                 onReport={handleReport}
             />
 
-            {room && (
+            {room && room.status === 'finished' && (
                 <GameSummaryModal
-                    isVisible={true}
+                    isVisible={showGameSummary}
                     onClose={onGameSummaryClose}
                     room={room}
                 />

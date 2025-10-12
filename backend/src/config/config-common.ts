@@ -24,7 +24,7 @@ export const commonConfig = {
       kFactorBase: 25,
       winStreakMultiplier: 0.1,
       maxWinStreakBonus: 0.3,
-      gamesPlayedDampening: 10,
+      gamesPlayedDampening: 30,
     },
     maxPlayers: {
       "1v1": 2,

@@ -62,6 +62,12 @@ export type Room = {
         isWinner: boolean;
         eloAtGame: number;
         eloChange?: number;
+        correctGuessDetails?: {
+            row: number;
+            col: number;
+            letter: string;
+            timestamp: Date;
+        }[];
     }[];
 };
 
