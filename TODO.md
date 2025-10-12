@@ -10,7 +10,6 @@
 
 1. logging
 2. tests
-6. report command
 
 
 
