@@ -1,16 +1,17 @@
 /**
- * Concurrency test: user guess and inactivity worker reveal the SAME letter "at the same time".
- * We simulate the user input by mutating the cachedGameInfo during the "game_inactive" emit
- * to set the exact same letter the worker just revealed.
+ * Concurrency test: user input occurs immediately after the worker reveals a letter,
+ * but before the transaction commits. We simulate this by mutating the cachedGameInfo
+ * within the mocked SocketEventService.emitToRoom when the worker emits "game_inactive".
  *
- * Validates idempotency:
- * - The final state equals a single correct reveal without duplication or conflict.
- * - The game continues scheduling the next inactivity check.
+ * This validates:
+ * - The game is not paused.
+ * - The final persisted/cached state reflects both the worker's reveal and the user's input.
+ * - Next inactivity job is scheduled normally.
  */
 
 import type { DataSource } from "typeorm";
-import { Room } from "../src/entities/Room";
-import { Crossword } from "../src/entities/Crossword";
+import { Room } from "../../src/entities/Room";
+import { Crossword } from "../../src/entities/Crossword";
 
 // Ensure config can parse REDIS_URL before importing any src module that uses config
 process.env.REDIS_URL = process.env.REDIS_URL || "redis://localhost:6379";
@@ -63,25 +64,30 @@ const emittedEvents: Array<{ roomId: number; eventName: string; data: any }> =
   [];
 
 // Simple in-memory Redis double
-type CachedGameInfo = import("../src/services/RedisService").CachedGameInfo;
+type CachedGameInfo = import("../../src/services/RedisService").CachedGameInfo;
 const redisStore = new Map<string, CachedGameInfo>();
 
-// Mock SocketEventService factory: on "game_inactive" set the SAME letter as worker
-jest.mock("../src/services/SocketEventService", () => {
+// Mock SocketEventService factory: mutate cache on "game_inactive" to simulate user input
+jest.mock("../../src/services/SocketEventService", () => {
   const emitToRoom = jest.fn(
-    async (roomId: number, eventName: string, _data: any) => {
-      emittedEvents.push({ roomId, eventName, data: _data });
+    async (roomId: number, eventName: string, data: any) => {
+      emittedEvents.push({ roomId, eventName, data });
 
-      // Simulate simultaneous user input that sets the same letter at index 1 ("B")
+      // Simulate a user input happening immediately after inactivity reveal
+      // but before transaction commit. We mutate the same cachedGameInfo reference.
       if (eventName === "game_inactive") {
         const cache = redisStore.get(roomId.toString());
         if (cache) {
-          // Update lastActivityAt to reflect very recent user input
+          // Advance lastActivityAt and reveal another unsolved letter (index 2)
           cache.lastActivityAt = Math.max(cache.lastActivityAt, Date.now()) + 1;
-
-          // Set same letter at same index the worker just revealed (index 1 = "B")
-          if (Array.isArray(cache.foundLetters)) {
-            cache.foundLetters[1] = "B";
+          // Safeguard: ensure index 2 exists and is unsolved
+          if (
+            Array.isArray(cache.foundLetters) && cache.foundLetters[2] === "*"
+          ) {
+            // We'll need the crossword grid to set the correct letter; we do not have it here,
+            // but the worker will pick index 1 (due to Math.random override) and we pick index 2 here.
+            // The tests set crossword so grid[2] exists and is "C".
+            cache.foundLetters[2] = "C";
           }
         }
       }
@@ -96,7 +102,7 @@ jest.mock("../src/services/SocketEventService", () => {
 });
 
 // Mock RedisService to use our in-memory store
-jest.mock("../src/services/RedisService", () => {
+jest.mock("../../src/services/RedisService", () => {
   class RedisService {
     getServerId() {
       return "test-server";
@@ -121,7 +127,7 @@ jest.mock("../src/services/RedisService", () => {
 
 // Mock queues module: intercept scheduling via gameInactivityQueue.add
 const scheduledJobs: Array<{ data: any; opts: any }> = [];
-jest.mock("../src/jobs/queues", () => {
+jest.mock("../../src/jobs/queues", () => {
   return {
     gameInactivityQueue: {
       add: jest.fn(async (_name: string, data: any, opts: any) => {
@@ -133,7 +139,7 @@ jest.mock("../src/jobs/queues", () => {
 });
 
 // Mock RoomService to avoid DB work during onGameEnd
-jest.mock("../src/services/RoomService", () => {
+jest.mock("../../src/services/RoomService", () => {
   return {
     RoomService: class {
       constructor(_ds: any) {}
@@ -146,7 +152,7 @@ jest.mock("../src/services/RoomService", () => {
 
 // Import worker factory after mocks/env are in place
 const { createGameInactivityWorker } = require(
-  "../src/jobs/workers/game-inactivity.worker",
+  "../../src/jobs/workers/game-inactivity.worker",
 );
 
 // Utilities
@@ -256,21 +262,31 @@ function resetCaptors() {
   jest.clearAllMocks();
 }
 
-describe("Game inactivity worker same-letter concurrency", () => {
+describe("Game inactivity worker merge with concurrent user input", () => {
+  const realRandom = Math.random;
+
   beforeEach(() => {
     resetCaptors();
     jest.useFakeTimers({ now: Date.now() });
     jest.setSystemTime(new Date("2025-01-01T00:00:00.000Z"));
+    // Force findRandomUnsolvedLetter to pick the first unsolved index deterministically
+    // In worker: it picks Math.floor(Math.random() * unsolvedPositions.length)
+    // With 2 unsolved positions, returning 0 picks index 1 (the first "*").
+    // We'll then simulate the user revealing index 2 in emitToRoom mock.
+    // @ts-ignore
+    global.Math.random = () => 0;
   });
 
   afterEach(() => {
     jest.useRealTimers();
+    // @ts-ignore
+    global.Math.random = realRandom;
   });
 
-  test("Worker and user reveal the same letter concurrently without conflict", async () => {
-    // Only one unsolved index (1), so worker will reveal index 1 = "B"
+  test("Worker reveal + user input merges correctly and next job is scheduled", async () => {
+    // Grid has 2 unsolved letters: indices 1 ('B') and 2 ('C')
     const cw = makeCrossword(["A", "B", "C", "D"]);
-    const room = makeRoom(404, ["A", "*", "C", "D"], cw);
+    const room = makeRoom(303, ["A", "*", "*", "D"], cw);
     const { fakeDataSource } = makeFakeDataSource(room);
 
     const t0 = Date.now();
@@ -291,7 +307,7 @@ describe("Game inactivity worker same-letter concurrency", () => {
     );
 
     const job = {
-      id: "job-same-1",
+      id: "job-merge-1",
       data: { roomId: room.id, lastActivityTimestamp: t0 },
       timestamp: Date.now(),
       processedOn: undefined,
@@ -300,12 +316,13 @@ describe("Game inactivity worker same-letter concurrency", () => {
 
     await (worker as any).process(job);
 
-    // Final state should be solved at index 1 exactly once, no conflict
+    // Assertions:
+    // 1) Both reveals are present: worker revealed index 1 ("B"), user (mock) revealed index 2 ("C")
     const final = redisStore.get(cacheKey)!;
     expect(final.foundLetters).toEqual(["A", "B", "C", "D"]);
 
-    // Emissions
-    const socketMock = require("../src/services/SocketEventService");
+    // 2) We saw both "game_inactive" and "room" emissions
+    const socketMock = require("../../src/services/SocketEventService");
     const inactiveCalls = (socketMock.emitToRoom as jest.Mock).mock.calls
       .filter(
         ([_id, evt]) => evt === "game_inactive",
@@ -316,7 +333,7 @@ describe("Game inactivity worker same-letter concurrency", () => {
     expect(inactiveCalls.length).toBe(1);
     expect(roomCalls.length).toBe(1);
 
-    // Next job scheduled
+    // 3) Next job scheduled normally
     expect(scheduledJobs.length).toBeGreaterThanOrEqual(1);
     expect(scheduledJobs[0].data).toMatchObject({
       roomId: room.id,

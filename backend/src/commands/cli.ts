@@ -196,4 +196,167 @@ program
     }
   });
 
+program
+  .command("start-game")
+  .description(
+    "Start a new game between two players with optional pre-filled board",
+  )
+  .requiredOption("-p1, --player1 <number>", "First player ID")
+  .requiredOption("-p2, --player2 <number>", "Second player ID")
+  .option(
+    "-d, --difficulty <string>",
+    "Difficulty level (easy, medium, hard)",
+    "easy",
+  )
+  .option(
+    "-f, --fill <number>",
+    "Percentage of squares to pre-fill (0-100)",
+    "0",
+  )
+  .option(
+    "-t, --timer",
+    "Start the game inactivity timer",
+    false,
+  )
+  .action(async (options) => {
+    let dataSource: DataSource | null = null;
+    try {
+      dataSource = await AppDataSource.initialize();
+      const { player1, player2, difficulty, fill, timer } = options;
+
+      const player1Id = parseInt(player1);
+      const player2Id = parseInt(player2);
+      const fillPercentage = parseFloat(fill);
+      const startTimer = timer === true;
+
+      // Validate fill percentage
+      if (fillPercentage < 0 || fillPercentage > 100) {
+        console.error("Fill percentage must be between 0 and 100");
+        process.exit(1);
+      }
+
+      // Validate players exist
+      const userRepo = dataSource.getRepository(User);
+      const [p1, p2] = await Promise.all([
+        userRepo.findOneBy({ id: player1Id }),
+        userRepo.findOneBy({ id: player2Id }),
+      ]);
+
+      if (!p1) {
+        console.error(`Player 1 with ID ${player1Id} not found`);
+        process.exit(1);
+      }
+
+      if (!p2) {
+        console.error(`Player 2 with ID ${player2Id} not found`);
+        process.exit(1);
+      }
+
+      // Create the game using RoomService
+      const { RoomService } = await import("../services/RoomService");
+      const roomService = new RoomService(dataSource);
+      const crosswordService = new CrosswordService(dataSource);
+
+      // Get a crossword for the difficulty
+      const crossword = await crosswordService.getCrosswordByDifficulty(
+        difficulty,
+      );
+
+      if (!crossword) {
+        console.error(`No crossword found for difficulty: ${difficulty}`);
+        process.exit(1);
+      }
+
+      // Create the room manually to have control over initialization
+      const { Room } = await import("../entities/Room");
+      const room = new Room();
+      room.players = [p1, p2];
+      room.crossword = crossword;
+      room.difficulty = difficulty;
+      room.type = "1v1";
+      room.status = "playing";
+      room.scores = { [p1.id]: 0, [p2.id]: 0 };
+      room.last_activity_at = new Date();
+
+      // Create found_letters template
+      const foundLetters = await crosswordService.createFoundLettersTemplate(
+        crossword.id,
+      );
+
+      // Pre-fill squares if requested
+      if (fillPercentage > 0) {
+        const totalSquares = foundLetters.filter((char) => char === "*").length;
+        const squaresToFill = Math.floor((totalSquares * fillPercentage) / 100);
+
+        // Get indices of all unfilled squares
+        const unfilledIndices: number[] = [];
+        foundLetters.forEach((char, index) => {
+          if (char === "*") {
+            unfilledIndices.push(index);
+          }
+        });
+
+        // Randomly select squares to fill
+        const shuffled = unfilledIndices.sort(() => Math.random() - 0.5);
+        const indicesToFill = shuffled.slice(0, squaresToFill);
+
+        // Fill the selected squares with correct letters
+        indicesToFill.forEach((index) => {
+          foundLetters[index] = crossword.grid[index];
+        });
+
+        console.log(
+          `Pre-filled ${squaresToFill} out of ${totalSquares} squares (${fillPercentage}%)`,
+        );
+      }
+
+      room.found_letters = foundLetters;
+
+      // Save the room
+      const savedRoom = await dataSource.getRepository(Room).save(room);
+
+      // Start inactivity timer if requested
+      if (startTimer) {
+        const { config } = await import("../config/config");
+        await gameInactivityQueue.add(
+          "game-inactivity",
+          {
+            roomId: savedRoom.id,
+            lastActivityTimestamp: room.last_activity_at.getTime(),
+          },
+          {
+            jobId: `game-inactivity-${savedRoom.id}-${uuidv4()}`,
+            delay: config.game.timeout.inactivity.initial,
+          },
+        );
+        console.log(
+          `Started inactivity timer with ${config.game.timeout.inactivity.initial}ms delay`,
+        );
+      }
+
+      console.log("\n✓ Game created successfully!");
+      console.log(`  Room ID: ${savedRoom.id}`);
+      console.log(
+        `  Players: ${p1.username} (ID: ${p1.id}) vs ${p2.username} (ID: ${p2.id})`,
+      );
+      console.log(`  Difficulty: ${difficulty}`);
+      console.log(`  Crossword: ${crossword.title || "Untitled"}`);
+      console.log(`  Grid Size: ${crossword.row_size}x${crossword.col_size}`);
+      console.log(`  Pre-filled: ${fillPercentage}%`);
+      console.log(`  Status: ${savedRoom.status}`);
+      console.log(
+        `  Inactivity Timer: ${startTimer ? "Started" : "Not started"}`,
+      );
+
+      await dataSource.destroy();
+      process.exit(0);
+    } catch (error) {
+      if (dataSource) {
+        await dataSource.destroy().catch(() => {});
+      }
+      console.error("Error starting game:", error);
+      process.exit(1);
+    }
+  });
+
 program.parse(process.argv);

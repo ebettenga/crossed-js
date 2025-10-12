@@ -175,5 +175,44 @@ export default function (
     );
     reply.send(leaderboard);
   });
+
+  // Get game stats for a specific room
+  fastify.get<{
+    Params: { roomId: string };
+  }>("/rooms/:roomId/stats", async (request, reply) => {
+    const { roomId } = request.params;
+    const room = await roomService.getRoomById(parseInt(roomId, 10));
+
+    if (!room) {
+      reply.code(404).send({ error: "Room not found" });
+      return;
+    }
+
+    // Only return stats for finished games
+    if (room.status !== "finished") {
+      reply.code(400).send({ error: "Game stats are only available for finished games" });
+      return;
+    }
+
+    // Get stats with user relation
+    const gameStatsRepo = fastify.orm.getRepository("GameStats");
+    const stats = await gameStatsRepo.find({
+      where: { roomId: room.id },
+      relations: ["user"],
+    });
+
+    const formattedStats = stats.map((stat: any) => ({
+      userId: stat.userId,
+      correctGuesses: stat.correctGuesses,
+      incorrectGuesses: stat.incorrectGuesses,
+      isWinner: stat.isWinner,
+      eloAtGame: stat.eloAtGame,
+      eloChange: stat.user ? stat.user.eloRating - stat.eloAtGame : undefined,
+      correctGuessDetails: stat.correctGuessDetails,
+    }));
+
+    reply.send(formattedStats);
+  });
+
   next();
 }

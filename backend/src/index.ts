@@ -54,7 +54,7 @@ fastify.register(fastifyAutoload, {
 
 async function startServer() {
   if (config.mode === "worker") {
-    console.log("Starting in worker mode...");
+    fastify.log.info("Starting in worker mode...");
 
     // Ensure database is initialized
     if (!AppDataSource.isInitialized) {
@@ -68,7 +68,7 @@ async function startServer() {
 
     // Handle graceful shutdown
     process.on("SIGTERM", async () => {
-      console.log("Shutting down workers...");
+      fastify.log.info("Shutting down workers...");
       await closeWorkers();
       if (AppDataSource.isInitialized) {
         await AppDataSource.destroy();
