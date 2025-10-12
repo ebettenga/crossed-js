@@ -17,16 +17,6 @@ import type { CachedGameInfo } from "../services/RedisService";
 export type GameType = "1v1" | "2v2" | "free4all" | "time_trial";
 export type GameStatus = "playing" | "pending" | "finished" | "cancelled";
 
-type Clues = {
-  across: string[];
-  down: string[];
-};
-
-enum PopulatingState {
-  READING,
-  WRITING,
-}
-
 interface Clue {
   number: number;
   hint: string;
@@ -83,6 +73,7 @@ export class Room {
   crossword: Crossword;
 
   // Store scores as a JSON object with user IDs as keys
+  // TODO: add this data to the GameStats?
   @Column("simple-json", { default: {} })
   scores: { [key: number]: number };
 

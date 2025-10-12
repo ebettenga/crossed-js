@@ -332,57 +332,55 @@ export class RoomService {
       );
     }
 
-    // Update win streaks and winner status
-    for (const stats of allGameStats) {
-      const guessCounts = cachedGameInfo?.userGuessCounts?.[stats.userId] || {
+    console.log("cached game info", cachedGameInfo);
+    // Update win streaks and winner from cached game
+    for (const player of room.players) {
+      const playerStats = allGameStats.find((stat) =>
+        stat.userId === player.id
+      ) || await this.ensureGameStatsEntry(room, player);
+
+      const guessCounts = cachedGameInfo?.userGuessCounts?.[player.id] || {
         correct: 0,
         incorrect: 0,
       };
 
-      stats.correctGuesses = guessCounts.correct;
-      stats.incorrectGuesses = guessCounts.incorrect;
+      playerStats.correctGuesses = guessCounts.correct;
+      playerStats.incorrectGuesses = guessCounts.incorrect;
 
-      const guessDetails =
-        cachedGameInfo?.correctGuessDetails?.[stats.userId] ||
+      const guessDetails = cachedGameInfo?.correctGuessDetails?.[player.id] ||
         [];
-      stats.correctGuessDetails = guessDetails.map((detail) => ({
+      playerStats.correctGuessDetails = guessDetails.map((detail) => ({
         ...detail,
         timestamp: new Date(detail.timestamp),
       }));
 
-      // Log the values being saved for debugging
-      fastify.log.info({
-        msg: `Saving stats for user ${stats.userId} in room ${room.id}`,
-        correctGuesses: stats.correctGuesses,
-        incorrectGuesses: stats.incorrectGuesses,
-        correctGuessDetailsCount: stats.correctGuessDetails.length,
-        score: room.scores[stats.userId],
-      });
-
       // If game was forfeited, non-forfeiting players are winners
       const isWinner = forfeitedBy !== undefined
-        ? stats.userId !== forfeitedBy
-        : winnerIds.includes(stats.userId);
+        ? playerStats.userId !== forfeitedBy
+        : winnerIds.includes(playerStats.userId);
 
       if (isWinner) {
         // Get the player's stats from their last completed game
         const previousStats = await gameStatsRepo
           .createQueryBuilder("stats")
           .innerJoinAndSelect("stats.room", "room")
-          .where("stats.userId = :userId", { userId: stats.userId })
+          .where("stats.userId = :userId", { userId: playerStats.userId })
           .andWhere("stats.roomId != :roomId", { roomId: room.id })
           .andWhere("room.status = :status", { status: "finished" })
           .orderBy("stats.createdAt", "DESC")
           .take(1)
           .getOne();
 
-        stats.isWinner = true;
-        stats.winStreak = (previousStats?.winStreak || 0) + 1;
+        playerStats.isWinner = true;
+        playerStats.winStreak = (previousStats?.winStreak || 0) + 1;
       } else {
-        stats.isWinner = false;
-        stats.winStreak = 0; // Reset win streak for losers
+        playerStats.isWinner = false;
+        playerStats.winStreak = 0; // Reset win streak for losers
       }
-      await gameStatsRepo.save(stats);
+
+      console.log(`saving gameStats. user: ${playerStats.userId}`, playerStats);
+
+      await gameStatsRepo.save(playerStats);
     }
 
     // Update ELO ratings for all players
