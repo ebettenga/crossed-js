@@ -325,6 +325,13 @@ export class RoomService {
 
     const cachedGameInfo = await this.redisService.getGame(room.id.toString());
 
+    // Log for debugging
+    if (!cachedGameInfo) {
+      fastify.log.warn(
+        `No cached game info found for room ${room.id} during onGameEnd`,
+      );
+    }
+
     // Update win streaks and winner status
     for (const stats of allGameStats) {
       const guessCounts = cachedGameInfo?.userGuessCounts?.[stats.userId] || {
@@ -339,11 +346,18 @@ export class RoomService {
         cachedGameInfo?.correctGuessDetails?.[stats.userId] ||
         [];
       stats.correctGuessDetails = guessDetails.map((detail) => ({
-        row: detail.row,
-        col: detail.col,
-        letter: detail.letter,
+        ...detail,
         timestamp: new Date(detail.timestamp),
       }));
+
+      // Log the values being saved for debugging
+      fastify.log.info({
+        msg: `Saving stats for user ${stats.userId} in room ${room.id}`,
+        correctGuesses: stats.correctGuesses,
+        incorrectGuesses: stats.incorrectGuesses,
+        correctGuessDetailsCount: stats.correctGuessDetails.length,
+        score: room.scores[stats.userId],
+      });
 
       // If game was forfeited, non-forfeiting players are winners
       const isWinner = forfeitedBy !== undefined

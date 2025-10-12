@@ -11,23 +11,13 @@
 1. logging
 2. tests
 3. change diffultly selector on home page to look more like challenge modal
+4. command to start a game with x% filled out.
+6. report command
 
 
 
 
-
-
-## High-impact additions for all game types
-
-- [ ] Show Match outcome summary: margin of victory/defeat; aggregate team scores for 2v2.
-
-- [ ] Show Elo change using gameStats.eloAtGame and eloChange with green/red styling; fallback to user.eloRating with "rating unchanged" when eloChange is missing.
-
-- [ ] Show Accuracy and mistakes: compute accuracy = correctGuesses / (correctGuesses + incorrectGuesses); display "Accuracy: NN% (X correct, Y mistakes)".
-
-- [ ] Show Contribution share: compute user's correctGuesses / sum(correctGuesses of all players) and display contribution%.
-
-- [ ] Show Completion metrics: coverage percent of solved vs total non-black squares using board and found letters ("Grid solved: NN%").
+AI Generated Ideas:
 
 ## 1v1, 2v2, free-for-all specific
 
@@ -41,10 +31,6 @@
 - [ ] Show "This run" summary; later show "Personal Best" once PB endpoint exists.
 - [ ] Show Pace and split insights from correctGuessDetails timestamps: avg sec/letter, fastest 30s streak, longest gap.
 - [ ] Show Percentile language ("Top NN% this room") when backend exposes aggregate counts.
-
-## Crossword-centric insights
-
-- [ ] Show themed note: creator/author bio line; if difficulty is "hard", include one-line explanation when community-average difficulty is available.
 
 ## Ratings UX improvements
 

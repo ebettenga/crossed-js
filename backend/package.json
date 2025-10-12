@@ -10,6 +10,7 @@
     "dev:worker": "SERVER_MODE=worker tsx --env-file .env --watch ./src/index.ts",
     "build": "pkgroll",
     "commands": "tsx --env-file .env ./src/commands/cli.ts",
+    "start-game": "yarn commands start-game",
     "prepare": "if [ \"$CI\" != \"true\" ]; then pre-commit install; fi",
     "ci:load-test-data": "yarn commands load-test-data",
     "test": "tsx --experimental-vm-modules node_modules/jest/bin/jest.js --verbose --coverage",

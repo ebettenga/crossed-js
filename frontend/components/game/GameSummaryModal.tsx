@@ -258,7 +258,7 @@ const CompetitiveResults: React.FC<CompetitiveResultsProps> = ({ room, selectedP
             <View className="flex-row w-full mt-2">
                 <View
                     className={cn(
-                        "border-t-[2px] border-[#343434] dark:border-neutral-600 bg-[#FAFAF7] dark:bg-neutral-800 flex-1 h-16 rounded-sm",
+                        "border-t-[2px] border-[#343434] dark:border-neutral-600 bg-[#FAFAF7] dark:bg-neutral-800 flex-1 h-10 rounded-sm",
                     )}
                 >
                     <Pressable
@@ -281,7 +281,7 @@ const CompetitiveResults: React.FC<CompetitiveResultsProps> = ({ room, selectedP
 
                 <View
                     className={cn(
-                        "border-t-2 border-l-2 border-[#343434] dark:border-neutral-600 bg-[#FAFAF7] dark:bg-neutral-800 flex-1 h-16 rounded-sm",
+                        "border-t-2 border-l-2 border-[#343434] dark:border-neutral-600 bg-[#FAFAF7] dark:bg-neutral-800 flex-1 h-10 rounded-sm",
                     )}
                 >
                     <Pressable
