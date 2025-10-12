@@ -25,3 +25,9 @@ build-android-dev: #creates a new eas build for android
 
 create: ## set up the project
 	yarn install
+
+
+OPEN_CMD = $(shell which xdg-open 2>/dev/null || which open 2>/dev/null || echo "start")
+ssh-prod: ## gain a shell on the production enviroment to run migrations and reports
+	@echo "🌐 Opening Railway CLI SSH guide..."
+	@$(OPEN_CMD) "https://docs.railway.com/guides/cli#ssh"

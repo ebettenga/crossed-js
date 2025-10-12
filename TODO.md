@@ -3,7 +3,7 @@
 
 ## Bugs
 
-1. on the stats page, in recent games, the correct and incorrect numbers are often the same number for some reason DONE?
+1. on the stats page, in recent games, the correct and incorrect numbers are often the same number for some reason (DONE)?
 
 
 ## Features
@@ -18,8 +18,6 @@ AI Generated Ideas:
 
 ## 1v1, 2v2, free-for-all specific
 
-- [ ] Show MVP and leaderboard: rank by score; MVP tag; per-team totals and within-team ranking; mini table: Name | Score | Accuracy | Elo Δ.
-- [ ] Show Teammate synergy (2v2): streak assist heuristic from back-to-back corrects within a short window.
 - [ ] Show Head-to-head deltas (1v1): text summary of first lead, largest lead, final margin.
 
 ## Time-trial specific enhancements
