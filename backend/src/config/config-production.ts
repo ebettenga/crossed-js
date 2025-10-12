@@ -14,7 +14,7 @@ export const config = {
     username: process.env.PGUSER,
     password: process.env.PGPASSWORD,
     database: process.env.POSTGRES_DB,
-    synchronize: true,
+    synchronize: false,
     logging: false,
     entities: ["./src/entities/**/*.ts"],
   } as PostgresConnectionOptions,

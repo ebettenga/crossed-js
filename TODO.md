@@ -12,8 +12,6 @@
 2. tests
 
 
-
-
 AI Generated Ideas:
 
 ## 1v1, 2v2, free-for-all specific
