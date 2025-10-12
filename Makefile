@@ -31,3 +31,7 @@ OPEN_CMD = $(shell which xdg-open 2>/dev/null || which open 2>/dev/null || echo 
 ssh-prod: ## gain a shell on the production enviroment to run migrations and reports
 	@echo "🌐 Opening Railway CLI SSH guide..."
 	@$(OPEN_CMD) "https://docs.railway.com/guides/cli#ssh"
+
+
+report: ## alias to run a report command
+	cd backend && yarn commands report
