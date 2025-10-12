@@ -3,15 +3,13 @@
 
 ## Bugs
 
-1. on the stats page, in recent games, the correct and incorrect numbers are often the same number for some reason
+1. on the stats page, in recent games, the correct and incorrect numbers are often the same number for some reason DONE?
 
 
 ## Features
 
 1. logging
 2. tests
-3. change diffultly selector on home page to look more like challenge modal
-4. command to start a game with x% filled out.
 6. report command
 
 

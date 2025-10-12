@@ -1,5 +1,5 @@
 import { And, DataSource, In, LessThan, Not } from "typeorm";
-import { Room } from "../entities/Room";
+import { JoinMethod, Room } from "../entities/Room";
 import { User } from "../entities/User";
 import { CrosswordService } from "./CrosswordService";
 import { EloService } from "./EloService";
@@ -194,6 +194,7 @@ export class RoomService {
     room.difficulty = difficulty;
     room.type = type;
     room.scores = { [player.id]: 0 };
+    room.join = JoinMethod.RANDOM;
 
     room.found_letters = await this.crosswordService.createFoundLettersTemplate(
       crossword.id,
@@ -662,6 +663,7 @@ export class RoomService {
     room.type = "1v1";
     room.status = "pending";
     room.scores = { [challenger.id]: 0, [challenged.id]: 0 };
+    room.join = JoinMethod.CHALLENGE;
 
     room.found_letters = await this.crosswordService.createFoundLettersTemplate(
       crossword.id,

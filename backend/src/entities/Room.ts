@@ -2,6 +2,7 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  Join,
   JoinColumn,
   JoinTable,
   ManyToMany,
@@ -28,6 +29,12 @@ export enum SquareType {
   BLACK,
   CIRCLE_BLANK,
   CIRCLE_SOLVED,
+}
+
+export enum JoinMethod {
+  CHALLENGE = "challenge",
+  RANDOM = "random",
+  CLI = "cli",
 }
 
 export interface Square {
@@ -59,6 +66,13 @@ export class Room {
     default: "pending",
   })
   status: GameStatus;
+
+  @Column({
+    type: "enum",
+    enum: JoinMethod,
+    nullable: true,
+  })
+  join_type?: JoinMethod;
 
   @ManyToMany("User", { eager: true })
   @JoinTable({
