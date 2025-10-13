@@ -55,6 +55,14 @@ services:
     depends_on:
       - db
       - redis
+  privacy-policy:
+    build:
+      context: ./privacy-policy
+      dockerfile: Dockerfile
+    container_name: crossed-privacy-policy
+    ports:
+      - "8080:80"
+    restart: unless-stopped
 
 volumes:
   redis_data:
