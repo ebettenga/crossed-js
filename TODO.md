@@ -8,8 +8,9 @@
 
 ## Features
 
-1. logging
-2. tests
+1. tests
+2. tests ci
+
 
 
 AI Generated Ideas:
