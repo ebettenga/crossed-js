@@ -12,7 +12,7 @@
     "commands": "tsx --env-file .env ./src/commands/cli.ts",
     "start-game": "yarn commands start-game",
     "prepare": "if [ \"$CI\" != \"true\" ]; then pre-commit install; fi",
-    "ci:load-test-data": "yarn commands load-test-data",
+    "ci:load-test-data": "tsx ./src/commands/cli.ts load-test-data",
     "test": "tsx --experimental-vm-modules node_modules/jest/bin/jest.js --verbose --coverage",
     "serve:coverage": "npx serve coverage/lcov-report",
     "migration:run": "npx typeorm-ts-node-esm migration:run -d ./src/data-source.ts",
