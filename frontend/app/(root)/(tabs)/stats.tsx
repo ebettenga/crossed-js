@@ -10,6 +10,7 @@ import { EloChart } from '~/components/stats/EloChart';
 import { AccuracyChart } from '~/components/stats/AccuracyChart';
 import { cn } from '~/lib/utils';
 import { useEloVisibility } from '~/hooks/useEloVisibility';
+import { useLogger } from '~/hooks/useLogs';
 
 interface StatCardProps {
     title: string;
@@ -99,6 +100,7 @@ const GameRow: React.FC<GameRowProps> = ({ game, userId }) => {
 export default function Stats() {
     const insets = useSafeAreaInsets();
     const { data: user, isLoading: userLoading, refetch: refetchUser } = useUser();
+    const logger = useLogger();
     const { isEloVisible } = useEloVisibility();
 
     const oneMonthAgo = React.useMemo(() => {
@@ -120,6 +122,7 @@ export default function Stats() {
                 refetchGames()
             ]);
         } catch (error) {
+            logger.mutate({ log: { context: 'onRefresh failed for the Stats page' }, severity: 'error' })
             console.error('Error refreshing stats:', error);
         }
     }, [refetchUser, refetchGames]);

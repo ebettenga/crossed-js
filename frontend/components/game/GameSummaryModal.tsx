@@ -18,6 +18,7 @@ import { DifficultyRating } from '~/types/crossword';
 import { RectButton } from '../home/HomeSquareButton';
 import { cn } from '~/lib/utils';
 import { ScrollView } from 'react-native-gesture-handler';
+import { useLogger } from '~/hooks/useLogs';
 
 const formatMs = (ms: number | null) => {
     if (ms == null || ms < 0) return '—';
@@ -518,6 +519,7 @@ export const GameSummaryModal: React.FC<GameSummaryModalProps> = ({
     room,
 }) => {
     const { data: currentUser } = useUser();
+    const logger = useLogger();
     const [qualityRating, setQualityRating] = useState(0);
     const [difficultyRating, setDifficultyRating] = useState<DifficultyRating | null>(null);
     const [selectedPlayerIndex, setSelectedPlayerIndex] = useState(0);
@@ -571,6 +573,7 @@ export const GameSummaryModal: React.FC<GameSummaryModalProps> = ({
             rateDifficulty.mutate({ crosswordId: room.crossword.id, rating });
             setDifficultyRating(rating);
         } catch (error) {
+            logger.mutate({ log: { context: 'handleDifficultyRate failed on GameSummaryModal' }, severity: 'error' })
             console.error('Failed to rate difficulty:', error);
         }
     };
@@ -580,6 +583,7 @@ export const GameSummaryModal: React.FC<GameSummaryModalProps> = ({
             rateQuality.mutate({ crosswordId: room.crossword.id, rating });
             setQualityRating(rating);
         } catch (error) {
+            logger.mutate({ log: { context: 'handleQualityRate failed on GameSummaryModal' }, severity: 'error' })
             console.error('Failed to rate quality:', error);
         }
     };

@@ -14,6 +14,7 @@ import { cn } from '~/lib/utils';
 import { useSound } from "~/hooks/useSound";
 import { pencilSounds, randomPencilKey } from '~/assets/sounds/randomButtonSound';
 import { useSoundPreference } from '~/hooks/useSoundPreference';
+import { useLogger } from '~/hooks/useLogs';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const PADDING = 6;
@@ -26,10 +27,12 @@ type GameMode = '1v1' | '2v2' | 'free4all' | 'time_trial';
 export default function Home() {
     const { mutate: join } = useJoinRoom();
     const router = useRouter();
+    const logger = useLogger()
     const { data: activeRooms, isLoading: isLoadingRooms, refetch: refetchActiveRooms } = useActiveRooms();
     const { data: pendingRooms, isLoading: isLoadingPendingRooms, refetch: refetchPendingRooms } = usePendingRooms();
     const { data: user, isLoading: isLoadingUser, refetch: refetchUser } = useUser();
     const [refreshing, setRefreshing] = useState(false);
+
 
     const [isDifficultyDialogVisible, setDifficultyDialogVisible] = useState(false);
     const [selectedGameMode, setSelectedGameMode] = React.useState<GameMode | null>(null);

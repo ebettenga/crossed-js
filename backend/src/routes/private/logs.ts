@@ -15,6 +15,8 @@ export default function (
   fastify.post("/logs", async (request, reply) => {
     const log = new Log();
     Object.assign(log, request.body);
+
+    log.log = { ...log.log, userId: request.user.id };
     await fastify.orm.getRepository(Log).save(log);
     reply.code(201).send(log);
   });

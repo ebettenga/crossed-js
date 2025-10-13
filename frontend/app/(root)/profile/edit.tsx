@@ -6,9 +6,11 @@ import { ChevronLeft, Camera } from 'lucide-react-native';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import { PageHeader } from '~/components/Header';
 import { useColorMode } from '~/hooks/useColorMode';
+import { useLogger } from '~/hooks/useLogs';
 
 export default function EditProfile() {
     const router = useRouter();
+    const logger = useLogger();
     const { data: user } = useUser();
     const updateUser = useUpdateUser();
     const updatePhoto = useUpdatePhoto();
@@ -58,6 +60,7 @@ export default function EditProfile() {
                 'Error',
                 error instanceof Error ? error.message : 'Failed to update profile'
             );
+            logger.mutate({ log: { context: "handleSave failed on EditProfile" }, severity: 'warn' })
         } finally {
             setIsLoading(false);
         }
@@ -113,6 +116,7 @@ export default function EditProfile() {
                 'Error',
                 error instanceof Error ? error.message : 'Failed to prepare photo'
             );
+            logger.mutate({ log: { context: 'handlePhotoUpload failed on EditProfile page' }, severity: 'error' })
         }
     };
 

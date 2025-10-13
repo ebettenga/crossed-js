@@ -106,6 +106,7 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
         // Create new socket instance
         setupSocketInstance(token);
       } catch (error) {
+
         console.error("Socket initialization error:", error);
       }
     };

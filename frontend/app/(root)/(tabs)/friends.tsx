@@ -21,13 +21,7 @@ import { ChallengeRow } from '~/components/ChallengeRow';
 import { cn } from '~/lib/utils';
 import { showToast } from '~/components/shared/Toast';
 import { useUserStatus } from '../../../hooks/socket';
-
-interface SearchResult {
-    id: number;
-    username: string;
-    photo: string | null;
-    status: 'online' | 'offline';
-}
+import { useLogger } from '~/hooks/useLogs';
 
 interface OtherUser {
     id: number;
@@ -180,6 +174,7 @@ const FriendRow: React.FC<FriendRowProps> = ({
 export default function Friends() {
     const insets = useSafeAreaInsets();
     const { data: user } = useUser();
+    const logger = useLogger();
     const [username, setUsername] = useState('');
     const [activeTab, setActiveTab] = useState<'friends' | 'challenges'>('friends');
     const [challengeTarget, setChallengeTarget] = useState<{ id: number; name: string } | null>(null);
@@ -221,7 +216,7 @@ export default function Friends() {
             setUsername(''); // Clear input on success
             showToast('success', 'Friend request sent');
         } catch (err) {
-            console.error('Failed to add friend:', err);
+            logger.mutate({ log: { context: "handleAddFriend Failed" }, severity: "error" })
         }
     }, [username, addFriend, clearSearchResults]);
 
@@ -244,6 +239,7 @@ export default function Friends() {
                 showToast('success', 'Friend request sent');
             },
             onError: (err) => {
+                logger.mutate({ log: { stackTrace: err, context: "handleAddFriend Failed" }, severity: "error" })
                 console.error('Failed to add friend:', err);
             }
         });
@@ -253,6 +249,7 @@ export default function Friends() {
         try {
             await removeFriend(friendId);
         } catch (err) {
+            logger.mutate({ log: { stackTrace: err, context: "handleRemoveFriend Failed" }, severity: "error" })
             console.error('Failed to remove friend:', err);
         }
     }, [removeFriend]);
@@ -261,6 +258,7 @@ export default function Friends() {
         try {
             await acceptFriend(friendId);
         } catch (err) {
+            logger.mutate({ log: { context: "handleAcceptFriend Failed" }, severity: "error" })
             console.error('Failed to accept friend request:', err);
         }
     }, [acceptFriend]);
@@ -269,6 +267,7 @@ export default function Friends() {
         try {
             await rejectFriend(friendId);
         } catch (err) {
+            logger.mutate({ log: { stackTrace: err, context: "handleRejectFriend Failed" }, severity: "error" })
             console.error('Failed to reject friend request:', err);
         }
     }, [rejectFriend]);
@@ -277,6 +276,7 @@ export default function Friends() {
         try {
             acceptChallenge.mutate(roomId);
         } catch (err) {
+            logger.mutate({ log: { stackTrace: err, context: "handleAcceptChallenge Failed" }, severity: "error" })
             console.error('Failed to accept challenge:', err);
         }
     };
@@ -285,6 +285,7 @@ export default function Friends() {
         try {
             await rejectChallenge.mutateAsync(roomId);
         } catch (err) {
+            logger.mutate({ log: { stackTrace: err, context: "handlerejectChallenge Failed" }, severity: "error" })
             console.error('Failed to reject challenge:', err);
         }
     };
@@ -298,6 +299,7 @@ export default function Friends() {
                 refetchChallenges()
             ]);
         } catch (error) {
+            logger.mutate({ log: { context: "onRefresh Failed on Friend Page" }, severity: "error" })
             console.error('Error refreshing:', error);
         }
         setRefreshing(false);
