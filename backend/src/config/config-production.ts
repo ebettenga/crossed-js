@@ -10,7 +10,7 @@ export const config = {
   db: {
     type: "postgres",
     host: process.env.PGHOST,
-    port: 5432,
+    port: parseInt(process.env.PGPORT),
     username: process.env.PGUSER,
     password: process.env.PGPASSWORD,
     database: process.env.POSTGRES_DB,
