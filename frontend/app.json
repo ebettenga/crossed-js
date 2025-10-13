@@ -10,14 +10,14 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.crossed"
+      "bundleIdentifier": "com.bettengasolutions.crossed"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/icon.png",
         "backgroundColor": "#92979b"
       },
-      "package": "com.anonymous.crossed"
+      "package": "com.bettengasolutions.crossed"
     },
     "web": {
       "bundler": "metro",
@@ -70,6 +70,6 @@
         "projectId": "370ab06a-bcfe-462d-a5b4-4eccc7638a70"
       }
     },
-    "owner": "bettet01"
+    "owner": "bettengasolutions"
   }
 }
