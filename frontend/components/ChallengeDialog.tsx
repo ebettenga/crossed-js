@@ -20,12 +20,14 @@ export const ChallengeDialog = ({ isVisible, onClose, friendId, friendName }: Ch
   const { play } = useSound(pencilSounds, { enabled: isSoundEnabled });
 
   const handleChallenge = async () => {
-
+    console.log('[ChallengeDialog] Sending challenge');
     sendChallenge.mutate({
       challengedId: friendId,
       difficulty: selectedDifficulty,
     });
+    console.log('[ChallengeDialog] Playing sound before closing dialog');
     await play(randomPencilKey());
+    console.log('[ChallengeDialog] Sound completed, closing dialog');
     onClose();
   };
 
