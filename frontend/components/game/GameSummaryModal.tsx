@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, TouchableOpacity, Pressable, ScrollView, FlatList } from 'react-native';
+import { View, Text, TouchableOpacity, Pressable, ScrollView } from 'react-native';
 import { Dialog, DialogContent } from '~/components/ui/dialog';
 import { Room, SquareType } from '~/hooks/useJoinRoom';
 import { useUser } from '~/hooks/users';
@@ -582,93 +582,86 @@ export const GameSummaryModal: React.FC<GameSummaryModalProps> = ({
         <Dialog open={isVisible} onOpenChange={onClose}>
             <DialogContent
                 className="bg-[#F5F5F5] flex w-96 h-[500px] dark:bg-[#1A2227]"
-                onPointerDownOutside={(e) => {
-                    e.preventDefault();
-                }}
-                onInteractOutside={(e) => {
-                    e.preventDefault();
-                }}
             >
-                <FlatList
-                    data={[{ key: 'content' }]}
-                    renderItem={() => (
-                        <View className="p-2">
-                            {renderResults()}
-
-                            <View className={cn(
-                                "rounded-sm border-[1.5px] border-[#343434] dark:border-neutral-600 bg-[#FAFAF7] dark:bg-neutral-800 w-full mt-4 mb-4",
-                            )}>
-                                <View className="flex-row justify-center gap-x-3 my-4">
-                                    <TouchableOpacity
-                                        onPress={() => handleDifficultyRate('too_easy')}
-                                        className={`border-[1.5px] rounded-sm dark:bg-neutral-800 px-4 py-2 ${difficultyRating === 'too_easy' ? 'border-[#8B0000]' : 'border-[#FAFAF7]'}`}
-                                    >
-                                        <Text className={`text-white font-['Times_New_Roman'] ${difficultyRating === 'too_easy' ? 'color-[#8B0000]' : 'color-[#FAFAF7]'}`}>Easy</Text>
-                                    </TouchableOpacity>
-                                    <TouchableOpacity
-                                        onPress={() => handleDifficultyRate('just_right')}
-                                        className={`border-[1.5px] rounded-sm dark:bg-neutral-800 px-4 py-2  ${difficultyRating === 'just_right' ? 'border-[#8B0000]' : 'border-[#FAFAF7]'}`}
-                                    >
-                                        <Text className={`text-white font-['Times_New_Roman'] ${difficultyRating === 'just_right' ? 'color-[#8B0000]' : 'color-[#FAFAF7]'}`}>Perfect</Text>
-                                    </TouchableOpacity>
-                                    <TouchableOpacity
-                                        onPress={() => handleDifficultyRate('too_hard')}
-                                        className={`border-[1.5px] rounded-sm dark:bg-neutral-800 px-4 py-2  ${difficultyRating === 'too_hard' ? 'border-[#8B0000]' : 'border-[#FAFAF7]'}`}
-                                    >
-                                        <Text className={`text-white font-['Times_New_Roman'] ${difficultyRating === 'too_hard' ? 'color-[#8B0000]' : 'color-[#FAFAF7]'}`}>Hard</Text>
-                                    </TouchableOpacity>
-                                </View>
-
-                                <View className='my-4'>
-                                    <View className="flex-row justify-center space-x-2">
-                                        {[1, 2, 3, 4, 5].map((star) => (
-                                            <AnimatedStar
-                                                key={star}
-                                                filled={star <= qualityRating}
-                                                onPress={() => handleQualityRate(star as 1 | 2 | 3 | 4 | 5)}
-                                                delay={star * 100}
-                                            />
-                                        ))}
-                                    </View>
-                                </View>
-                            </View>
-                        </View>
-                    )}
-                    ListFooterComponent={() => (
-                        <View className="px-2">
-                            <View
-                                className={cn(
-                                    "border-[1.5px] border-[#343434] dark:border-neutral-600 bg-[#FAFAF7] dark:bg-neutral-800 w-full h-16 rounded-sm mt-2",
-                                )}
-                            >
-                                <Pressable
-                                    onPress={onClose}
-                                    style={({ pressed }) => ({
-                                        backgroundColor: pressed
-                                            ? '#F0F0ED'
-                                            : '#FAFAF7'
-                                    })}
-                                    className={cn(
-                                        "flex-1 justify-center items-center relative dark:bg-neutral-800",
-                                        "active:bg-[#F0F0ED] active:dark:bg-neutral-700",
-                                    )}
-                                >
-                                    <Text className="absolute top-1 left-1 text-xs font-['Times_New_Roman'] text-[#666666] dark:text-neutral-400 font-medium">
-                                        1
-                                    </Text>
-                                    <View className="w-full h-full flex flex-col items-center justify-center">
-                                        <View className="mb-1">
-                                            <Home color='#FFFFFF' />
-                                        </View>
-                                    </View>
-                                </Pressable>
-                            </View>
-                        </View>
-                    )}
+                <ScrollView
                     showsVerticalScrollIndicator={true}
                     bounces={true}
                     keyboardShouldPersistTaps="handled"
-                />
+                    style={{ flex: 1 }}
+                    contentContainerStyle={{ paddingBottom: 20 }}
+                >
+                    <View className="p-2">
+                        {renderResults()}
+
+                        <View className={cn(
+                            "rounded-sm border-[1.5px] border-[#343434] dark:border-neutral-600 bg-[#FAFAF7] dark:bg-neutral-800 w-full mt-4 mb-4",
+                        )}>
+                            <View className="flex-row justify-center gap-x-3 my-4">
+                                <TouchableOpacity
+                                    onPress={() => handleDifficultyRate('too_easy')}
+                                    className={`border-[1.5px] rounded-sm dark:bg-neutral-800 px-4 py-2 ${difficultyRating === 'too_easy' ? 'border-[#8B0000]' : 'border-[#FAFAF7]'}`}
+                                >
+                                    <Text className={`text-white font-['Times_New_Roman'] ${difficultyRating === 'too_easy' ? 'color-[#8B0000]' : 'color-[#FAFAF7]'}`}>Easy</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    onPress={() => handleDifficultyRate('just_right')}
+                                    className={`border-[1.5px] rounded-sm dark:bg-neutral-800 px-4 py-2  ${difficultyRating === 'just_right' ? 'border-[#8B0000]' : 'border-[#FAFAF7]'}`}
+                                >
+                                    <Text className={`text-white font-['Times_New_Roman'] ${difficultyRating === 'just_right' ? 'color-[#8B0000]' : 'color-[#FAFAF7]'}`}>Perfect</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    onPress={() => handleDifficultyRate('too_hard')}
+                                    className={`border-[1.5px] rounded-sm dark:bg-neutral-800 px-4 py-2  ${difficultyRating === 'too_hard' ? 'border-[#8B0000]' : 'border-[#FAFAF7]'}`}
+                                >
+                                    <Text className={`text-white font-['Times_New_Roman'] ${difficultyRating === 'too_hard' ? 'color-[#8B0000]' : 'color-[#FAFAF7]'}`}>Hard</Text>
+                                </TouchableOpacity>
+                            </View>
+
+                            <View className='my-4'>
+                                <View className="flex-row justify-center space-x-2">
+                                    {[1, 2, 3, 4, 5].map((star) => (
+                                        <AnimatedStar
+                                            key={star}
+                                            filled={star <= qualityRating}
+                                            onPress={() => handleQualityRate(star as 1 | 2 | 3 | 4 | 5)}
+                                            delay={star * 100}
+                                        />
+                                    ))}
+                                </View>
+                            </View>
+                        </View>
+                    </View>
+
+                    <View className="px-2 pb-2">
+                        <View
+                            className={cn(
+                                "border-[1.5px] border-[#343434] dark:border-neutral-600 bg-[#FAFAF7] dark:bg-neutral-800 w-full h-16 rounded-sm mt-2",
+                            )}
+                        >
+                            <Pressable
+                                onPress={onClose}
+                                style={({ pressed }) => ({
+                                    backgroundColor: pressed
+                                        ? '#F0F0ED'
+                                        : '#FAFAF7'
+                                })}
+                                className={cn(
+                                    "flex-1 justify-center items-center relative dark:bg-neutral-800",
+                                    "active:bg-[#F0F0ED] active:dark:bg-neutral-700",
+                                )}
+                            >
+                                <Text className="absolute top-1 left-1 text-xs font-['Times_New_Roman'] text-[#666666] dark:text-neutral-400 font-medium">
+                                    1
+                                </Text>
+                                <View className="w-full h-full flex flex-col items-center justify-center">
+                                    <View className="mb-1">
+                                        <Home color='#FFFFFF' />
+                                    </View>
+                                </View>
+                            </Pressable>
+                        </View>
+                    </View>
+                </ScrollView>
             </DialogContent>
         </Dialog>
     );
