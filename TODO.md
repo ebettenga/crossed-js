@@ -5,13 +5,10 @@
 
 1. fix color issues on top and bottom phone bar on production release ( google drive image shows this)
 2. fix spacing issues on production release (can't see question sometimes)
-3. make scroll on game summary easier
 4. make create account button more obvious (next to sign in instead?)
 5. make signup page scroll up past text input (you have to leave the input to click into password atm)
 6. tabs bar doesn't sit at bottom of screen properly (google drive image)
 7. remove bottom phone bar if possible
-8. top scores game summary modal needs a rework
-9. sounds get cutoff when selecting a game (play enitre sound, then navigate or something)
 
 ## Features
 
