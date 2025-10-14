@@ -371,37 +371,6 @@ const TimeTrialResults: React.FC<TimeTrialResultsProps> = ({
                             </Text>
                         </View>
 
-                        {/* Elo Change */}
-                        <View className="flex-row justify-between">
-                            <Text className="text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">
-                                Rating:
-                            </Text>
-                            <View className="flex-row items-center gap-2">
-                                <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman']">
-                                    {eloAtGame}
-                                </Text>
-                                {eloChange !== undefined && eloChange !== 0 ? (
-                                    <View className="flex-row items-center gap-1">
-                                        {eloChange > 0 ? (
-                                            <TrendingUp size={16} color="#16a34a" />
-                                        ) : (
-                                            <TrendingDown size={16} color="#dc2626" />
-                                        )}
-                                        <Text className={cn(
-                                            "font-['Times_New_Roman'] font-semibold",
-                                            eloChange > 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
-                                        )}>
-                                            {eloChange > 0 ? '+' : ''}{eloChange}
-                                        </Text>
-                                    </View>
-                                ) : (
-                                    <Text className="text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman'] text-xs">
-                                        (unchanged)
-                                    </Text>
-                                )}
-                            </View>
-                        </View>
-
                         {/* Accuracy */}
                         {playerStats && (
                             <View className="flex-row justify-between">
