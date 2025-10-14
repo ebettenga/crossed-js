@@ -467,6 +467,9 @@ export const GameSummaryModal: React.FC<GameSummaryModalProps> = ({
     const [selectedPlayerIndex, setSelectedPlayerIndex] = useState(0);
     const rateDifficulty = useRateDifficulty();
     const rateQuality = useRateQuality();
+    const scrollViewRef = React.useRef<ScrollView>(null);
+    const lastTouchY = React.useRef<number>(0);
+    const currentScrollY = React.useRef<number>(0);
 
     // Fetch game stats using React Query
     const {
@@ -579,16 +582,44 @@ export const GameSummaryModal: React.FC<GameSummaryModalProps> = ({
     };
 
     return (
-        <Dialog open={isVisible} onOpenChange={onClose}>
+        <Dialog
+            open={isVisible}
+            onOpenChange={(open) => {
+                console.log('[GameSummaryModal] Dialog onOpenChange:', open);
+                onClose();
+            }}
+        >
             <DialogContent
                 className="bg-[#F5F5F5] flex w-96 h-[500px] dark:bg-[#1A2227]"
             >
                 <ScrollView
+                    ref={scrollViewRef}
                     showsVerticalScrollIndicator={true}
                     bounces={true}
                     keyboardShouldPersistTaps="handled"
                     style={{ flex: 1 }}
                     contentContainerStyle={{ paddingBottom: 20 }}
+                    onScroll={(e) => {
+                        if (!lastTouchY.current) {
+                            currentScrollY.current = e.nativeEvent.contentOffset.y;
+                        }
+                    }}
+                    onTouchStart={(e) => {
+                        lastTouchY.current = e.nativeEvent.pageY;
+                    }}
+                    onTouchMove={(e) => {
+                        const deltaY = lastTouchY.current - e.nativeEvent.pageY;
+                        const newScrollY = Math.max(0, currentScrollY.current + deltaY);
+
+                        scrollViewRef.current?.scrollTo({ y: newScrollY, animated: false });
+                        lastTouchY.current = e.nativeEvent.pageY;
+                        currentScrollY.current = newScrollY;
+                    }}
+                    onTouchEnd={(e) => {
+                        lastTouchY.current = 0;
+                    }}
+                    scrollEventThrottle={16}
+                    nestedScrollEnabled={true}
                 >
                     <View className="p-2">
                         {renderResults()}
