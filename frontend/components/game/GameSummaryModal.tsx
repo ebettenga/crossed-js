@@ -163,97 +163,102 @@ const CompetitiveResults: React.FC<CompetitiveResultsProps> = ({ room, selectedP
             </Text>
 
 
-            <ScrollView className="px-4 mb-4" style={{ maxHeight: 256 }}>
-                <View className="">
+            <View className="px-4 mb-4" style={{ maxHeight: 256 }}>
+                <ScrollView
+                    showsVerticalScrollIndicator={true}
+                    bounces={false}
+                >
+                    <View className="">
 
-                    {/* Score */}
-                    <View className="flex-row mb-1 justify-between">
-                        <Text className="text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">
-                            Score:
-                        </Text>
-                        <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman']">
-                            {room.scores[selectedPlayerId] || 0}
-                        </Text>
-                    </View>
-
-
-                    {/* Match Outcome */}
-                    <View className="flex-row mb-1 justify-between">
-                        <Text className="text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">
-                            Margin:
-                        </Text>
-                        <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman']">
-                            {outcome.isWinner ? '+' : '-'}{outcome.margin} pts
-                        </Text>
-                    </View>
-
-                    {/* Elo Change */}
-                    <View className="flex-row mb-1 justify-between">
-                        <Text className="text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">
-                            Rating:
-                        </Text>
-                        <View className="flex-row items-center gap-2">
-                            <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman']">
-                                {eloAtGame}
+                        {/* Score */}
+                        <View className="flex-row mb-1 justify-between">
+                            <Text className="text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">
+                                Score:
                             </Text>
-                            {eloChange !== undefined && eloChange !== 0 ? (
-                                <View className="flex-row items-center gap-1">
-                                    {eloChange > 0 ? (
-                                        <TrendingUp size={16} color="#16a34a" />
-                                    ) : (
-                                        <TrendingDown size={16} color="#dc2626" />
-                                    )}
-                                    <Text className={cn(
-                                        "font-['Times_New_Roman'] font-semibold",
-                                        eloChange > 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
-                                    )}>
-                                        {eloChange > 0 ? '+' : ''}{eloChange}
-                                    </Text>
-                                </View>
-                            ) : (
-                                <Text className="text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman'] text-xs">
-                                    (unchanged)
+                            <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman']">
+                                {room.scores[selectedPlayerId] || 0}
+                            </Text>
+                        </View>
+
+
+                        {/* Match Outcome */}
+                        <View className="flex-row mb-1 justify-between">
+                            <Text className="text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">
+                                Margin:
+                            </Text>
+                            <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman']">
+                                {outcome.isWinner ? '+' : '-'}{outcome.margin} pts
+                            </Text>
+                        </View>
+
+                        {/* Elo Change */}
+                        <View className="flex-row mb-1 justify-between">
+                            <Text className="text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">
+                                Rating:
+                            </Text>
+                            <View className="flex-row items-center gap-2">
+                                <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman']">
+                                    {eloAtGame}
                                 </Text>
-                            )}
+                                {eloChange !== undefined && eloChange !== 0 ? (
+                                    <View className="flex-row items-center gap-1">
+                                        {eloChange > 0 ? (
+                                            <TrendingUp size={16} color="#16a34a" />
+                                        ) : (
+                                            <TrendingDown size={16} color="#dc2626" />
+                                        )}
+                                        <Text className={cn(
+                                            "font-['Times_New_Roman'] font-semibold",
+                                            eloChange > 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
+                                        )}>
+                                            {eloChange > 0 ? '+' : ''}{eloChange}
+                                        </Text>
+                                    </View>
+                                ) : (
+                                    <Text className="text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman'] text-xs">
+                                        (unchanged)
+                                    </Text>
+                                )}
+                            </View>
                         </View>
-                    </View>
 
-                    {/* Accuracy */}
-                    {playerStats && (
+                        {/* Accuracy */}
+                        {playerStats && (
+                            <View className="flex-row mb-1 justify-between">
+                                <Text className="text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">
+                                    Accuracy:
+                                </Text>
+                                <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman']">
+                                    {accuracy.toFixed(1)}% ({playerStats.correctGuesses} correct, {playerStats.incorrectGuesses} mistakes)
+                                </Text>
+                            </View>
+                        )}
+
+                        {/* Contribution */}
+                        {playerStats && gameStats && gameStats.length > 1 && (
+                            <View className="flex-row mb-1 justify-between">
+                                <Text className="text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">
+                                    Contribution:
+                                </Text>
+                                <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman']">
+                                    {contribution.toFixed(1)}%
+                                </Text>
+                            </View>
+                        )}
+
+                        {/* Grid Completion */}
                         <View className="flex-row mb-1 justify-between">
                             <Text className="text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">
-                                Accuracy:
+                                Grid Solved:
                             </Text>
                             <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman']">
-                                {accuracy.toFixed(1)}% ({playerStats.correctGuesses} correct, {playerStats.incorrectGuesses} mistakes)
+                                {gridCompletion.toFixed(1)}%
                             </Text>
                         </View>
-                    )}
 
-                    {/* Contribution */}
-                    {playerStats && gameStats && gameStats.length > 1 && (
-                        <View className="flex-row mb-1 justify-between">
-                            <Text className="text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">
-                                Contribution:
-                            </Text>
-                            <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman']">
-                                {contribution.toFixed(1)}%
-                            </Text>
-                        </View>
-                    )}
-
-                    {/* Grid Completion */}
-                    <View className="flex-row mb-1 justify-between">
-                        <Text className="text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">
-                            Grid Solved:
-                        </Text>
-                        <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman']">
-                            {gridCompletion.toFixed(1)}%
-                        </Text>
                     </View>
-
-                </View>
-            </ScrollView>
+                </ScrollView>
+            </View>
 
             {/* Navigation buttons */}
             <View className="flex-row w-full mt-2">
@@ -350,165 +355,122 @@ const TimeTrialResults: React.FC<TimeTrialResultsProps> = ({
                 {selectedPlayer?.username || 'Player'}
             </Text>
 
-            <ScrollView className="px-4 mb-4" style={{ maxHeight: 256 }}>
-                <View className="space-y-3">
-                    {/* Score */}
-                    <View className="flex-row justify-between">
-                        <Text className="text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">
-                            Score:
-                        </Text>
-                        <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman']">
-                            {room.scores[selectedPlayerId] || 0}
-                        </Text>
-                    </View>
-
-                    {/* Elo Change */}
-                    <View className="flex-row justify-between">
-                        <Text className="text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">
-                            Rating:
-                        </Text>
-                        <View className="flex-row items-center gap-2">
-                            <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman']">
-                                {eloAtGame}
+            <View className="px-4 mb-4" style={{ maxHeight: 256 }}>
+                <ScrollView
+                    showsVerticalScrollIndicator={true}
+                    bounces={false}
+                >
+                    <View className="space-y-3">
+                        {/* Score */}
+                        <View className="flex-row justify-between">
+                            <Text className="text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">
+                                Score:
                             </Text>
-                            {eloChange !== undefined && eloChange !== 0 ? (
-                                <View className="flex-row items-center gap-1">
-                                    {eloChange > 0 ? (
-                                        <TrendingUp size={16} color="#16a34a" />
-                                    ) : (
-                                        <TrendingDown size={16} color="#dc2626" />
-                                    )}
-                                    <Text className={cn(
-                                        "font-['Times_New_Roman'] font-semibold",
-                                        eloChange > 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
-                                    )}>
-                                        {eloChange > 0 ? '+' : ''}{eloChange}
-                                    </Text>
-                                </View>
-                            ) : (
-                                <Text className="text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman'] text-xs">
-                                    (unchanged)
+                            <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman']">
+                                {room.scores[selectedPlayerId] || 0}
+                            </Text>
+                        </View>
+
+                        {/* Elo Change */}
+                        <View className="flex-row justify-between">
+                            <Text className="text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">
+                                Rating:
+                            </Text>
+                            <View className="flex-row items-center gap-2">
+                                <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman']">
+                                    {eloAtGame}
                                 </Text>
-                            )}
-                        </View>
-                    </View>
-
-                    {/* Accuracy */}
-                    {playerStats && (
-                        <View className="flex-row justify-between">
-                            <Text className="text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">
-                                Accuracy:
-                            </Text>
-                            <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman']">
-                                {accuracy.toFixed(1)}% ({playerStats.correctGuesses} correct, {playerStats.incorrectGuesses} mistakes)
-                            </Text>
-                        </View>
-                    )}
-
-                    {/* Contribution */}
-                    {playerStats && gameStats && gameStats.length > 1 && (
-                        <View className="flex-row justify-between">
-                            <Text className="text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">
-                                Contribution:
-                            </Text>
-                            <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman']">
-                                {contribution.toFixed(1)}%
-                            </Text>
-                        </View>
-                    )}
-
-                    {/* Grid Completion */}
-                    <View className="flex-row justify-between">
-                        <Text className="text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">
-                            Grid Solved:
-                        </Text>
-                        <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman']">
-                            {gridCompletion.toFixed(1)}%
-                        </Text>
-                    </View>
-                </View>
-
-                {/* Leaderboard */}
-                <View className="mt-6 pt-4 border-t border-[#343434] dark:border-neutral-600">
-                    <Text className="text-lg text-center text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman'] mb-3">
-                        Top Scores
-                    </Text>
-                    {isLoading ? (
-                        <Text className="text-center text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">Loading...</Text>
-                    ) : error ? (
-                        <Text className="text-center text-[#8B0000] dark:text-[#FF6B6B] font-['Times_New_Roman']">
-                            {error instanceof Error ? error.message : 'Failed to load leaderboard'}
-                        </Text>
-                    ) : leaderboard && leaderboard.length > 0 ? (
-                        <View className="space-y-2">
-                            {leaderboard.map((entry) => {
-                                const isYou = entry.user?.id === selectedPlayerId;
-                                return (
-                                    <View key={entry.roomId} className="flex-row justify-between">
-                                        <Text className={`text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman'] ${isYou ? 'font-semibold' : ''}`}>
-                                            {entry.rank}. {entry.user?.username ?? 'Anonymous'}
-                                        </Text>
-                                        <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman']">
-                                            {entry.score} pts • {formatMs(entry.timeTakenMs)}
+                                {eloChange !== undefined && eloChange !== 0 ? (
+                                    <View className="flex-row items-center gap-1">
+                                        {eloChange > 0 ? (
+                                            <TrendingUp size={16} color="#16a34a" />
+                                        ) : (
+                                            <TrendingDown size={16} color="#dc2626" />
+                                        )}
+                                        <Text className={cn(
+                                            "font-['Times_New_Roman'] font-semibold",
+                                            eloChange > 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
+                                        )}>
+                                            {eloChange > 0 ? '+' : ''}{eloChange}
                                         </Text>
                                     </View>
-                                );
-                            })}
+                                ) : (
+                                    <Text className="text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman'] text-xs">
+                                        (unchanged)
+                                    </Text>
+                                )}
+                            </View>
                         </View>
-                    ) : (
-                        <Text className="text-center text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">No results yet</Text>
-                    )}
-                </View>
-            </ScrollView>
 
-            {/* Navigation buttons */}
-            <View className="flex-row w-full mt-4">
-                <View
-                    className={cn(
-                        "border-t-[2px] border-[#343434] dark:border-neutral-600 bg-[#FAFAF7] dark:bg-neutral-800 flex-1 h-16 rounded-sm",
-                    )}
-                >
-                    <Pressable
-                        onPress={() => onNavigatePlayer('prev')}
-                        style={({ pressed }) => ({
-                            backgroundColor: pressed
-                                ? '#F0F0ED'
-                                : '#FAFAF7'
-                        })}
-                        className={cn(
-                            "flex-1 justify-center items-center relative dark:bg-neutral-800",
-                            "active:bg-[#F0F0ED] active:dark:bg-neutral-700",
+                        {/* Accuracy */}
+                        {playerStats && (
+                            <View className="flex-row justify-between">
+                                <Text className="text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">
+                                    Accuracy:
+                                </Text>
+                                <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman']">
+                                    {accuracy.toFixed(1)}% ({playerStats.correctGuesses} correct, {playerStats.incorrectGuesses} mistakes)
+                                </Text>
+                            </View>
                         )}
-                    >
-                        <View className="w-full h-full flex flex-col items-center justify-center">
-                            <ChevronLeft color='#666666' size={32} />
-                        </View>
-                    </Pressable>
-                </View>
 
-                <View
-                    className={cn(
-                        "border-t-2 border-l-2 border-[#343434] dark:border-neutral-600 bg-[#FAFAF7] dark:bg-neutral-800 flex-1 h-16 rounded-sm",
-                    )}
-                >
-                    <Pressable
-                        onPress={() => onNavigatePlayer('next')}
-                        style={({ pressed }) => ({
-                            backgroundColor: pressed
-                                ? '#F0F0ED'
-                                : '#FAFAF7'
-                        })}
-                        className={cn(
-                            "flex-1 justify-center items-center relative dark:bg-neutral-800",
-                            "active:bg-[#F0F0ED] active:dark:bg-neutral-700",
+                        {/* Contribution */}
+                        {playerStats && gameStats && gameStats.length > 1 && (
+                            <View className="flex-row justify-between">
+                                <Text className="text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">
+                                    Contribution:
+                                </Text>
+                                <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman']">
+                                    {contribution.toFixed(1)}%
+                                </Text>
+                            </View>
                         )}
-                    >
-                        <View className="w-full h-full flex flex-col items-center justify-center">
-                            <ChevronRight color='#666666' size={32} />
+
+                        {/* Grid Completion */}
+                        <View className="flex-row justify-between">
+                            <Text className="text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">
+                                Grid Solved:
+                            </Text>
+                            <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman']">
+                                {gridCompletion.toFixed(1)}%
+                            </Text>
                         </View>
-                    </Pressable>
-                </View>
+                    </View>
+
+                    {/* Leaderboard */}
+                    <View className="mt-6 pt-4 border-t border-[#343434] dark:border-neutral-600">
+                        <Text className="text-lg text-center text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman'] mb-3">
+                            Top Scores
+                        </Text>
+                        {isLoading ? (
+                            <Text className="text-center text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">Loading...</Text>
+                        ) : error ? (
+                            <Text className="text-center text-[#8B0000] dark:text-[#FF6B6B] font-['Times_New_Roman']">
+                                {error instanceof Error ? error.message : 'Failed to load leaderboard'}
+                            </Text>
+                        ) : leaderboard && leaderboard.length > 0 ? (
+                            <View className="space-y-2">
+                                {leaderboard.map((entry) => {
+                                    const isYou = entry.user?.id === selectedPlayerId;
+                                    return (
+                                        <View key={entry.roomId} className="flex-row justify-between">
+                                            <Text className={`text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman'] ${isYou ? 'font-semibold' : ''}`}>
+                                                {entry.rank}. {entry.user?.username ?? 'Anonymous'}
+                                            </Text>
+                                            <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman']">
+                                                {entry.score} pts • {formatMs(entry.timeTakenMs)}
+                                            </Text>
+                                        </View>
+                                    );
+                                })}
+                            </View>
+                        ) : (
+                            <Text className="text-center text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">No results yet</Text>
+                        )}
+                    </View>
+                </ScrollView>
             </View>
+
         </View>
     );
 };
@@ -639,12 +601,16 @@ export const GameSummaryModal: React.FC<GameSummaryModalProps> = ({
     return (
         <Dialog open={isVisible} onOpenChange={onClose}>
             <DialogContent className="bg-[#F5F5F5] flex w-96 h-[500px] dark:bg-[#1A2227]">
-                <View className="flex-1 flex justify-between p-2">
-                    <ScrollView contentContainerClassName='flex flex-col gap-4'>
+                <View className="flex-1 flex flex-col justify-between p-2">
+                    <ScrollView
+                        className="flex-1"
+                        showsVerticalScrollIndicator={true}
+                        bounces={true}
+                    >
                         {renderResults()}
 
                         <View className={cn(
-                            "rounded-sm border-[1.5px] border-[#343434] dark:border-neutral-600 bg-[#FAFAF7] dark:bg-neutral-800 w-full mb-4",
+                            "rounded-sm border-[1.5px] border-[#343434] dark:border-neutral-600 bg-[#FAFAF7] dark:bg-neutral-800 w-full mt-4 mb-4",
                         )}>
                             <View className="flex-row justify-center gap-x-3 my-4">
                                 <TouchableOpacity
@@ -680,10 +646,7 @@ export const GameSummaryModal: React.FC<GameSummaryModalProps> = ({
                                 </View>
                             </View>
                         </View>
-
                     </ScrollView>
-
-
 
                     {/* Home button */}
                     <View
