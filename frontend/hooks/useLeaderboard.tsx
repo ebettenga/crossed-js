@@ -11,14 +11,19 @@ export type LeaderboardEntry = {
   timeTakenMs: number | null;
 };
 
+export type LeaderboardResponse = {
+  topEntries: LeaderboardEntry[];
+  currentPlayerEntry?: LeaderboardEntry;
+};
+
 export const useTimeTrialLeaderboard = (roomId: number | undefined, limit: number = 10) => {
-  return useQuery<LeaderboardEntry[]>({
+  return useQuery<LeaderboardResponse>({
     queryKey: ['leaderboard', 'time-trial', roomId, limit],
     queryFn: async () => {
       if (!roomId) {
         throw new Error('Room ID is required');
       }
-      return await get<LeaderboardEntry[]>(
+      return await get<LeaderboardResponse>(
         `/rooms/${roomId}/leaderboard/time-trial`,
         { params: { limit: limit.toString() } }
       );

@@ -165,8 +165,11 @@ const CompetitiveResults: React.FC<CompetitiveResultsProps> = ({ room, selectedP
 
             <View className="px-4 mb-4" style={{ maxHeight: 256 }}>
                 <ScrollView
-                    showsVerticalScrollIndicator={true}
-                    bounces={false}
+                    showsVerticalScrollIndicator
+                    bounces
+                    scrollEventThrottle={16}
+                    overScrollMode="never"
+                    keyboardShouldPersistTaps="handled"
                 >
                     <View className="">
 
@@ -314,7 +317,7 @@ const CompetitiveResults: React.FC<CompetitiveResultsProps> = ({ room, selectedP
 
 interface TimeTrialResultsProps {
     room: Room;
-    leaderboard: any[] | undefined;
+    leaderboard: { topEntries: any[]; currentPlayerEntry?: any } | undefined;
     isLoading: boolean;
     error: Error | null;
     selectedPlayerId: number;
@@ -355,89 +358,109 @@ const TimeTrialResults: React.FC<TimeTrialResultsProps> = ({
                 {selectedPlayer?.username || 'Player'}
             </Text>
 
-            <View className="px-4 mb-4" style={{ maxHeight: 256 }}>
-                <ScrollView
-                    showsVerticalScrollIndicator={true}
-                    bounces={false}
-                >
-                    <View className="space-y-3">
-                        {/* Score */}
-                        <View className="flex-row justify-between">
-                            <Text className="text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">
-                                Score:
-                            </Text>
-                            <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman']">
-                                {room.scores[selectedPlayerId] || 0}
-                            </Text>
-                        </View>
-
-                        {/* Accuracy */}
-                        {playerStats && (
-                            <View className="flex-row justify-between">
-                                <Text className="text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">
-                                    Accuracy:
-                                </Text>
-                                <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman']">
-                                    {accuracy.toFixed(1)}% ({playerStats.correctGuesses} correct, {playerStats.incorrectGuesses} mistakes)
-                                </Text>
-                            </View>
-                        )}
-
-                        {/* Contribution */}
-                        {playerStats && gameStats && gameStats.length > 1 && (
-                            <View className="flex-row justify-between">
-                                <Text className="text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">
-                                    Contribution:
-                                </Text>
-                                <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman']">
-                                    {contribution.toFixed(1)}%
-                                </Text>
-                            </View>
-                        )}
-
-                        {/* Grid Completion */}
-                        <View className="flex-row justify-between">
-                            <Text className="text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">
-                                Grid Solved:
-                            </Text>
-                            <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman']">
-                                {gridCompletion.toFixed(1)}%
-                            </Text>
-                        </View>
-                    </View>
-
-                    {/* Leaderboard */}
-                    <View className="mt-6 pt-4 border-t border-[#343434] dark:border-neutral-600">
-                        <Text className="text-lg text-center text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman'] mb-3">
-                            Top Scores
+            <View className="px-4 mb-4">
+                <View className="space-y-3">
+                    {/* Score */}
+                    <View className="flex-row justify-between">
+                        <Text className="text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">
+                            Score:
                         </Text>
-                        {isLoading ? (
-                            <Text className="text-center text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">Loading...</Text>
-                        ) : error ? (
-                            <Text className="text-center text-[#8B0000] dark:text-[#FF6B6B] font-['Times_New_Roman']">
-                                {error instanceof Error ? error.message : 'Failed to load leaderboard'}
-                            </Text>
-                        ) : leaderboard && leaderboard.length > 0 ? (
-                            <View className="space-y-2">
-                                {leaderboard.map((entry) => {
-                                    const isYou = entry.user?.id === selectedPlayerId;
-                                    return (
-                                        <View key={entry.roomId} className="flex-row justify-between">
-                                            <Text className={`text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman'] ${isYou ? 'font-semibold' : ''}`}>
-                                                {entry.rank}. {entry.user?.username ?? 'Anonymous'}
-                                            </Text>
-                                            <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman']">
-                                                {entry.score} pts • {formatMs(entry.timeTakenMs)}
-                                            </Text>
-                                        </View>
-                                    );
-                                })}
-                            </View>
-                        ) : (
-                            <Text className="text-center text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">No results yet</Text>
-                        )}
+                        <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman']">
+                            {room.scores[selectedPlayerId] || 0}
+                        </Text>
                     </View>
-                </ScrollView>
+
+                    {/* Accuracy */}
+                    {playerStats && (
+                        <View className="flex-row justify-between">
+                            <Text className="text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">
+                                Accuracy:
+                            </Text>
+                            <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman']">
+                                {accuracy.toFixed(1)}% ({playerStats.correctGuesses} correct, {playerStats.incorrectGuesses} mistakes)
+                            </Text>
+                        </View>
+                    )}
+
+                    {/* Contribution */}
+                    {playerStats && gameStats && gameStats.length > 1 && (
+                        <View className="flex-row justify-between">
+                            <Text className="text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">
+                                Contribution:
+                            </Text>
+                            <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman']">
+                                {contribution.toFixed(1)}%
+                            </Text>
+                        </View>
+                    )}
+
+                    {/* Grid Completion */}
+                    <View className="flex-row justify-between">
+                        <Text className="text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">
+                            Grid Solved:
+                        </Text>
+                        <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman']">
+                            {gridCompletion.toFixed(1)}%
+                        </Text>
+                    </View>
+                </View>
+
+                {/* Leaderboard */}
+                <View className="mt-6 pt-4 border-t border-[#343434] dark:border-neutral-600">
+                    <Text className="text-lg text-center text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman'] mb-3">
+                        Top Scores
+                    </Text>
+                    {isLoading ? (
+                        <Text className="text-center text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">Loading...</Text>
+                    ) : error ? (
+                        <Text className="text-center text-[#8B0000] dark:text-[#FF6B6B] font-['Times_New_Roman']">
+                            {error instanceof Error ? error.message : 'Failed to load leaderboard'}
+                        </Text>
+                    ) : leaderboard && leaderboard.topEntries && leaderboard.topEntries.length > 0 ? (
+                        <View className="space-y-1">
+                            {leaderboard.topEntries.map((entry) => {
+                                const isYou = entry.user?.id === selectedPlayerId;
+                                return (
+                                    <View key={entry.roomId} className={cn(
+                                        "flex-row justify-between py-1",
+                                        isYou && "bg-[#F0F0ED] dark:bg-neutral-700 px-2 rounded"
+                                    )}>
+                                        <Text className={cn(
+                                            "text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']",
+                                            isYou && "font-semibold"
+                                        )}>
+                                            {entry.rank}. {entry.user?.username ?? 'Anonymous'}
+                                        </Text>
+                                        <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman'] text-sm">
+                                            {entry.score} pts • {formatMs(entry.timeTakenMs)}
+                                        </Text>
+                                    </View>
+                                );
+                            })}
+
+                            {/* Show current player's position if not in top N */}
+                            {leaderboard.currentPlayerEntry && (
+                                <>
+                                    <View className="flex-row justify-center py-1">
+                                        <Text className="text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">
+                                            ⋯
+                                        </Text>
+                                    </View>
+                                    <View className="flex-row justify-between bg-[#F0F0ED] dark:bg-neutral-700 px-2 py-1 rounded">
+                                        <Text className="text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman'] font-semibold">
+                                            {leaderboard.currentPlayerEntry.rank}. {leaderboard.currentPlayerEntry.user?.username ?? 'Anonymous'}
+                                        </Text>
+                                        <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman'] text-sm">
+                                            {leaderboard.currentPlayerEntry.score} pts • {formatMs(leaderboard.currentPlayerEntry.timeTakenMs)}
+                                        </Text>
+                                    </View>
+                                </>
+                            )}
+                        </View>
+                    ) : (
+                        <Text className="text-center text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">No results yet</Text>
+                    )}
+                </View>
             </View>
 
         </View>
@@ -474,7 +497,7 @@ export const GameSummaryModal: React.FC<GameSummaryModalProps> = ({
         error: lbError
     } = useTimeTrialLeaderboard(
         isVisible && room?.type === 'time_trial' ? room.id : undefined,
-        10
+        5
     );
 
     if (!room || !currentUser) return null;
@@ -568,84 +591,85 @@ export const GameSummaryModal: React.FC<GameSummaryModalProps> = ({
     };
 
     return (
-        <Dialog open={isVisible} onOpenChange={onClose}>
+        <Dialog open={isVisible} onOpenChange={(open) => {
+            // Only allow closing via the Home button, not by clicking outside
+            if (!open) return;
+        }}>
             <DialogContent className="bg-[#F5F5F5] flex w-96 h-[500px] dark:bg-[#1A2227]">
-                <View className="flex-1 flex flex-col justify-between p-2">
-                    <ScrollView
-                        className="flex-1"
-                        showsVerticalScrollIndicator={true}
-                        bounces={true}
-                    >
-                        {renderResults()}
+                <ScrollView
+                    contentContainerClassName='flex-col justify-between p-2 flex-1'
+                    className="flex "
+                    showsVerticalScrollIndicator
+                >
+                    {renderResults()}
 
-                        <View className={cn(
-                            "rounded-sm border-[1.5px] border-[#343434] dark:border-neutral-600 bg-[#FAFAF7] dark:bg-neutral-800 w-full mt-4 mb-4",
-                        )}>
-                            <View className="flex-row justify-center gap-x-3 my-4">
-                                <TouchableOpacity
-                                    onPress={() => handleDifficultyRate('too_easy')}
-                                    className={`border-[1.5px] rounded-sm dark:bg-neutral-800 px-4 py-2 ${difficultyRating === 'too_easy' ? 'border-[#8B0000]' : 'border-[#FAFAF7]'}`}
-                                >
-                                    <Text className={`text-white font-['Times_New_Roman'] ${difficultyRating === 'too_easy' ? 'color-[#8B0000]' : 'color-[#FAFAF7]'}`}>Easy</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                    onPress={() => handleDifficultyRate('just_right')}
-                                    className={`border-[1.5px] rounded-sm dark:bg-neutral-800 px-4 py-2  ${difficultyRating === 'just_right' ? 'border-[#8B0000]' : 'border-[#FAFAF7]'}`}
-                                >
-                                    <Text className={`text-white font-['Times_New_Roman'] ${difficultyRating === 'just_right' ? 'color-[#8B0000]' : 'color-[#FAFAF7]'}`}>Perfect</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                    onPress={() => handleDifficultyRate('too_hard')}
-                                    className={`border-[1.5px] rounded-sm dark:bg-neutral-800 px-4 py-2  ${difficultyRating === 'too_hard' ? 'border-[#8B0000]' : 'border-[#FAFAF7]'}`}
-                                >
-                                    <Text className={`text-white font-['Times_New_Roman'] ${difficultyRating === 'too_hard' ? 'color-[#8B0000]' : 'color-[#FAFAF7]'}`}>Hard</Text>
-                                </TouchableOpacity>
-                            </View>
+                    <View className={cn(
+                        "rounded-sm border-[1.5px] border-[#343434] dark:border-neutral-600 bg-[#FAFAF7] dark:bg-neutral-800 w-full mt-4 mb-4",
+                    )}>
+                        <View className="flex-row justify-center gap-x-3 my-4">
+                            <TouchableOpacity
+                                onPress={() => handleDifficultyRate('too_easy')}
+                                className={`border-[1.5px] rounded-sm dark:bg-neutral-800 px-4 py-2 ${difficultyRating === 'too_easy' ? 'border-[#8B0000]' : 'border-[#FAFAF7]'}`}
+                            >
+                                <Text className={`text-white font-['Times_New_Roman'] ${difficultyRating === 'too_easy' ? 'color-[#8B0000]' : 'color-[#FAFAF7]'}`}>Easy</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={() => handleDifficultyRate('just_right')}
+                                className={`border-[1.5px] rounded-sm dark:bg-neutral-800 px-4 py-2  ${difficultyRating === 'just_right' ? 'border-[#8B0000]' : 'border-[#FAFAF7]'}`}
+                            >
+                                <Text className={`text-white font-['Times_New_Roman'] ${difficultyRating === 'just_right' ? 'color-[#8B0000]' : 'color-[#FAFAF7]'}`}>Perfect</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={() => handleDifficultyRate('too_hard')}
+                                className={`border-[1.5px] rounded-sm dark:bg-neutral-800 px-4 py-2  ${difficultyRating === 'too_hard' ? 'border-[#8B0000]' : 'border-[#FAFAF7]'}`}
+                            >
+                                <Text className={`text-white font-['Times_New_Roman'] ${difficultyRating === 'too_hard' ? 'color-[#8B0000]' : 'color-[#FAFAF7]'}`}>Hard</Text>
+                            </TouchableOpacity>
+                        </View>
 
-                            <View className='my-4'>
-                                <View className="flex-row justify-center space-x-2">
-                                    {[1, 2, 3, 4, 5].map((star) => (
-                                        <AnimatedStar
-                                            key={star}
-                                            filled={star <= qualityRating}
-                                            onPress={() => handleQualityRate(star as 1 | 2 | 3 | 4 | 5)}
-                                            delay={star * 100}
-                                        />
-                                    ))}
-                                </View>
+                        <View className='my-4'>
+                            <View className="flex-row justify-center space-x-2">
+                                {[1, 2, 3, 4, 5].map((star) => (
+                                    <AnimatedStar
+                                        key={star}
+                                        filled={star <= qualityRating}
+                                        onPress={() => handleQualityRate(star as 1 | 2 | 3 | 4 | 5)}
+                                        delay={star * 100}
+                                    />
+                                ))}
                             </View>
                         </View>
-                    </ScrollView>
+                    </View>
+                </ScrollView>
 
-                    {/* Home button */}
-                    <View
+                {/* Home button */}
+                <View
+                    className={cn(
+                        "border-[1.5px] border-[#343434] dark:border-neutral-600 bg-[#FAFAF7] dark:bg-neutral-800 w-full h-16 rounded-sm mt-2",
+                    )}
+                >
+                    <Pressable
+                        onPress={onClose}
+                        style={({ pressed }) => ({
+                            backgroundColor: pressed
+                                ? '#F0F0ED'
+                                : '#FAFAF7'
+                        })}
                         className={cn(
-                            "border-[1.5px] border-[#343434] dark:border-neutral-600 bg-[#FAFAF7] dark:bg-neutral-800 w-full h-16 rounded-sm",
+                            "flex-1 justify-center items-center relative dark:bg-neutral-800",
+                            "active:bg-[#F0F0ED] active:dark:bg-neutral-700",
                         )}
                     >
-                        <Pressable
-                            onPress={onClose}
-                            style={({ pressed }) => ({
-                                backgroundColor: pressed
-                                    ? '#F0F0ED'
-                                    : '#FAFAF7'
-                            })}
-                            className={cn(
-                                "flex-1 justify-center items-center relative dark:bg-neutral-800",
-                                "active:bg-[#F0F0ED] active:dark:bg-neutral-700",
-                            )}
-                        >
 
-                            <Text className="absolute top-1 left-1 text-xs font-['Times_New_Roman'] text-[#666666] dark:text-neutral-400 font-medium">
-                                1
-                            </Text>
-                            <View className="w-full h-full flex flex-col items-center justify-center">
-                                <View className="mb-1">
-                                    <Home color='#FFFFFF' />
-                                </View>
+                        <Text className="absolute top-1 left-1 text-xs font-['Times_New_Roman'] text-[#666666] dark:text-neutral-400 font-medium">
+                            1
+                        </Text>
+                        <View className="w-full h-full flex flex-col items-center justify-center">
+                            <View className="mb-1">
+                                <Home color='#FFFFFF' />
                             </View>
-                        </Pressable>
-                    </View>
+                        </View>
+                    </Pressable>
                 </View>
             </DialogContent>
         </Dialog>

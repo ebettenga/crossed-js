@@ -744,8 +744,8 @@ export class RoomService {
   async getTimeTrialLeaderboard(
     roomId: number,
     limit: number = 10,
-  ): Promise<
-    Array<{
+  ): Promise<{
+    topEntries: Array<{
       rank: number;
       roomId: number;
       score: number;
@@ -753,14 +753,26 @@ export class RoomService {
       created_at: string;
       completed_at: string | null;
       timeTakenMs: number | null;
-    }>
-  > {
+    }>;
+    currentPlayerEntry?: {
+      rank: number;
+      roomId: number;
+      score: number;
+      user: { id: number; username: string; eloRating: number } | null;
+      created_at: string;
+      completed_at: string | null;
+      timeTakenMs: number | null;
+    };
+  }> {
     const room = await this.getRoomById(roomId);
     if (!room) {
       throw new NotFoundError("Room not found");
     }
 
     const crosswordId = room.crossword.id;
+    const currentPlayerId = room.players && room.players.length > 0
+      ? room.players[0].id
+      : null;
 
     // Fetch finished time-trial games on the same crossword
     const rooms = await this.ormConnection.getRepository(Room).find({
@@ -808,8 +820,8 @@ export class RoomService {
       return ta - tb;
     });
 
-    // Limit and format dates to ISO strings
-    const top = entries.slice(0, limit).map((e, idx) => ({
+    // Add ranks to all entries
+    const rankedEntries = entries.map((e, idx) => ({
       rank: idx + 1,
       roomId: e.roomId,
       score: e.score,
@@ -819,6 +831,21 @@ export class RoomService {
       timeTakenMs: e.timeTakenMs,
     }));
 
-    return top;
+    // Get top N entries
+    const topEntries = rankedEntries.slice(0, limit);
+
+    // Find current player's entry if not in top N
+    let currentPlayerEntry: typeof rankedEntries[0] | undefined;
+    if (currentPlayerId) {
+      const currentEntry = rankedEntries.find((e) => e.roomId === roomId);
+      if (currentEntry && currentEntry.rank > limit) {
+        currentPlayerEntry = currentEntry;
+      }
+    }
+
+    return {
+      topEntries,
+      currentPlayerEntry,
+    };
   }
 }

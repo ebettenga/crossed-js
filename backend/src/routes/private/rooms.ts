@@ -169,11 +169,11 @@ export default function (
       return;
     }
 
-    const leaderboard = await roomService.getTimeTrialLeaderboard(
+    const result = await roomService.getTimeTrialLeaderboard(
       room.id,
       limitNum,
     );
-    reply.send(leaderboard);
+    reply.send(result);
   });
 
   // Get game stats for a specific room
@@ -190,7 +190,9 @@ export default function (
 
     // Only return stats for finished games
     if (room.status !== "finished") {
-      reply.code(400).send({ error: "Game stats are only available for finished games" });
+      reply.code(400).send({
+        error: "Game stats are only available for finished games",
+      });
       return;
     }
 

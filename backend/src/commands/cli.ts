@@ -220,10 +220,13 @@ program
 program
   .command("start-game")
   .description(
-    "Start a new game between two players with optional pre-filled board",
+    "Start a new game with optional pre-filled board",
   )
   .requiredOption("-p1, --player1 <number>", "First player ID")
-  .requiredOption("-p2, --player2 <number>", "Second player ID")
+  .option(
+    "-p2, --player2 <number>",
+    "Second player ID (not required for time_trial)",
+  )
   .option(
     "-d, --difficulty <string>",
     "Difficulty level (easy, medium, hard)",
@@ -239,16 +242,30 @@ program
     "Start the game inactivity timer",
     false,
   )
+  .option(
+    "-g, --game-type <string>",
+    "Game type (1v1, 2v2, free4all, time_trial)",
+    "1v1",
+  )
   .action(async (options) => {
     let dataSource: DataSource | null = null;
     try {
       dataSource = await AppDataSource.initialize();
-      const { player1, player2, difficulty, fill, timer } = options;
+      const { player1, player2, difficulty, fill, timer, gameType } = options;
 
       const player1Id = parseInt(player1);
-      const player2Id = parseInt(player2);
+      const player2Id = player2 ? parseInt(player2) : null;
       const fillPercentage = parseFloat(fill);
       const startTimer = timer === true;
+
+      // Validate game type
+      const validGameTypes = ["1v1", "2v2", "free4all", "time_trial"];
+      if (!validGameTypes.includes(gameType)) {
+        console.error(
+          `Invalid game type. Must be one of: ${validGameTypes.join(", ")}`,
+        );
+        process.exit(1);
+      }
 
       // Validate fill percentage
       if (fillPercentage < 0 || fillPercentage > 100) {
@@ -256,21 +273,36 @@ program
         process.exit(1);
       }
 
+      // For time_trial, player2 is not required
+      if (gameType === "time_trial" && player2Id) {
+        console.error(
+          "Time trial games are single player. Do not specify player2.",
+        );
+        process.exit(1);
+      }
+
+      // For non-time_trial games, player2 is required
+      if (gameType !== "time_trial" && !player2Id) {
+        console.error(`Player 2 is required for ${gameType} games`);
+        process.exit(1);
+      }
+
       // Validate players exist
       const userRepo = dataSource.getRepository(User);
-      const [p1, p2] = await Promise.all([
-        userRepo.findOneBy({ id: player1Id }),
-        userRepo.findOneBy({ id: player2Id }),
-      ]);
+      const p1 = await userRepo.findOneBy({ id: player1Id });
 
       if (!p1) {
         console.error(`Player 1 with ID ${player1Id} not found`);
         process.exit(1);
       }
 
-      if (!p2) {
-        console.error(`Player 2 with ID ${player2Id} not found`);
-        process.exit(1);
+      let p2 = null;
+      if (player2Id) {
+        p2 = await userRepo.findOneBy({ id: player2Id });
+        if (!p2) {
+          console.error(`Player 2 with ID ${player2Id} not found`);
+          process.exit(1);
+        }
       }
 
       // Create the game using RoomService
@@ -291,12 +323,14 @@ program
       // Create the room manually to have control over initialization
       const { Room } = await import("../entities/Room");
       const room = new Room();
-      room.players = [p1, p2];
+      room.players = gameType === "time_trial" ? [p1] : [p1, p2];
       room.crossword = crossword;
       room.difficulty = difficulty;
-      room.type = "1v1";
+      room.type = gameType;
       room.status = "playing";
-      room.scores = { [p1.id]: 0, [p2.id]: 0 };
+      room.scores = gameType === "time_trial"
+        ? { [p1.id]: 0 }
+        : { [p1.id]: 0, [p2.id]: 0 };
       room.last_activity_at = new Date();
       room.join_type = JoinMethod.CLI;
 
@@ -358,9 +392,14 @@ program
 
       console.log("\n✓ Game created successfully!");
       console.log(`  Room ID: ${savedRoom.id}`);
-      console.log(
-        `  Players: ${p1.username} (ID: ${p1.id}) vs ${p2.username} (ID: ${p2.id})`,
-      );
+      console.log(`  Game Type: ${gameType}`);
+      if (gameType === "time_trial") {
+        console.log(`  Player: ${p1.username} (ID: ${p1.id})`);
+      } else {
+        console.log(
+          `  Players: ${p1.username} (ID: ${p1.id}) vs ${p2.username} (ID: ${p2.id})`,
+        );
+      }
       console.log(`  Difficulty: ${difficulty}`);
       console.log(`  Crossword: ${crossword.title || "Untitled"}`);
       console.log(`  Grid Size: ${crossword.row_size}x${crossword.col_size}`);
