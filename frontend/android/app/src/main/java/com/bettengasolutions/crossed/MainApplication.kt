@@ -1,4 +1,4 @@
-package com.anonymous.crossed
+package com.bettengasolutions.crossed
 
 import android.app.Application
 import android.content.res.Configuration

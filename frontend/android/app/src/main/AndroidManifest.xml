@@ -27,7 +27,7 @@
         <category android:name="android.intent.category.DEFAULT"/>
         <category android:name="android.intent.category.BROWSABLE"/>
         <data android:scheme="crossed"/>
-        <data android:scheme="com.anonymous.crossed"/>
+        <data android:scheme="com.bettengasolutions.crossed"/>
         <data android:scheme="exp+crossed"/>
       </intent-filter>
     </activity>
