@@ -262,6 +262,37 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
         return null;
     };
 
+    /*
+    This useEffect is to move the cursor for the player if the letter gets filled in by someone else / the job
+    */
+    useEffect(() => {
+        if (!room?.board || !selectedCell) {
+            return;
+        }
+
+        const updatedCell = room.board[selectedCell.x]?.[selectedCell.y];
+        if (!updatedCell) {
+            return;
+        }
+
+        const wasSolved = selectedCell.squareType === SquareType.SOLVED;
+        const isNowSolved = updatedCell.squareType === SquareType.SOLVED;
+
+        if (!wasSolved && isNowSolved) {
+            const next =
+                findNextEditableCellInWord(updatedCell, room.board, isAcrossMode) ??
+                findNextClueTarget(updatedCell, room.board, isAcrossMode, 'next');
+            if (next) {
+                setSelectedCell(next);
+                return;
+            }
+        }
+
+        if (selectedCell !== updatedCell) {
+            setSelectedCell(updatedCell);
+        }
+    }, [room?.board, selectedCell, isAcrossMode]);
+
     const handleForfeit = () => {
         forfeit(roomId);
     };
