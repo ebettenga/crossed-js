@@ -138,68 +138,17 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
     };
 
     const handleKeyPress = (key: string) => {
-        if (!selectedCell) {
+        if (!selectedCell || !room?.board) {
             return;
         }
         guess(roomId, { x: selectedCell.x, y: selectedCell.y }, key);
         setLastGuessCell({ x: selectedCell.x, y: selectedCell.y, playerId: String(currentUser?.id ?? "") });
-        // Move to next cell based on direction
-        const nextCell = getNextCell(selectedCell);
+        // Prefer next editable cell in the current word, otherwise follow clue navigation rules
+        const inWordNext = findNextEditableCellInWord(selectedCell, room.board, isAcrossMode);
+        const nextCell = inWordNext ?? findNextClueTarget(selectedCell, room.board, isAcrossMode, 'next');
         if (nextCell) {
             setSelectedCell(nextCell);
         }
-    };
-
-    const getNextCell = (currentCell: Square): Square | null => {
-        if (!room?.board) {
-            return null;
-        }
-
-        const board = room.board;
-        const { x, y } = currentCell;
-
-        if (isAcrossMode) {
-            // Move right
-            for (let newY = y + 1; newY < board[x].length; newY++) {
-                if (board[x][newY].squareType !== SquareType.BLACK && board[x][newY].squareType !== SquareType.SOLVED) {
-                    return board[x][newY];
-                }
-            }
-            // Move to next row
-            for (let newX = x + 1; newX < board.length; newX++) {
-                for (let newY = 0; newY < board[newX].length; newY++) {
-                    if (board[newX][newY].squareType !== SquareType.BLACK && board[newX][newY].squareType !== SquareType.SOLVED) {
-                        return board[newX][newY];
-                    }
-                }
-            }
-        } else {
-            // Move down
-            for (let newX = x + 1; newX < board.length; newX++) {
-                if (board[newX][y].squareType !== SquareType.BLACK && board[newX][y].squareType !== SquareType.SOLVED) {
-                    return board[newX][y];
-                }
-            }
-            // Move to next column
-            for (let newY = y + 1; newY < board[0].length; newY++) {
-                for (let newX = 0; newX < board.length; newX++) {
-                    if (board[newX][newY].squareType !== SquareType.BLACK && board[newX][newY].squareType !== SquareType.SOLVED) {
-                        return board[newX][newY];
-                    }
-                }
-            }
-        }
-
-        // If no next cell found, try to find any unsolved cell
-        for (let newX = 0; newX < board.length; newX++) {
-            for (let newY = 0; newY < board[newX].length; newY++) {
-                if (board[newX][newY].squareType !== SquareType.BLACK && board[newX][newY].squareType !== SquareType.SOLVED) {
-                    return board[newX][newY];
-                }
-            }
-        }
-
-        return null;
     };
 
     // Helpers for clue navigation to ensure deterministic sequencing by direction
@@ -244,6 +193,21 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
         return cells;
     };
 
+    const findNextEditableCellInWord = (currentCell: Square, board: Square[][], across: boolean): Square | null => {
+        const wordStart = getWordStart(currentCell, board, across);
+        const wordCells = getWordCells(wordStart, board, across);
+        const currentIndex = wordCells.findIndex(cell => cell.x === currentCell.x && cell.y === currentCell.y);
+
+        for (let i = currentIndex + 1; i < wordCells.length; i++) {
+            const cell = wordCells[i];
+            if (cell.squareType !== SquareType.BLACK && cell.squareType !== SquareType.SOLVED) {
+                return cell;
+            }
+        }
+
+        return null;
+    };
+
     const buildClueStartList = (board: Square[][], across: boolean): Square[] => {
         const starts: Square[] = [];
         for (let x = 0; x < board.length; x++) {
@@ -263,6 +227,39 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
             return a.x === b.x ? a.y - b.y : a.x - b.x;
         });
         return starts;
+    };
+
+    const findNextClueTarget = (
+        currentCell: Square,
+        board: Square[][],
+        across: boolean,
+        direction: 'next' | 'previous'
+    ): Square | null => {
+        const starts = buildClueStartList(board, across);
+        if (starts.length === 0) {
+            return null;
+        }
+
+        const currentStart = getWordStart(currentCell, board, across);
+        const currentIndex = starts.findIndex(s => s.x === currentStart.x && s.y === currentStart.y);
+        const step = direction === 'next' ? 1 : -1;
+        const baseIndex = currentIndex === -1 ? 0 : currentIndex;
+
+        let idx = (baseIndex + step + starts.length) % starts.length;
+        let visited = 0;
+
+        while (visited < starts.length) {
+            const start = starts[idx];
+            const wordCells = getWordCells(start, board, across);
+            const firstUnsolved = wordCells.find(cell => cell.squareType !== SquareType.SOLVED);
+            if (firstUnsolved) {
+                return firstUnsolved;
+            }
+            idx = (idx + step + starts.length) % starts.length;
+            visited++;
+        }
+
+        return null;
     };
 
     const handleForfeit = () => {
@@ -317,34 +314,7 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
         const across = isAcrossMode;
 
         // Build an ordered list of ALL clue starts for the current direction
-        const starts = buildClueStartList(board, across);
-        if (starts.length === 0) return;
-
-        // Find the start of the currently selected clue (by walking to the beginning of the word)
-        const currentStart = getWordStart(selectedCell, board, across);
-        const currentIndex = starts.findIndex(s => s.x === currentStart.x && s.y === currentStart.y);
-
-        const baseIndex = currentIndex === -1 ? 0 : currentIndex;
-        const step = direction === 'next' ? 1 : -1;
-
-        // Iterate until we find a clue with an unsolved letter, wrapping as needed.
-        let idx = (baseIndex + step + starts.length) % starts.length;
-        let visited = 0;
-        let target: Square | null = null;
-
-        while (visited < starts.length) {
-            const start = starts[idx];
-            const wordCells = getWordCells(start, board, across);
-            const firstUnsolved = wordCells.find(c => c.squareType !== SquareType.SOLVED);
-            if (firstUnsolved) {
-                target = firstUnsolved;
-                break;
-            }
-            idx = (idx + step + starts.length) % starts.length;
-            visited++;
-        }
-
-        // If all words are solved, keep current selection; otherwise move to the found unsolved letter
+        const target = findNextClueTarget(selectedCell, board, across, direction);
         if (target) {
             setSelectedCell(target);
         }
