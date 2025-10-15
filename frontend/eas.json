@@ -15,7 +15,15 @@
       "autoIncrement": true
     }
   },
-  "submit": {
-    "production": {}
+"submit": {
+    "production": {
+      "android": {
+        "serviceAccountKeyPath": "./eas-build-key.json",
+        "track": "internal"
+      },
+      "ios": {
+        "ascAppId": "your-app-store-connect-app-id"
+      }
+    }
   }
 }
