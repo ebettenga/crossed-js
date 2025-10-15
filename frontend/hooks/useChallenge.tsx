@@ -6,6 +6,8 @@ import { Room } from "./useJoinRoom";
 import { useRouter } from "expo-router";
 import { useUser } from "./users";
 
+export const CHALLENGES_UPDATED_EVENT = 'challenges:updated';
+
 export const useChallenge = () => {
     const queryClient = useQueryClient();
     const { socket, isConnected } = useSocket();
@@ -15,16 +17,18 @@ export const useChallenge = () => {
     useEffect(() => {
         if (!isConnected || !socket) return;
 
-        const handleChallengeReceived = () => {
+        const invalidateChallenges = () => {
             queryClient.invalidateQueries({ queryKey: ['challenges', 'pending'] });
         };
 
-        socket.on("challenge_received", handleChallengeReceived);
+        socket.on("challenge_received", invalidateChallenges);
+        socket.on(CHALLENGES_UPDATED_EVENT, invalidateChallenges);
 
         return () => {
-            socket.off("challenge_received", handleChallengeReceived);
+            socket.off("challenge_received", invalidateChallenges);
+            socket.off(CHALLENGES_UPDATED_EVENT, invalidateChallenges);
         };
-    }, [socket, isConnected]);
+    }, [socket, isConnected, queryClient]);
 
     useEffect(() => {
         if (!socket || !isConnected) return;

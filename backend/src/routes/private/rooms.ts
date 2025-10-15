@@ -1,6 +1,7 @@
 import { FastifyInstance } from "fastify";
 import { RoomService } from "../../services/RoomService";
 import { JoinRoom } from "./sockets";
+import { createSocketEventService } from "../../services/SocketEventService";
 
 type Coordinates = {
   x: number;
@@ -23,6 +24,7 @@ export default function (
   next: (err?: Error) => void,
 ): void {
   const roomService = new RoomService(fastify.orm);
+  const socketEventService = createSocketEventService(fastify);
 
   fastify.get("/rooms/:roomId", async (request, reply) => {
     const params = request.params as { roomId: string };
@@ -119,6 +121,12 @@ export default function (
         .socketsJoin(room.id.toString());
     }
     fastify.io.to(room.id.toString()).emit("room", room.toJSON());
+    const participantIds = room.players.map((player) => player.id);
+    await socketEventService.emitToUsers(participantIds, "challenges:updated", {
+      roomId: room.id,
+      status: room.status,
+      action: "created",
+    });
     reply.send(room.toJSON());
   });
 
@@ -129,6 +137,12 @@ export default function (
       request.user.id,
     );
     fastify.io.to(room.id.toString()).emit("room", room.toJSON());
+    const participantIds = room.players.map((player) => player.id);
+    await socketEventService.emitToUsers(participantIds, "challenges:updated", {
+      roomId: room.id,
+      status: room.status,
+      action: "accepted",
+    });
     reply.send(room.toJSON());
   });
 
@@ -136,6 +150,12 @@ export default function (
     const { roomId } = request.params as { roomId: string };
     const room = await roomService.rejectChallenge(parseInt(roomId));
     fastify.io.to(room.id.toString()).emit("room", room.toJSON());
+    const participantIds = room.players.map((player) => player.id);
+    await socketEventService.emitToUsers(participantIds, "challenges:updated", {
+      roomId: room.id,
+      status: room.status,
+      action: "rejected",
+    });
     reply.send(room.toJSON());
   });
 

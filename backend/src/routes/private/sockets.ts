@@ -299,6 +299,16 @@ export default function (
           );
           socket.join(room.id.toString());
           fastify.io.to(room.id.toString()).emit("room", room.toJSON());
+          const participantIds = room.players.map((player) => player.id);
+          await socketEventService.emitToUsers(
+            participantIds,
+            "challenges:updated",
+            {
+              roomId: room.id,
+              status: room.status,
+              action: "created",
+            },
+          );
         } catch (error) {
           fastify.log.error({ err: error });
           socket.emit("error", { message: "Failed to create challenge" });
@@ -311,6 +321,16 @@ export default function (
           const room = await roomService.acceptChallenge(roomId, user.id);
           socket.join(room.id.toString());
           fastify.io.to(room.id.toString()).emit("room", room.toJSON());
+          const participantIds = room.players.map((player) => player.id);
+          await socketEventService.emitToUsers(
+            participantIds,
+            "challenges:updated",
+            {
+              roomId: room.id,
+              status: room.status,
+              action: "accepted",
+            },
+          );
         } catch (error) {
           fastify.log.error({ err: error });
           socket.emit("error", { message: "Failed to accept challenge" });
@@ -322,6 +342,16 @@ export default function (
           const { roomId } = JSON.parse(data) as { roomId: number };
           const room = await roomService.rejectChallenge(roomId);
           fastify.io.to(room.id.toString()).emit("room", room.toJSON());
+          const participantIds = room.players.map((player) => player.id);
+          await socketEventService.emitToUsers(
+            participantIds,
+            "challenges:updated",
+            {
+              roomId: room.id,
+              status: room.status,
+              action: "rejected",
+            },
+          );
         } catch (error) {
           fastify.log.error({ err: error });
           socket.emit("error", { message: "Failed to reject challenge" });
