@@ -365,7 +365,7 @@ This useEffect is to move the cursor for the player if the letter gets filled in
         }}
             className="bg-[#F6FAFE] dark:bg-[#0F1417]" behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
 
-            <View className="flex-row justify-between items-center px-4 mt-2">
+            <View className="flex-row justify-between items-center px-4">
                 <View className="flex-row items-center gap-2">
                     {currentUser && (
                         <Avatar user={currentUser} imageUrl={currentUser.photo} size={32} />

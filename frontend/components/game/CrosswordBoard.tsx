@@ -89,7 +89,7 @@ export const CrosswordBoard: React.FC<CrosswordBoardProps> = ({
 
     return (
         <View className={cn(
-            "w-full justify-center items-center pt-5",
+            "w-full justify-center items-center pt-2",
             `h-[${AVAILABLE_HEIGHT}px]`
         )}>
             <View className="items-center justify-center" style={{ width: BOARD_SIZE, height: BOARD_SIZE }}>
