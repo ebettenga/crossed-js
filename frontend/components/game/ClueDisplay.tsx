@@ -24,7 +24,7 @@ export const ClueDisplay: React.FC<ClueDisplayProps> = ({
   const clueText = decode(rawClueText);
 
   return (
-    <View className="p-2 pt-4 flex-row items-center justify-between min-h-[40px]">
+    <View className="p-2 flex-row items-center justify-between min-h-[40px]">
       <TouchableOpacity
         onPress={() => onNavigate('previous')}
         className="p-2"

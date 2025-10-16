@@ -37,9 +37,6 @@ const TabsLayout = () => {
 
     return (
         <Tabs
-            safeAreaInsets={{
-                bottom: 17
-            }}
             screenOptions={{
                 tabBarShowLabel: false,
                 tabBarStyle: {

@@ -87,7 +87,7 @@ export const PlayerInfo: React.FC<PlayerInfoProps> = ({ players, scores }) => {
     });
 
     return (
-        <View className="px-1.5 pt-2 pb-0">
+        <View className="px-3 pt-3">
             <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
@@ -97,30 +97,27 @@ export const PlayerInfo: React.FC<PlayerInfoProps> = ({ players, scores }) => {
                     <View
                         key={player.id}
                         style={{ width: CARD_WIDTH }}
-                        className={`p-3 rounded-lg flex-row items-center justify-between ${
-                            player.id === currentUser?.id
-                                ? 'bg-[#8B0000]'
-                                : 'bg-[#F5F5EB] dark:bg-[#1A2227]'
-                        }`}
+                        className={`p-3 rounded-lg flex-row items-center justify-between ${player.id === currentUser?.id
+                            ? 'bg-[#8B0000]'
+                            : 'bg-[#F5F5EB] dark:bg-[#1A2227]'
+                            }`}
                     >
                         <View className="flex-row items-center gap-2">
                             <Text
-                                className={`text-sm font-semibold font-['Times_New_Roman'] ${
-                                    player.id === currentUser?.id
-                                        ? 'text-white'
-                                        : 'text-[#1D2124] dark:text-[#DDE1E5]'
-                                }`}
+                                className={`text-sm font-semibold font-['Times_New_Roman'] ${player.id === currentUser?.id
+                                    ? 'text-white'
+                                    : 'text-[#1D2124] dark:text-[#DDE1E5]'
+                                    }`}
                             >
                                 {player.username}
                             </Text>
                         </View>
                         <View className="flex-row items-center relative">
                             <Text
-                                className={`text-lg font-semibold font-['Times_New_Roman'] ${
-                                    player.id === currentUser?.id
-                                        ? 'text-white'
-                                        : 'text-[#1D2124] dark:text-[#DDE1E5]'
-                                }`}
+                                className={`text-lg font-semibold font-['Times_New_Roman'] ${player.id === currentUser?.id
+                                    ? 'text-white'
+                                    : 'text-[#1D2124] dark:text-[#DDE1E5]'
+                                    }`}
                             >
                                 {scores[player.id] || 0}
                             </Text>
