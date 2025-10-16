@@ -6,6 +6,7 @@ import { cn } from '~/lib/utils';
 
 import icons from '@/constants/icons'
 import { useColorMode } from '~/hooks/useColorMode';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const TabIcon = ({ focused, icon, title }: { focused: boolean; icon: any; title: string }) => (
     <View className="flex-1 mt-3 flex-col items-center">
@@ -36,12 +37,14 @@ const TabsLayout = () => {
 
     return (
         <Tabs
+            safeAreaInsets={{
+                bottom: 17
+            }}
             screenOptions={{
                 tabBarShowLabel: false,
                 tabBarStyle: {
                     backgroundColor: isDark ? '#0F1417' : '#F6FAFE',
                     position: 'absolute',
-                    minHeight: 70,
                     display: hideTabBar ? 'none' : 'flex',
                     shadowColor: '#000',
                     shadowOffset: {

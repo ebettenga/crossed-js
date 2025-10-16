@@ -65,15 +65,19 @@ export default function Home() {
         const mode = selectedGameMode;
 
         try {
+            console.log('[Home] Playing sound before navigation');
             await play(randomPencilKey());
+            console.log('[Home] Sound play completed');
         } catch { }
 
+        console.log('[Home] Joining room, may trigger navigation');
         join({
             difficulty,
             type: mode
         }, {
             onSuccess: (room) => {
                 if (mode === 'time_trial') {
+                    console.log('[Home] Navigating to game screen');
                     router.push(`/game?roomId=${room.id}`);
                 }
             }

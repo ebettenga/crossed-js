@@ -49,6 +49,7 @@ export function useSound<TKeys extends string>(
 
   const instances = useRef(new Map<TKeys, Audio.Sound>());
   const loading = useRef(new Map<TKeys, Promise<Audio.Sound>>());
+  const playingInstances = useRef(new Set<TKeys>());
 
   useEffect(() => {
     // Configure audio mode once
@@ -84,6 +85,7 @@ export function useSound<TKeys extends string>(
     }
     return () => {
       // Unload all on unmount
+      console.log("[useSound] Component unmounting, unloading all sounds");
       unload().catch(() => {});
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -122,8 +124,13 @@ export function useSound<TKeys extends string>(
 
   const play = useCallback(async (key: TKeys, options?: PlayOptions) => {
     if (!enabled) return;
+    console.log(`[useSound] Playing sound: ${String(key)}`);
     const sound = await loadInstance(key);
     const loop = !!options?.loop;
+
+    // Mark as playing
+    playingInstances.current.add(key);
+
     try {
       await sound.setIsLoopingAsync(loop);
     } catch {}
@@ -132,7 +139,21 @@ export function useSound<TKeys extends string>(
         await sound.setPositionAsync(0);
       } catch {}
     }
+
+    // Set up callback to mark as not playing when finished
+    if (!loop) {
+      sound.setOnPlaybackStatusUpdate((status) => {
+        if (status.isLoaded && status.didJustFinish) {
+          console.log(`[useSound] Sound finished: ${String(key)}`);
+          playingInstances.current.delete(key);
+          // Clear the callback to prevent memory leaks
+          sound.setOnPlaybackStatusUpdate(null);
+        }
+      });
+    }
+
     await sound.replayAsync();
+    console.log(`[useSound] Sound started: ${String(key)}`);
   }, [enabled, loadInstance]);
 
   const setLooping = useCallback(async (key: TKeys, looping: boolean) => {
@@ -144,6 +165,7 @@ export function useSound<TKeys extends string>(
 
   const stop = useCallback(async (key: TKeys) => {
     const sound = instances.current.get(key) ?? (await loadInstance(key));
+    playingInstances.current.delete(key);
     try {
       await sound.stopAsync();
     } catch {}
@@ -160,12 +182,22 @@ export function useSound<TKeys extends string>(
     const targets = keys && keys.length
       ? keys
       : (Array.from(instances.current.keys()) as TKeys[]);
+    console.log(`[useSound] Unloading sounds:`, targets);
     await Promise.all(
       targets.map(async (k) => {
+        // Skip unloading if sound is currently playing
+        if (playingInstances.current.has(k)) {
+          console.log(
+            `[useSound] Skipping unload for playing sound: ${String(k)}`,
+          );
+          return;
+        }
+
         const s = instances.current.get(k);
         if (s) {
           instances.current.delete(k);
           try {
+            console.log(`[useSound] Unloading sound: ${String(k)}`);
             await s.unloadAsync();
           } catch {}
         }

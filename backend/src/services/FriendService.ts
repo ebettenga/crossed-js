@@ -120,7 +120,7 @@ export class FriendService {
     return this.ormConnection.getRepository(Friend).save(friendship);
   }
 
-  async removeFriend(userId: number, friendshipId: number): Promise<void> {
+  async removeFriend(userId: number, friendshipId: number): Promise<Friend> {
     const friendship = await this.ormConnection
       .getRepository(Friend)
       .findOne({ where: { id: friendshipId } });
@@ -133,6 +133,6 @@ export class FriendService {
       throw new Error("Not authorized to remove this friendship");
     }
 
-    await this.ormConnection.getRepository(Friend).remove(friendship);
+    return this.ormConnection.getRepository(Friend).remove(friendship);
   }
 }

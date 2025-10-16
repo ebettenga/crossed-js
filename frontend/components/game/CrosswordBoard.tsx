@@ -1,26 +1,13 @@
-import React, { useMemo } from 'react';
-import { View, Dimensions } from 'react-native';
+import React, { useCallback, useMemo, useState } from 'react';
+import { LayoutChangeEvent, View } from 'react-native';
 import { CrosswordCell } from './CrosswordCell';
 import { Square } from '~/hooks/useRoom';
 import { config } from '~/config/config';
 import { cn } from '~/lib/utils';
 import { useUser } from '~/hooks/users';
 
-const SCREEN_WIDTH = Dimensions.get('window').width;
-const SCREEN_HEIGHT = Dimensions.get('window').height;
 const GRID_SIZE = config.game.crossword.gridSize;
 const BORDER_WIDTH = config.game.crossword.borderWidth;
-const KEYBOARD_HEIGHT = 250;
-const HEADER_HEIGHT = 120;
-
-// Calculate board size
-const AVAILABLE_HEIGHT = SCREEN_HEIGHT - KEYBOARD_HEIGHT - HEADER_HEIGHT;
-const AVAILABLE_WIDTH = SCREEN_WIDTH - (BORDER_WIDTH * 2);
-const CELL_SIZE = Math.floor(Math.min(
-    AVAILABLE_WIDTH / GRID_SIZE,
-    AVAILABLE_HEIGHT / GRID_SIZE
-));
-const BOARD_SIZE = CELL_SIZE * GRID_SIZE + (BORDER_WIDTH * 2);
 
 interface CrosswordBoardProps {
     board: Square[][];
@@ -46,6 +33,37 @@ export const CrosswordBoard: React.FC<CrosswordBoardProps> = ({
     lastGuessCell,
 }) => {
     const { data: currentUser } = useUser();
+    const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
+
+    const handleLayout = useCallback((event: LayoutChangeEvent) => {
+        const { width, height } = event.nativeEvent.layout;
+        setContainerSize((prev) => {
+            if (prev.width === width && prev.height === height) {
+                return prev;
+            }
+            return { width, height };
+        });
+    }, []);
+
+    const metrics = useMemo(() => {
+        if (containerSize.width <= 0 || containerSize.height <= 0) {
+            return null;
+        }
+
+        const availableWidth = containerSize.width - BORDER_WIDTH * 2;
+        const availableHeight = containerSize.height - BORDER_WIDTH * 2;
+        const cellSize = Math.floor(Math.min(
+            availableWidth / GRID_SIZE,
+            availableHeight / GRID_SIZE
+        ));
+
+        if (cellSize <= 0) {
+            return null;
+        }
+
+        const boardSize = cellSize * GRID_SIZE + BORDER_WIDTH * 2;
+        return { cellSize, boardSize };
+    }, [containerSize.height, containerSize.width]);
 
     const handleCellPress = (square: Square) => {
         if (selectedCell?.id === square.id) {
@@ -56,6 +74,12 @@ export const CrosswordBoard: React.FC<CrosswordBoardProps> = ({
 
     // Memoize the board rendering to prevent unnecessary re-renders
     const boardContent = useMemo(() => {
+        if (!metrics) {
+            return null;
+        }
+
+        const { cellSize } = metrics;
+
         return board.map((row, x) => (
             <View key={x} className="flex-row">
                 {row.map((square, y) => {
@@ -73,6 +97,7 @@ export const CrosswordBoard: React.FC<CrosswordBoardProps> = ({
                             letter={square.letter || ''}
                             onPress={() => handleCellPress(square)}
                             coordinates={{ x, y }}
+                            cellSize={cellSize}
                             isSelected={isSelected}
                             gridNumber={square.gridnumber}
                             squareType={square.squareType}
@@ -85,21 +110,39 @@ export const CrosswordBoard: React.FC<CrosswordBoardProps> = ({
                 })}
             </View>
         ));
-    }, [board, selectedCell, onCellPress, isAcrossMode, revealedLetterIndex, scoreChanges, lastGuessCell, currentUser?.id]);
+    }, [
+        board,
+        metrics,
+        selectedCell,
+        onCellPress,
+        isAcrossMode,
+        revealedLetterIndex,
+        scoreChanges,
+        lastGuessCell,
+        currentUser?.id,
+    ]);
 
     return (
-        <View className={cn(
-            "w-full justify-center items-center pt-5",
-            `h-[${AVAILABLE_HEIGHT}px]`
-        )}>
-            <View className="items-center justify-center" style={{ width: BOARD_SIZE, height: BOARD_SIZE }}>
-                <View className={cn(
-                    "bg-white dark:bg-neutral-800 rounded-lg overflow-hidden",
-                    "border border-neutral-200 dark:border-neutral-700"
-                )} style={{ width: BOARD_SIZE, height: BOARD_SIZE }}>
-                    {boardContent}
+        <View
+            onLayout={handleLayout}
+            className={cn("w-full flex-1 justify-center items-center pt-2")}
+        >
+            {metrics && (
+                <View
+                    className="items-center justify-center"
+                    style={{ width: metrics.boardSize, height: metrics.boardSize }}
+                >
+                    <View
+                        className={cn(
+                            "bg-white dark:bg-neutral-800 rounded-lg overflow-hidden",
+                            "border border-neutral-200 dark:border-neutral-700"
+                        )}
+                        style={{ width: metrics.boardSize, height: metrics.boardSize }}
+                    >
+                        {boardContent}
+                    </View>
                 </View>
-            </View>
+            )}
         </View>
     );
 };

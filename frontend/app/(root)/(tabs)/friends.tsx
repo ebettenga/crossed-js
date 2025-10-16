@@ -12,7 +12,8 @@ import {
     usePendingRequests,
     useAcceptFriendRequest,
     useRejectFriendRequest,
-    useSearchUsers
+    useSearchUsers,
+    useFriendsSocketEvents
 } from '~/hooks/useFriends';
 import { useUser } from '~/hooks/users';
 import { ChallengeDialog } from '~/components/ChallengeDialog';
@@ -306,6 +307,7 @@ export default function Friends() {
     }, [refetchFriends, refetchPending, refetchChallenges]);
 
     useUserStatus(); // Add this hook to listen for status changes
+    useFriendsSocketEvents();
 
     if (!user) return null;
 

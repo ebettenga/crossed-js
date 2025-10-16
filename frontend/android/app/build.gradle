@@ -86,9 +86,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'com.anonymous.crossed'
+    namespace 'com.bettengasolutions.crossed'
     defaultConfig {
-        applicationId 'com.anonymous.crossed'
+        applicationId 'com.bettengasolutions.crossed'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

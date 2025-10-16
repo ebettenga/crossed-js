@@ -18,7 +18,8 @@
     "build:android:dev": "eas build --platform android --profile development",
     "build:android:dev:local": "eas build --platform android --profile development --local",
     "preview:android": "eas build --platform android --profile preview",
-    "preview:ios": "eas build --platform ios --profile preview"
+    "preview:ios": "eas build --platform ios --profile preview",
+    "submit:android": "eas submit -p android"
   },
   "jest": {
     "preset": "jest-expo"
@@ -82,6 +83,7 @@
     "expo-symbols": "~0.2.0",
     "expo-system-ui": "~4.0.6",
     "expo-web-browser": "~14.0.1",
+    "html-entities": "^2.5.2",
     "lucide-react-native": "^0.469.0",
     "nativewind": "^4.1.23",
     "react": "18.3.1",

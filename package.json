@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "html-entities": "^2.6.0"
+  }
+}

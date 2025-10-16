@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
-import { Square } from '~/hooks/useJoinRoom';
 import { ChevronLeft, ChevronRight } from 'lucide-react-native';
+import { decode } from 'html-entities';
+import { Square } from '~/hooks/useJoinRoom';
 
 interface ClueDisplayProps {
   selectedSquare: Square | null;
@@ -19,7 +20,8 @@ export const ClueDisplay: React.FC<ClueDisplayProps> = ({
 
   if (!clue) return null;
 
-  const clueText = clue.split(".")[1];
+  const rawClueText = clue.replace(/^\s*\d+\.\s*/, '').trim();
+  const clueText = decode(rawClueText);
 
   return (
     <View className="p-2 pt-4 flex-row items-center justify-between min-h-[40px]">

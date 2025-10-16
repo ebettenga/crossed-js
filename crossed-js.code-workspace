@@ -28,6 +28,7 @@
 		"editor.formatOnSave": true,
 		"editor.codeActionsOnSave": {
 			"source.fixAll.eslint": "always"
-		}
+		},
+		"java.configuration.updateBuildConfiguration": "automatic"
 	}
 }

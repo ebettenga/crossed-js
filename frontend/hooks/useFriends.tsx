@@ -1,7 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { get, post, del } from './api';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { User, useUser } from './users';
+import { useSocket } from './socket';
 
 export interface Friend {
   id: number;
@@ -112,4 +113,26 @@ export function useSearchUsers() {
   };
 
   return { searchResults, clearSearchResults, ...mutation };
+}
+
+export const FRIENDS_UPDATED_EVENT = 'friends:updated';
+
+export function useFriendsSocketEvents() {
+  const { socket } = useSocket();
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const invalidateLists = () => {
+      queryClient.invalidateQueries({ queryKey: [FRIENDS_KEY] });
+      queryClient.invalidateQueries({ queryKey: [PENDING_REQUESTS_KEY] });
+    };
+
+    socket.on(FRIENDS_UPDATED_EVENT, invalidateLists);
+
+    return () => {
+      socket.off(FRIENDS_UPDATED_EVENT, invalidateLists);
+    };
+  }, [socket, queryClient]);
 }

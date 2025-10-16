@@ -24,6 +24,8 @@ type MenuOption = {
     style?: { color: string };
 };
 
+const CLUE_DISPLAY_HEIGHT = 80;
+
 export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
     const insets = useSafeAreaInsets();
     const { room, guess, refresh, forfeit, showGameSummary, onGameSummaryClose, revealedLetterIndex } = useRoom(roomId);
@@ -129,6 +131,41 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
         return cellsMap;
     }, [room?.board]);
 
+    /*
+This useEffect is to move the cursor for the player if the letter gets filled in by someone else / the job
+*/
+    useEffect(() => {
+        if (!room?.board || !selectedCell) {
+            return;
+        }
+
+        if (room.type == 'time_trial') {
+            return;
+        }
+
+        const updatedCell = room.board[selectedCell.x]?.[selectedCell.y];
+        if (!updatedCell) {
+            return;
+        }
+
+        const wasSolved = selectedCell.squareType === SquareType.SOLVED;
+        const isNowSolved = updatedCell.squareType === SquareType.SOLVED;
+
+        if (!wasSolved && isNowSolved) {
+            const next =
+                findNextEditableCellInWord(updatedCell, room.board, isAcrossMode) ??
+                findNextClueTarget(updatedCell, room.board, isAcrossMode, 'next');
+            if (next) {
+                setSelectedCell(next);
+                return;
+            }
+        }
+
+        if (selectedCell !== updatedCell) {
+            setSelectedCell(updatedCell);
+        }
+    }, [room?.board, selectedCell, isAcrossMode]);
+
     if (!room || room.id !== roomId) {
         return <LoadingGame />;
     }
@@ -138,68 +175,17 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
     };
 
     const handleKeyPress = (key: string) => {
-        if (!selectedCell) {
+        if (!selectedCell || !room?.board) {
             return;
         }
         guess(roomId, { x: selectedCell.x, y: selectedCell.y }, key);
         setLastGuessCell({ x: selectedCell.x, y: selectedCell.y, playerId: String(currentUser?.id ?? "") });
-        // Move to next cell based on direction
-        const nextCell = getNextCell(selectedCell);
+        // Prefer next editable cell in the current word, otherwise follow clue navigation rules
+        const inWordNext = findNextEditableCellInWord(selectedCell, room.board, isAcrossMode);
+        const nextCell = inWordNext ?? findNextClueTarget(selectedCell, room.board, isAcrossMode, 'next');
         if (nextCell) {
             setSelectedCell(nextCell);
         }
-    };
-
-    const getNextCell = (currentCell: Square): Square | null => {
-        if (!room?.board) {
-            return null;
-        }
-
-        const board = room.board;
-        const { x, y } = currentCell;
-
-        if (isAcrossMode) {
-            // Move right
-            for (let newY = y + 1; newY < board[x].length; newY++) {
-                if (board[x][newY].squareType !== SquareType.BLACK && board[x][newY].squareType !== SquareType.SOLVED) {
-                    return board[x][newY];
-                }
-            }
-            // Move to next row
-            for (let newX = x + 1; newX < board.length; newX++) {
-                for (let newY = 0; newY < board[newX].length; newY++) {
-                    if (board[newX][newY].squareType !== SquareType.BLACK && board[newX][newY].squareType !== SquareType.SOLVED) {
-                        return board[newX][newY];
-                    }
-                }
-            }
-        } else {
-            // Move down
-            for (let newX = x + 1; newX < board.length; newX++) {
-                if (board[newX][y].squareType !== SquareType.BLACK && board[newX][y].squareType !== SquareType.SOLVED) {
-                    return board[newX][y];
-                }
-            }
-            // Move to next column
-            for (let newY = y + 1; newY < board[0].length; newY++) {
-                for (let newX = 0; newX < board.length; newX++) {
-                    if (board[newX][newY].squareType !== SquareType.BLACK && board[newX][newY].squareType !== SquareType.SOLVED) {
-                        return board[newX][newY];
-                    }
-                }
-            }
-        }
-
-        // If no next cell found, try to find any unsolved cell
-        for (let newX = 0; newX < board.length; newX++) {
-            for (let newY = 0; newY < board[newX].length; newY++) {
-                if (board[newX][newY].squareType !== SquareType.BLACK && board[newX][newY].squareType !== SquareType.SOLVED) {
-                    return board[newX][newY];
-                }
-            }
-        }
-
-        return null;
     };
 
     // Helpers for clue navigation to ensure deterministic sequencing by direction
@@ -244,6 +230,21 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
         return cells;
     };
 
+    const findNextEditableCellInWord = (currentCell: Square, board: Square[][], across: boolean): Square | null => {
+        const wordStart = getWordStart(currentCell, board, across);
+        const wordCells = getWordCells(wordStart, board, across);
+        const currentIndex = wordCells.findIndex(cell => cell.x === currentCell.x && cell.y === currentCell.y);
+
+        for (let i = currentIndex + 1; i < wordCells.length; i++) {
+            const cell = wordCells[i];
+            if (cell.squareType !== SquareType.BLACK && cell.squareType !== SquareType.SOLVED) {
+                return cell;
+            }
+        }
+
+        return null;
+    };
+
     const buildClueStartList = (board: Square[][], across: boolean): Square[] => {
         const starts: Square[] = [];
         for (let x = 0; x < board.length; x++) {
@@ -263,6 +264,39 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
             return a.x === b.x ? a.y - b.y : a.x - b.x;
         });
         return starts;
+    };
+
+    const findNextClueTarget = (
+        currentCell: Square,
+        board: Square[][],
+        across: boolean,
+        direction: 'next' | 'previous'
+    ): Square | null => {
+        const starts = buildClueStartList(board, across);
+        if (starts.length === 0) {
+            return null;
+        }
+
+        const currentStart = getWordStart(currentCell, board, across);
+        const currentIndex = starts.findIndex(s => s.x === currentStart.x && s.y === currentStart.y);
+        const step = direction === 'next' ? 1 : -1;
+        const baseIndex = currentIndex === -1 ? 0 : currentIndex;
+
+        let idx = (baseIndex + step + starts.length) % starts.length;
+        let visited = 0;
+
+        while (visited < starts.length) {
+            const start = starts[idx];
+            const wordCells = getWordCells(start, board, across);
+            const firstUnsolved = wordCells.find(cell => cell.squareType !== SquareType.SOLVED);
+            if (firstUnsolved) {
+                return firstUnsolved;
+            }
+            idx = (idx + step + starts.length) % starts.length;
+            visited++;
+        }
+
+        return null;
     };
 
     const handleForfeit = () => {
@@ -317,110 +351,106 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
         const across = isAcrossMode;
 
         // Build an ordered list of ALL clue starts for the current direction
-        const starts = buildClueStartList(board, across);
-        if (starts.length === 0) return;
-
-        // Find the start of the currently selected clue (by walking to the beginning of the word)
-        const currentStart = getWordStart(selectedCell, board, across);
-        const currentIndex = starts.findIndex(s => s.x === currentStart.x && s.y === currentStart.y);
-
-        const baseIndex = currentIndex === -1 ? 0 : currentIndex;
-        const step = direction === 'next' ? 1 : -1;
-
-        // Iterate until we find a clue with an unsolved letter, wrapping as needed.
-        let idx = (baseIndex + step + starts.length) % starts.length;
-        let visited = 0;
-        let target: Square | null = null;
-
-        while (visited < starts.length) {
-            const start = starts[idx];
-            const wordCells = getWordCells(start, board, across);
-            const firstUnsolved = wordCells.find(c => c.squareType !== SquareType.SOLVED);
-            if (firstUnsolved) {
-                target = firstUnsolved;
-                break;
-            }
-            idx = (idx + step + starts.length) % starts.length;
-            visited++;
-        }
-
-        // If all words are solved, keep current selection; otherwise move to the found unsolved letter
+        const target = findNextClueTarget(selectedCell, board, across, direction);
         if (target) {
             setSelectedCell(target);
         }
     };
 
-    return (
-        <KeyboardAvoidingView style={{
-            flex: 1,
-            paddingTop: insets.top,
-            paddingBottom: insets.bottom,
-            paddingLeft: insets.left,
-            paddingRight: insets.right,
-        }}
-            className="bg-[#F6FAFE] dark:bg-[#0F1417]" behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+    const hasActiveClue = Boolean(
+        selectedCell && (isAcrossMode ? selectedCell.acrossQuestion : selectedCell?.downQuestion)
+    );
 
-            <View className="flex-row justify-between items-center px-4 mt-6">
-                <View className="flex-row items-center gap-2">
-                    {currentUser && (
-                        <Avatar user={currentUser} imageUrl={currentUser.photo} size={32} />
-                    )}
-                </View>
-                <View className="flex-row items-center gap-2">
-                    {room.crossword.created_by && (
-                        <View className="mt-1">
-                            <Text className="text-xs text-[#666666] dark:text-[#9CA3AF]">
-                                Created by{' '}
-                            </Text>
-                            <Text className="text-sm text-[#666666] dark:text-[#9CA3AF]">
-                                {room.crossword.creator_link ? (
-                                    <TouchableOpacity
-                                        onPress={() => Linking.openURL(room.crossword.creator_link!)}
-                                    >
-                                        <Text className="text-[#8B0000] dark:text-[#FF6B6B] underline">
+    return (
+        <KeyboardAvoidingView
+            style={{
+                flex: 1,
+                paddingTop: insets.top,
+                paddingLeft: insets.left,
+                paddingRight: insets.right,
+            }}
+            className="bg-[#F6FAFE] dark:bg-[#0F1417]"
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+            <View className="flex-1">
+                <View className="flex-row justify-between items-center px-4 mt-2">
+                    <View className="flex-row items-center gap-2">
+                        {currentUser && (
+                            <Avatar user={currentUser} imageUrl={currentUser.photo} size={32} />
+                        )}
+                    </View>
+                    <View className="flex-row items-center gap-2">
+                        {room.crossword.created_by && (
+                            <View className="mt-1">
+                                <Text className="text-xs text-[#666666] dark:text-[#9CA3AF]">
+                                    Created by{' '}
+                                </Text>
+                                <Text className="text-sm text-[#666666] dark:text-[#9CA3AF]">
+                                    {room.crossword.creator_link ? (
+                                        <TouchableOpacity
+                                            onPress={() => Linking.openURL(room.crossword.creator_link!)}
+                                        >
+                                            <Text className="text-[#8B0000] dark:text-[#FF6B6B] underline">
+                                                {room.crossword.author}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    ) : (
+                                        <Text className="text-[#1D2124] dark:text-[#DDE1E5]">
                                             {room.crossword.author}
                                         </Text>
-                                    </TouchableOpacity>
-                                ) : (
-                                    <Text className="text-[#1D2124] dark:text-[#DDE1E5]">
-                                        {room.crossword.author}
-                                    </Text>
-                                )}
-                            </Text>
-                        </View>
-                    )}
-                    <ConnectionStatus compact />
+                                    )}
+                                </Text>
+                            </View>
+                        )}
+                        <ConnectionStatus compact />
+                    </View>
                 </View>
-            </View>
-            <PlayerInfo
-                players={room.players}
-                scores={room.scores}
-            />
-            <View className="flex-1 items-center">
-                <View className="w-full">
-                    <CrosswordBoard
-                        board={room?.board}
-                        onCellPress={handleCellPress}
-                        selectedCell={selectedCell || null}
-                        isAcrossMode={isAcrossMode}
-                        setIsAcrossMode={setIsAcrossMode}
-                        title={room.crossword.title}
-                        revealedLetterIndex={revealedLetterIndex}
-                        scoreChanges={scoreChanges}
-                        lastGuessCell={lastGuessCell}
+                <PlayerInfo
+                    players={room.players}
+                    scores={room.scores}
+                />
+                <View className="flex-1 px-2 pb-2">
+                    <View className="flex-1 items-center justify-center">
+                        <CrosswordBoard
+                            board={room?.board}
+                            onCellPress={handleCellPress}
+                            selectedCell={selectedCell || null}
+                            isAcrossMode={isAcrossMode}
+                            setIsAcrossMode={setIsAcrossMode}
+                            title={room.crossword.title}
+                            revealedLetterIndex={revealedLetterIndex}
+                            scoreChanges={scoreChanges}
+                            lastGuessCell={lastGuessCell}
+                        />
+                    </View>
+                </View>
+                <View
+                    className="w-full bg-[#F5F5EB] dark:bg-[#0F1417] border-t border-[#E5E5D8] dark:border-neutral-700"
+                    style={{ paddingBottom: insets.bottom }}
+                >
+                    <View
+                        style={{ height: CLUE_DISPLAY_HEIGHT }}
+                        className="justify-center px-4"
+                    >
+                        {hasActiveClue ? (
+                            <ClueDisplay
+                                selectedSquare={selectedCell || null}
+                                isAcrossMode={isAcrossMode}
+                                onNavigate={handleClueNavigation}
+                            />
+                        ) : (
+                            <View className="flex-1 items-center justify-center">
+                                <Text className="text-sm text-[#666666] dark:text-[#9CA3AF]">
+                                    Select a cell to view its clue
+                                </Text>
+                            </View>
+                        )}
+                    </View>
+                    <Keyboard
+                        onKeyPress={handleKeyPress}
+                        disabledKeys={[]}
                     />
                 </View>
-                <ClueDisplay
-                    selectedSquare={selectedCell || null}
-                    isAcrossMode={isAcrossMode}
-                    onNavigate={handleClueNavigation}
-                />
-            </View>
-            <View className="w-full absolute bottom-0 left-0 right-0 bg-[#F5F5EB] dark:bg-[#0F1417]">
-                <Keyboard
-                    onKeyPress={handleKeyPress}
-                    disabledKeys={[]}
-                />
             </View>
             <GameMenu options={menuOptions} />
             <CluesButton

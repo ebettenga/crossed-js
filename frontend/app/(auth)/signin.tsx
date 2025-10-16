@@ -24,10 +24,14 @@ export default function SignIn() {
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 className="flex-1"
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+                enabled={true}
             >
                 <ScrollView
                     keyboardShouldPersistTaps="handled"
                     contentContainerStyle={{ flexGrow: 1 }}
+                    scrollEnabled={true}
+                    keyboardDismissMode="interactive"
                 >
                     <View className="relative h-[40%]">
                         <Image
