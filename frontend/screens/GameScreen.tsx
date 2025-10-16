@@ -24,6 +24,8 @@ type MenuOption = {
     style?: { color: string };
 };
 
+const CLUE_DISPLAY_HEIGHT = 80;
+
 export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
     const insets = useSafeAreaInsets();
     const { room, guess, refresh, forfeit, showGameSummary, onGameSummaryClose, revealedLetterIndex } = useRoom(roomId);
@@ -355,77 +357,100 @@ This useEffect is to move the cursor for the player if the letter gets filled in
         }
     };
 
-    return (
-        <KeyboardAvoidingView style={{
-            flex: 1,
-            paddingTop: insets.top,
-            paddingBottom: insets.bottom,
-            paddingLeft: insets.left,
-            paddingRight: insets.right,
-        }}
-            className="bg-[#F6FAFE] dark:bg-[#0F1417]" behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+    const hasActiveClue = Boolean(
+        selectedCell && (isAcrossMode ? selectedCell.acrossQuestion : selectedCell?.downQuestion)
+    );
 
-            <View className="flex-row justify-between items-center px-4">
-                <View className="flex-row items-center gap-2">
-                    {currentUser && (
-                        <Avatar user={currentUser} imageUrl={currentUser.photo} size={32} />
-                    )}
-                </View>
-                <View className="flex-row items-center gap-2">
-                    {room.crossword.created_by && (
-                        <View className="mt-1">
-                            <Text className="text-xs text-[#666666] dark:text-[#9CA3AF]">
-                                Created by{' '}
-                            </Text>
-                            <Text className="text-sm text-[#666666] dark:text-[#9CA3AF]">
-                                {room.crossword.creator_link ? (
-                                    <TouchableOpacity
-                                        onPress={() => Linking.openURL(room.crossword.creator_link!)}
-                                    >
-                                        <Text className="text-[#8B0000] dark:text-[#FF6B6B] underline">
+    return (
+        <KeyboardAvoidingView
+            style={{
+                flex: 1,
+                paddingTop: insets.top,
+                paddingLeft: insets.left,
+                paddingRight: insets.right,
+            }}
+            className="bg-[#F6FAFE] dark:bg-[#0F1417]"
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+            <View className="flex-1">
+                <View className="flex-row justify-between items-center px-4 mt-2">
+                    <View className="flex-row items-center gap-2">
+                        {currentUser && (
+                            <Avatar user={currentUser} imageUrl={currentUser.photo} size={32} />
+                        )}
+                    </View>
+                    <View className="flex-row items-center gap-2">
+                        {room.crossword.created_by && (
+                            <View className="mt-1">
+                                <Text className="text-xs text-[#666666] dark:text-[#9CA3AF]">
+                                    Created by{' '}
+                                </Text>
+                                <Text className="text-sm text-[#666666] dark:text-[#9CA3AF]">
+                                    {room.crossword.creator_link ? (
+                                        <TouchableOpacity
+                                            onPress={() => Linking.openURL(room.crossword.creator_link!)}
+                                        >
+                                            <Text className="text-[#8B0000] dark:text-[#FF6B6B] underline">
+                                                {room.crossword.author}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    ) : (
+                                        <Text className="text-[#1D2124] dark:text-[#DDE1E5]">
                                             {room.crossword.author}
                                         </Text>
-                                    </TouchableOpacity>
-                                ) : (
-                                    <Text className="text-[#1D2124] dark:text-[#DDE1E5]">
-                                        {room.crossword.author}
-                                    </Text>
-                                )}
-                            </Text>
-                        </View>
-                    )}
-                    <ConnectionStatus compact />
+                                    )}
+                                </Text>
+                            </View>
+                        )}
+                        <ConnectionStatus compact />
+                    </View>
                 </View>
-            </View>
-            <PlayerInfo
-                players={room.players}
-                scores={room.scores}
-            />
-            <View className="flex-1 items-center">
-                <View className="w-full">
-                    <CrosswordBoard
-                        board={room?.board}
-                        onCellPress={handleCellPress}
-                        selectedCell={selectedCell || null}
-                        isAcrossMode={isAcrossMode}
-                        setIsAcrossMode={setIsAcrossMode}
-                        title={room.crossword.title}
-                        revealedLetterIndex={revealedLetterIndex}
-                        scoreChanges={scoreChanges}
-                        lastGuessCell={lastGuessCell}
+                <PlayerInfo
+                    players={room.players}
+                    scores={room.scores}
+                />
+                <View className="flex-1 px-2 pb-2">
+                    <View className="flex-1 items-center justify-center">
+                        <CrosswordBoard
+                            board={room?.board}
+                            onCellPress={handleCellPress}
+                            selectedCell={selectedCell || null}
+                            isAcrossMode={isAcrossMode}
+                            setIsAcrossMode={setIsAcrossMode}
+                            title={room.crossword.title}
+                            revealedLetterIndex={revealedLetterIndex}
+                            scoreChanges={scoreChanges}
+                            lastGuessCell={lastGuessCell}
+                        />
+                    </View>
+                </View>
+                <View
+                    className="w-full bg-[#F5F5EB] dark:bg-[#0F1417] border-t border-[#E5E5D8] dark:border-neutral-700"
+                    style={{ paddingBottom: insets.bottom }}
+                >
+                    <View
+                        style={{ height: CLUE_DISPLAY_HEIGHT }}
+                        className="justify-center px-4"
+                    >
+                        {hasActiveClue ? (
+                            <ClueDisplay
+                                selectedSquare={selectedCell || null}
+                                isAcrossMode={isAcrossMode}
+                                onNavigate={handleClueNavigation}
+                            />
+                        ) : (
+                            <View className="flex-1 items-center justify-center">
+                                <Text className="text-sm text-[#666666] dark:text-[#9CA3AF]">
+                                    Select a cell to view its clue
+                                </Text>
+                            </View>
+                        )}
+                    </View>
+                    <Keyboard
+                        onKeyPress={handleKeyPress}
+                        disabledKeys={[]}
                     />
                 </View>
-                <ClueDisplay
-                    selectedSquare={selectedCell || null}
-                    isAcrossMode={isAcrossMode}
-                    onNavigate={handleClueNavigation}
-                />
-            </View>
-            <View className="w-full absolute bottom-0 left-0 right-0 bg-[#F5F5EB] dark:bg-[#0F1417]">
-                <Keyboard
-                    onKeyPress={handleKeyPress}
-                    disabledKeys={[]}
-                />
             </View>
             <GameMenu options={menuOptions} />
             <CluesButton

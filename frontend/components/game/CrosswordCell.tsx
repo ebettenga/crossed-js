@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { StyleSheet, Dimensions, Pressable, View, Text } from 'react-native';
+import { StyleSheet, Pressable, View, Text } from 'react-native';
 import { SquareType } from '~/hooks/useJoinRoom';
 import { config } from '~/config/config';
 import { ArrowRight, ArrowDown } from 'lucide-react-native';
@@ -9,25 +9,9 @@ import Animated, {
     withSequence,
     useSharedValue,
 } from 'react-native-reanimated';
-import { useUser } from '~/hooks/users';
 
-// Calculate cell size based on screen width and height
-const SCREEN_WIDTH = Dimensions.get('window').width;
-const SCREEN_HEIGHT = Dimensions.get('window').height;
 const GRID_SIZE = config.game.crossword.gridSize;
 const BORDER_WIDTH = config.game.crossword.borderWidth;
-const KEYBOARD_HEIGHT = 250; // Approximate height of keyboard + clue display
-const HEADER_HEIGHT = 120; // Approximate height of header section
-
-// Calculate the maximum available space for the board
-const AVAILABLE_HEIGHT = SCREEN_HEIGHT - KEYBOARD_HEIGHT - HEADER_HEIGHT;
-const AVAILABLE_WIDTH = SCREEN_WIDTH - (BORDER_WIDTH * 2);
-
-// Use the smaller of width or height to ensure square cells that fit the screen
-const CELL_SIZE = Math.floor(Math.min(
-    AVAILABLE_WIDTH / GRID_SIZE,
-    AVAILABLE_HEIGHT / GRID_SIZE
-));
 
 const CORNER_RADIUS = config.game.crossword.cornerRadius;
 
@@ -41,6 +25,7 @@ interface CrosswordCellProps {
     letter: string;
     onPress: () => void;
     coordinates: { x: number; y: number };
+    cellSize: number;
     isSelected?: boolean;
     gridNumber?: number | null;
     squareType: SquareType;
@@ -50,7 +35,7 @@ interface CrosswordCellProps {
     isCurrentUserGuess?: boolean;
 }
 
-const ScoreChange: React.FC<{ value: number }> = ({ value }) => {
+const ScoreChange: React.FC<{ value: number; cellSize: number }> = ({ value, cellSize }) => {
     const opacity = useSharedValue(1);
     const translateX = useSharedValue(0);
 
@@ -79,8 +64,8 @@ const ScoreChange: React.FC<{ value: number }> = ({ value }) => {
                 animatedStyle,
                 {
                     transform: [
-                        { translateX: -CELL_SIZE / 2 },
-                        { translateY: -CELL_SIZE / 2 }
+                        { translateX: -cellSize / 2 },
+                        { translateY: -cellSize / 2 }
                     ],
                     zIndex: 10
                 }
@@ -95,6 +80,7 @@ export const CrosswordCell: React.FC<CrosswordCellProps> = ({
     letter,
     onPress,
     coordinates,
+    cellSize,
     isSelected = false,
     gridNumber,
     squareType,
@@ -136,6 +122,10 @@ export const CrosswordCell: React.FC<CrosswordCellProps> = ({
                 style={[
                     styles.cell,
                     {
+                        width: cellSize,
+                        height: cellSize,
+                        borderTopWidth: BORDER_WIDTH,
+                        borderLeftWidth: BORDER_WIDTH,
                         borderRightWidth: coordinates.y === GRID_SIZE - 1 ? BORDER_WIDTH : 0,
                         borderBottomWidth: coordinates.x === GRID_SIZE - 1 ? BORDER_WIDTH : 0,
                         backgroundColor: getBackgroundColor(),
@@ -150,7 +140,10 @@ export const CrosswordCell: React.FC<CrosswordCellProps> = ({
                 {gridNumber && gridNumber > 0 && (
                     <Text style={[
                         styles.gridNumber,
-                        { color: getTextColor() }
+                        {
+                            color: getTextColor(),
+                            fontSize: cellSize * 0.25,
+                        }
                     ]}>
                         {gridNumber}
                     </Text>
@@ -159,7 +152,10 @@ export const CrosswordCell: React.FC<CrosswordCellProps> = ({
                     <Text style={[
                         styles.letter,
                         !isSolved && styles.hiddenText,
-                        { color: getTextColor() }
+                        {
+                            color: getTextColor(),
+                            fontSize: cellSize * 0.5,
+                        }
                     ]}>
                         {letter}
                     </Text>
@@ -174,7 +170,7 @@ export const CrosswordCell: React.FC<CrosswordCellProps> = ({
                     </View>
                 )}
                 {isCurrentUserGuess && scoreChange !== 0 && (
-                    <ScoreChange value={scoreChange} />
+                    <ScoreChange value={scoreChange} cellSize={cellSize} />
                 )}
             </View>
         </Pressable>
@@ -183,12 +179,8 @@ export const CrosswordCell: React.FC<CrosswordCellProps> = ({
 
 const styles = StyleSheet.create({
     cell: {
-        width: CELL_SIZE,
-        height: CELL_SIZE,
         justifyContent: 'center',
         alignItems: 'center',
-        borderTopWidth: BORDER_WIDTH,
-        borderLeftWidth: BORDER_WIDTH,
         borderColor: BORDER_COLOR,
     },
     selectedCell: {
@@ -196,7 +188,6 @@ const styles = StyleSheet.create({
         borderWidth: BORDER_WIDTH,
     },
     letter: {
-        fontSize: CELL_SIZE * 0.5,
         fontWeight: '600',
         fontFamily: 'Times New Roman',
     },
@@ -204,7 +195,6 @@ const styles = StyleSheet.create({
         position: 'absolute',
         top: 0,
         left: 2,
-        fontSize: CELL_SIZE * 0.25,
         fontWeight: '500',
     },
     hiddenText: {

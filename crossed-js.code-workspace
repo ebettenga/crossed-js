@@ -29,6 +29,6 @@
 		"editor.codeActionsOnSave": {
 			"source.fixAll.eslint": "always"
 		},
-		"java.configuration.updateBuildConfiguration": "interactive"
+		"java.configuration.updateBuildConfiguration": "automatic"
 	}
 }
