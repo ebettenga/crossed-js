@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, SafeAreaView } from 'react-native';
+import { Text, TouchableOpacity } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
 import { PageHeader } from '~/components/Header';
@@ -12,7 +12,7 @@ export default function Support() {
     const params = useLocalSearchParams<{ type?: string; comment?: string }>();
 
     return (
-        <SafeAreaView className="flex-1 bg-background">
+        <>
             <PageHeader />
 
             <TouchableOpacity
@@ -31,6 +31,6 @@ export default function Support() {
                 initialType={params.type as any || 'support'}
                 initialComment={params.comment || ''}
             />
-        </SafeAreaView>
+        </>
     );
 }
