@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, TouchableOpacity, Pressable, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, Pressable, ScrollView, useColorScheme } from 'react-native';
 import { Dialog, DialogContent } from '~/components/ui/dialog';
 import { Room, SquareType } from '~/hooks/useJoinRoom';
 import { useUser } from '~/hooks/users';
@@ -128,8 +128,6 @@ interface CompetitiveResultsProps {
 }
 
 const CompetitiveResults: React.FC<CompetitiveResultsProps> = ({ room, selectedPlayerId, onNavigatePlayer, gameStats }) => {
-
-    console.log(gameStats);
     const selectedPlayer = room.players.find(p => p.id === selectedPlayerId);
     const playerStats = gameStats?.find(stat => stat.userId === selectedPlayerId);
 
@@ -470,6 +468,9 @@ export const GameSummaryModal: React.FC<GameSummaryModalProps> = ({
     const scrollViewRef = React.useRef<ScrollView>(null);
     const lastTouchY = React.useRef<number>(0);
     const currentScrollY = React.useRef<number>(0);
+    const colorScheme = useColorScheme();
+    const isDarkMode = colorScheme === 'dark';
+    const homeIconColor = isDarkMode ? '#FFFFFF' : '#343434';
 
     // Fetch game stats using React Query
     const {
@@ -630,21 +631,63 @@ export const GameSummaryModal: React.FC<GameSummaryModalProps> = ({
                             <View className="flex-row justify-center gap-x-3 my-4">
                                 <TouchableOpacity
                                     onPress={() => handleDifficultyRate('too_easy')}
-                                    className={`border-[1.5px] rounded-sm dark:bg-neutral-800 px-4 py-2 ${difficultyRating === 'too_easy' ? 'border-[#8B0000]' : 'border-[#FAFAF7]'}`}
+                                    className={cn(
+                                        "border-[1.5px] rounded-sm px-4 py-2 bg-[#FAFAF7] dark:bg-neutral-800",
+                                        difficultyRating === 'too_easy'
+                                            ? "border-[#8B0000] bg-[#FDEAEA] dark:bg-neutral-900"
+                                            : "border-[#D1D5DB] dark:border-neutral-700"
+                                    )}
                                 >
-                                    <Text className={`text-white font-['Times_New_Roman'] ${difficultyRating === 'too_easy' ? 'color-[#8B0000]' : 'color-[#FAFAF7]'}`}>Easy</Text>
+                                    <Text
+                                        className={cn(
+                                            "font-['Times_New_Roman']",
+                                            difficultyRating === 'too_easy'
+                                                ? "text-[#8B0000]"
+                                                : "text-[#2B2B2B] dark:text-[#E5E7EB]"
+                                        )}
+                                    >
+                                        Easy
+                                    </Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity
                                     onPress={() => handleDifficultyRate('just_right')}
-                                    className={`border-[1.5px] rounded-sm dark:bg-neutral-800 px-4 py-2  ${difficultyRating === 'just_right' ? 'border-[#8B0000]' : 'border-[#FAFAF7]'}`}
+                                    className={cn(
+                                        "border-[1.5px] rounded-sm px-4 py-2 bg-[#FAFAF7] dark:bg-neutral-800",
+                                        difficultyRating === 'just_right'
+                                            ? "border-[#8B0000] bg-[#FDEAEA] dark:bg-neutral-900"
+                                            : "border-[#D1D5DB] dark:border-neutral-700"
+                                    )}
                                 >
-                                    <Text className={`text-white font-['Times_New_Roman'] ${difficultyRating === 'just_right' ? 'color-[#8B0000]' : 'color-[#FAFAF7]'}`}>Perfect</Text>
+                                    <Text
+                                        className={cn(
+                                            "font-['Times_New_Roman']",
+                                            difficultyRating === 'just_right'
+                                                ? "text-[#8B0000]"
+                                                : "text-[#2B2B2B] dark:text-[#E5E7EB]"
+                                        )}
+                                    >
+                                        Perfect
+                                    </Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity
                                     onPress={() => handleDifficultyRate('too_hard')}
-                                    className={`border-[1.5px] rounded-sm dark:bg-neutral-800 px-4 py-2  ${difficultyRating === 'too_hard' ? 'border-[#8B0000]' : 'border-[#FAFAF7]'}`}
+                                    className={cn(
+                                        "border-[1.5px] rounded-sm px-4 py-2 bg-[#FAFAF7] dark:bg-neutral-800",
+                                        difficultyRating === 'too_hard'
+                                            ? "border-[#8B0000] bg-[#FDEAEA] dark:bg-neutral-900"
+                                            : "border-[#D1D5DB] dark:border-neutral-700"
+                                    )}
                                 >
-                                    <Text className={`text-white font-['Times_New_Roman'] ${difficultyRating === 'too_hard' ? 'color-[#8B0000]' : 'color-[#FAFAF7]'}`}>Hard</Text>
+                                    <Text
+                                        className={cn(
+                                            "font-['Times_New_Roman']",
+                                            difficultyRating === 'too_hard'
+                                                ? "text-[#8B0000]"
+                                                : "text-[#2B2B2B] dark:text-[#E5E7EB]"
+                                        )}
+                                    >
+                                        Hard
+                                    </Text>
                                 </TouchableOpacity>
                             </View>
 
@@ -686,7 +729,7 @@ export const GameSummaryModal: React.FC<GameSummaryModalProps> = ({
                                 </Text>
                                 <View className="w-full h-full flex flex-col items-center justify-center">
                                     <View className="mb-1">
-                                        <Home color='#FFFFFF' />
+                                        <Home color={homeIconColor} />
                                     </View>
                                 </View>
                             </Pressable>
