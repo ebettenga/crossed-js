@@ -801,9 +801,6 @@ export const GameSummaryModal: React.FC<GameSummaryModalProps> = ({
                                         "active:bg-[#F0F0ED] active:dark:bg-neutral-700",
                                     )}
                                 >
-                                    <Text className="absolute top-1 left-1 text-xs font-['Times_New_Roman'] text-[#666666] dark:text-neutral-400 font-medium">
-                                        A
-                                    </Text>
                                     <View className="w-full h-full flex flex-col items-center justify-center">
                                         {isPlayAgainProcessing ? (
                                             <ActivityIndicator size="small" color="#8B0000" />

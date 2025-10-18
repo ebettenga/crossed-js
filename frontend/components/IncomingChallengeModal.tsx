@@ -53,7 +53,7 @@ export const IncomingChallengeModal = () => {
     const difficulty = incomingChallenge?.room?.difficulty ?? '';
 
     return (
-        <Portal>
+        <Portal name='incoming-challenge-modal'>
             <View className="absolute inset-0 z-50">
                 <Pressable
                     className="absolute inset-0 bg-black/50"
