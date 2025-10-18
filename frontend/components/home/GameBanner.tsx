@@ -18,6 +18,7 @@ export const GameBanner: React.FC<GameBannerProps> = ({
 }) => {
     const { cancel } = useRoom();
     const isPending = status === 'pending';
+    const canCancel = isPending && (gameType === '1v1' || gameType === 'free4all');
 
     // Format game type to be more readable
     const formattedGameType = {
@@ -28,7 +29,10 @@ export const GameBanner: React.FC<GameBannerProps> = ({
     }[gameType] || gameType;
 
     const handleCancel = () => {
-        cancel.mutate(parseInt(gameId));
+        if (cancel.isPending) {
+            return;
+        }
+        cancel.mutate(parseInt(gameId, 10));
     };
 
     return (
@@ -80,17 +84,19 @@ export const GameBanner: React.FC<GameBannerProps> = ({
                     </Text>
                 </View>
             </View>
-            {isPending ? (
+            {canCancel ? (
                 <TouchableOpacity
+                    disabled={cancel.isPending}
                     className="flex-row items-center p-2 rounded-md border border-[#FECACA] dark:border-[#2A3136] bg-[#FEF2F2] dark:bg-[#1A2227] gap-1"
                     onPress={handleCancel}
+                    style={{ opacity: cancel.isPending ? 0.6 : 1 }}
                 >
                     <X size={16} color="#EF4444" />
                     <Text className="text-xs text-[#EF4444] font-['Times New Roman']">Cancel</Text>
                 </TouchableOpacity>
-            ) : (
+            ) : !isPending ? (
                 <ChevronRight size={20} color="#666666" />
-            )}
+            ) : null}
         </View>
     );
 };

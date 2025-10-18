@@ -1,4 +1,4 @@
-import { View, Text, Image, StatusBar, useColorScheme } from 'react-native'
+import { View, Text, Image, StatusBar } from 'react-native'
 import React, { useEffect } from 'react'
 import { Tabs } from "expo-router";
 import { usePathname } from 'expo-router';
@@ -34,11 +34,14 @@ const TabsLayout = () => {
         StatusBar.setBarStyle(isDark ? 'light-content' : 'dark-content');
     }, [isDark]);
 
+    const height = __DEV__ ? 70 : 0
+
     return (
         <Tabs
             screenOptions={{
                 tabBarShowLabel: false,
                 tabBarStyle: {
+                    height: height,
                     backgroundColor: isDark ? '#0F1417' : '#F6FAFE',
                     position: 'absolute',
                     display: hideTabBar ? 'none' : 'flex',

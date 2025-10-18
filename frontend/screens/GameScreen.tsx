@@ -16,6 +16,7 @@ import { CluesButton } from '../components/game/CluesButton';
 import { SupportModal } from '../components/game/SupportModal';
 import { GameSummaryModal } from '../components/game/GameSummaryModal';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { showToast } from '~/components/shared/Toast';
 
 
 type MenuOption = {
@@ -42,6 +43,19 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
     useEffect(() => {
         refresh(roomId);
     }, []);
+
+    useEffect(() => {
+        if (!room) return;
+
+        if (room.status === 'pending') {
+            showToast(
+                'info',
+                'Your game is waiting for more players.',
+                'We will redirect you once the game begins.',
+            );
+            router.replace('/(root)/(tabs)');
+        }
+    }, [room?.status, router]);
 
     useEffect(() => {
         if (!room) return;

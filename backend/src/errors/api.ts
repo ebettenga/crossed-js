@@ -25,6 +25,15 @@ export class ForbiddenError extends Error {
   }
 }
 
+export class BadRequestError extends Error {
+  statusCode: number;
+  constructor(message: string) {
+    super(message);
+    this.name = "BadRequestError";
+    this.statusCode = 400;
+  }
+}
+
 export class UserNotFoundError extends Error {
   constructor(userId: string) {
     super(`User with ID ${userId} not found`);

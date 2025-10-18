@@ -6,7 +6,7 @@ import { EloService } from "./EloService";
 import { config } from "../config/config";
 import { fastify } from "../fastify";
 import { GameStats } from "../entities/GameStats";
-import { NotFoundError } from "../errors/api";
+import { BadRequestError, ForbiddenError, NotFoundError } from "../errors/api";
 import { gameInactivityQueue, gameTimeoutQueue } from "../jobs/queues";
 import { v4 as uuidv4 } from "uuid";
 import { EntityManager } from "typeorm";
@@ -249,9 +249,30 @@ export class RoomService {
     return savedRoom;
   }
 
-  async cancelRoom(roomId: number): Promise<Room> {
+  async cancelRoom(roomId: number, requestingUserId?: number): Promise<Room> {
     const room = await this.getRoomById(roomId);
     if (!room) throw new NotFoundError("Room not found");
+
+    if (room.status !== "pending") {
+      throw new BadRequestError("Only pending games can be cancelled");
+    }
+
+    if (!["1v1", "free4all"].includes(room.type)) {
+      throw new BadRequestError(
+        "Only 1v1 or free4all games can be cancelled while pending",
+      );
+    }
+
+    if (requestingUserId !== undefined) {
+      const isParticipant = room.players.some((player) =>
+        player.id === requestingUserId
+      );
+
+      if (!isParticipant) {
+        throw new ForbiddenError("You are not a participant in this game");
+      }
+    }
+
     room.status = "cancelled";
     room.markModified();
     await this.ormConnection.getRepository(Room).save(room);
