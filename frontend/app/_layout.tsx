@@ -6,11 +6,13 @@ import { useEffect, useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { PortalHost } from '@rn-primitives/portal';
 import { RoomProvider, SocketProvider } from '~/hooks/socket';
+import { ChallengeProvider } from '~/hooks/useChallenge';
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useUser } from "~/hooks/users";
 import Toast from "react-native-toast-message";
 import { useColorMode } from "~/hooks/useColorMode";
 import { SafeAreaView } from "react-native";
+import { IncomingChallengeModal } from '~/components/IncomingChallengeModal';
 
 // Prevent the splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
@@ -73,8 +75,11 @@ export default function RootLayout() {
     <QueryClientProvider client={queryClient}>
       <SocketProvider>
         <RoomProvider>
-          <AppContent />
-          <Toast />
+          <ChallengeProvider>
+            <AppContent />
+            <IncomingChallengeModal />
+            <Toast />
+          </ChallengeProvider>
         </RoomProvider>
       </SocketProvider>
     </QueryClientProvider>

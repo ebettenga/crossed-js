@@ -1,34 +1,89 @@
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { post, get } from "./api";
 import { useSocket } from "./socket";
-import { useEffect } from "react";
+import React, { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { Room } from "./useJoinRoom";
 import { useRouter } from "expo-router";
 import { useUser } from "./users";
 
 export const CHALLENGES_UPDATED_EVENT = 'challenges:updated';
 
+type IncomingChallengePayload = {
+    room: Room;
+    challenger: {
+        id: number;
+        username: string;
+    };
+    context?: string;
+};
+
+type ChallengeEventsContextValue = {
+    incomingChallenge: IncomingChallengePayload | null;
+    clearIncomingChallenge: () => void;
+    setIncomingChallenge: (challenge: IncomingChallengePayload | null) => void;
+};
+
+const ChallengeEventsContext = React.createContext<ChallengeEventsContextValue | undefined>(undefined);
+
+export const ChallengeProvider = ({ children }: { children: React.ReactNode }) => {
+    const queryClient = useQueryClient();
+    const { socket, isConnected } = useSocket();
+    const [incomingChallenge, setIncomingChallenge] = useState<IncomingChallengePayload | null>(null);
+
+    const clearIncomingChallenge = useCallback(() => setIncomingChallenge(null), []);
+    const invalidateChallengeRelatedQueries = useCallback(() => {
+        queryClient.invalidateQueries({ queryKey: ['rooms'] });
+        queryClient.invalidateQueries({ queryKey: ['challenges', 'pending'] });
+    }, [queryClient]);
+
+    useEffect(() => {
+        if (!isConnected || !socket) return;
+
+        const handleChallengeReceived = (data: IncomingChallengePayload) => {
+            setIncomingChallenge(data);
+            invalidateChallengeRelatedQueries();
+        };
+
+        const handleChallengesUpdated = () => {
+            invalidateChallengeRelatedQueries();
+        };
+
+        socket.on("challenge_received", handleChallengeReceived);
+        socket.on(CHALLENGES_UPDATED_EVENT, handleChallengesUpdated);
+
+        return () => {
+            socket.off("challenge_received", handleChallengeReceived);
+            socket.off(CHALLENGES_UPDATED_EVENT, handleChallengesUpdated);
+        };
+    }, [socket, isConnected, invalidateChallengeRelatedQueries]);
+
+    const value = useMemo(() => ({
+        incomingChallenge,
+        clearIncomingChallenge,
+        setIncomingChallenge,
+    }), [incomingChallenge, clearIncomingChallenge]);
+
+    return (
+        <ChallengeEventsContext.Provider value={value}>
+            {children}
+        </ChallengeEventsContext.Provider>
+    );
+};
+
+export const useChallengeEvents = () => {
+    const context = useContext(ChallengeEventsContext);
+    if (!context) {
+        throw new Error('useChallengeEvents must be used within a ChallengeProvider');
+    }
+    return context;
+};
+
 export const useChallenge = () => {
     const queryClient = useQueryClient();
     const { socket, isConnected } = useSocket();
     const router = useRouter();
     const { data: currentUser } = useUser();
-
-    useEffect(() => {
-        if (!isConnected || !socket) return;
-
-        const invalidateChallenges = () => {
-            queryClient.invalidateQueries({ queryKey: ['challenges', 'pending'] });
-        };
-
-        socket.on("challenge_received", invalidateChallenges);
-        socket.on(CHALLENGES_UPDATED_EVENT, invalidateChallenges);
-
-        return () => {
-            socket.off("challenge_received", invalidateChallenges);
-            socket.off(CHALLENGES_UPDATED_EVENT, invalidateChallenges);
-        };
-    }, [socket, isConnected, queryClient]);
+    const { incomingChallenge, clearIncomingChallenge } = useChallengeEvents();
 
     useEffect(() => {
         if (!socket || !isConnected) return;
@@ -56,8 +111,8 @@ export const useChallenge = () => {
     });
 
     const sendChallenge = useMutation({
-        mutationFn: async ({ challengedId, difficulty }: { challengedId: number; difficulty: string }) => {
-            return post<Room>('/rooms/challenge', { challengedId, difficulty });
+        mutationFn: async ({ challengedId, difficulty, context }: { challengedId: number; difficulty: string; context?: string }) => {
+            return post<Room>('/rooms/challenge', { challengedId, difficulty, context });
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['rooms'] });
@@ -94,5 +149,7 @@ export const useChallenge = () => {
         acceptChallenge,
         rejectChallenge,
         refetch: refetchChallenges,
+        incomingChallenge,
+        clearIncomingChallenge,
     };
 };

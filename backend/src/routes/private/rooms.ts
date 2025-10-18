@@ -16,6 +16,7 @@ type RoomQueryParams = {
 type ChallengeParams = {
   challengedId: number;
   difficulty: string;
+  context?: string;
 };
 
 export default function (
@@ -131,11 +132,12 @@ export default function (
   });
 
   fastify.post("/rooms/challenge", async (request, reply) => {
-    const { challengedId, difficulty } = request.body as ChallengeParams;
+    const { challengedId, difficulty, context } = request.body as ChallengeParams;
     const room = await roomService.createChallengeRoom(
       request.user.id,
       challengedId,
       difficulty,
+      context,
     );
     for (const player of room.players) {
       fastify.io

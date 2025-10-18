@@ -205,8 +205,9 @@ export class EloService {
       this.calculateKFactor(loserStats, loser.id),
     ]);
 
-    const winnerNewRating = Math.round(
-      winner.eloRating + winnerK * (1 - expectedWinnerScore),
+    const winnerNewRating = Math.max(
+      winner.eloRating,
+      Math.round(winner.eloRating + winnerK * (1 - expectedWinnerScore)),
     );
     const loserNewRating = Math.round(
       loser.eloRating + loserK * (0 - expectedLoserScore),
@@ -297,8 +298,9 @@ export class EloService {
     for (const player of team1) {
       const stats = this.getStatsForRoom(player, room.id);
       const kFactor = await this.calculateKFactor(stats, player.id);
-      const newRating = Math.round(
-        player.eloRating + kFactor * (1 - expectedTeam1Score),
+      const newRating = Math.max(
+        player.eloRating,
+        Math.round(player.eloRating + kFactor * (1 - expectedTeam1Score)),
       );
       newRatings.set(player.id, newRating);
     }
@@ -331,6 +333,7 @@ export class EloService {
     players: User[],
   ): Promise<Map<number, number>> {
     const newRatings = new Map<number, number>();
+    const maxScore = Math.max(...Object.values(room.scores));
 
     // Sort players by score in descending order
     const sortedPlayers = [...players].sort(
@@ -374,7 +377,10 @@ export class EloService {
         player.eloRating +
           kFactor * (normalizedActualScore - normalizedExpectedScore),
       );
-      newRatings.set(player.id, newRating);
+      const adjustedRating = room.scores[player.id] === maxScore
+        ? Math.max(player.eloRating, newRating)
+        : newRating;
+      newRatings.set(player.id, adjustedRating);
     }
 
     // Save all new ratings

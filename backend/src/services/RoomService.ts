@@ -663,6 +663,7 @@ export class RoomService {
     challengerId: number,
     challengedId: number,
     difficulty: string,
+    context?: string,
   ): Promise<Room> {
     const [challenger, challenged] = await Promise.all([
       this.ormConnection.getRepository(User).findOneBy({ id: challengerId }),
@@ -693,16 +694,14 @@ export class RoomService {
     const savedRoom = await this.ormConnection.getRepository(Room).save(room);
 
     // Emit a challenge event through socket.io
-    fastify.io.to(`user_${challenged.id.toString()}`).emit(
-      "challenge_received",
-      {
-        room: savedRoom.toJSON(),
-        challenger: {
-          id: challenger.id,
-          username: challenger.username,
-        },
+    fastify.io.to(`user_${challenged.id.toString()}`).emit("challenge_received", {
+      room: savedRoom.toJSON(),
+      challenger: {
+        id: challenger.id,
+        username: challenger.username,
       },
-    );
+      context,
+    });
 
     return savedRoom;
   }
@@ -868,5 +867,105 @@ export class RoomService {
       topEntries,
       currentPlayerEntry,
     };
+  }
+
+  async getGlobalTimeTrialLeaderboard(
+    limit: number = 10,
+  ): Promise<Array<{
+    rank: number;
+    roomId: number;
+    score: number;
+    user: { id: number; username: string; eloRating: number } | null;
+    created_at: string;
+    completed_at: string | null;
+    timeTakenMs: number | null;
+  }>> {
+    const roomRepository = this.ormConnection.getRepository(Room);
+
+    const rooms = await roomRepository.find({
+      where: {
+        type: "time_trial",
+        status: "finished",
+      },
+      order: { completed_at: "DESC" },
+    });
+
+    const entries = rooms.map((room) => {
+      const scoresObj = room.scores || {};
+      const scoreValues = Object.values(scoresObj);
+      const score = scoreValues.length > 0 ? Math.max(...scoreValues) : 0;
+
+      const player = room.players && room.players.length > 0
+        ? room.players[0]
+        : null;
+
+      const timeTakenMs = room.completed_at && room.created_at
+        ? room.completed_at.getTime() - room.created_at.getTime()
+        : null;
+
+      return {
+        roomId: room.id,
+        user: player
+          ? {
+            id: player.id,
+            username: player.username,
+            eloRating: player.eloRating,
+          }
+          : null,
+        score,
+        created_at: room.created_at,
+        completed_at: room.completed_at,
+        timeTakenMs,
+      };
+    });
+
+    const bestByUser = new Map<number, typeof entries[number]>();
+
+    for (const entry of entries) {
+      if (!entry.user) continue;
+
+      const existing = bestByUser.get(entry.user.id);
+      if (!existing) {
+        bestByUser.set(entry.user.id, entry);
+        continue;
+      }
+
+      if (entry.score > existing.score) {
+        bestByUser.set(entry.user.id, entry);
+        continue;
+      }
+
+      if (
+        entry.score === existing.score &&
+        (entry.timeTakenMs ?? Number.MAX_SAFE_INTEGER) <
+          (existing.timeTakenMs ?? Number.MAX_SAFE_INTEGER)
+      ) {
+        bestByUser.set(entry.user.id, entry);
+      }
+    }
+
+    const rankedEntries = Array.from(bestByUser.values())
+      .sort((a, b) => {
+        if (b.score !== a.score) {
+          return b.score - a.score;
+        }
+        const aTime = a.timeTakenMs ?? Number.MAX_SAFE_INTEGER;
+        const bTime = b.timeTakenMs ?? Number.MAX_SAFE_INTEGER;
+        return aTime - bTime;
+      })
+      .slice(0, limit)
+      .map((entry, index) => ({
+        rank: index + 1,
+        roomId: entry.roomId,
+        score: entry.score,
+        user: entry.user,
+        created_at: entry.created_at.toISOString(),
+        completed_at: entry.completed_at
+          ? entry.completed_at.toISOString()
+          : null,
+        timeTakenMs: entry.timeTakenMs,
+      }));
+
+    return rankedEntries;
   }
 }

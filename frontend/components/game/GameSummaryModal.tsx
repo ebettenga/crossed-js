@@ -1,9 +1,9 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, TouchableOpacity, Pressable, ScrollView, useColorScheme } from 'react-native';
+import { View, Text, TouchableOpacity, Pressable, ScrollView, useColorScheme, ActivityIndicator } from 'react-native';
 import { Dialog, DialogContent } from '~/components/ui/dialog';
 import { Room, SquareType } from '~/hooks/useJoinRoom';
 import { useUser } from '~/hooks/users';
-import { Home, Star, ChevronLeft, ChevronRight, TrendingUp, TrendingDown } from 'lucide-react-native';
+import { Home, Star, ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Swords } from 'lucide-react-native';
 import { useRateDifficulty, useRateQuality } from '~/hooks/useRatings';
 import { useTimeTrialLeaderboard } from '~/hooks/useLeaderboard';
 import { useGameStats, GameStats } from '~/hooks/useGameStats';
@@ -15,9 +15,12 @@ import Animated, {
     withDelay
 } from 'react-native-reanimated';
 import { DifficultyRating } from '~/types/crossword';
-import { RectButton } from '../home/HomeSquareButton';
 import { cn } from '~/lib/utils';
 import { useLogger } from '~/hooks/useLogs';
+import { useChallenge } from '~/hooks/useChallenge';
+import { useJoinRoom } from '~/hooks/useJoinRoom';
+import { useRouter } from 'expo-router';
+import { showToast } from '~/components/shared/Toast';
 
 const formatMs = (ms: number | null) => {
     if (ms == null || ms < 0) return '—';
@@ -460,6 +463,9 @@ export const GameSummaryModal: React.FC<GameSummaryModalProps> = ({
 }) => {
     const { data: currentUser } = useUser();
     const logger = useLogger();
+    const router = useRouter();
+    const joinRoomMutation = useJoinRoom();
+    const { sendChallenge } = useChallenge();
     const [qualityRating, setQualityRating] = useState(0);
     const [difficultyRating, setDifficultyRating] = useState<DifficultyRating | null>(null);
     const [selectedPlayerIndex, setSelectedPlayerIndex] = useState(0);
@@ -471,6 +477,7 @@ export const GameSummaryModal: React.FC<GameSummaryModalProps> = ({
     const colorScheme = useColorScheme();
     const isDarkMode = colorScheme === 'dark';
     const homeIconColor = isDarkMode ? '#FFFFFF' : '#343434';
+    const isPlayAgainProcessing = joinRoomMutation.isPending || sendChallenge.isPending;
 
     // Fetch game stats using React Query
     const {
@@ -581,6 +588,73 @@ export const GameSummaryModal: React.FC<GameSummaryModalProps> = ({
             />
         );
     };
+
+    const handlePlayAgain = async () => {
+        if (!room || !currentUser) return;
+
+        if (room.type === 'free4all') {
+            showToast('info', 'Play again for Free-for-all is coming soon!');
+            return;
+        }
+
+        if (room.type === '1v1') {
+            const opponent = room.players.find(player => player.id !== currentUser.id);
+            if (!opponent) {
+                showToast('error', 'Unable to find your opponent for a rematch.');
+                return;
+            }
+
+            try {
+                await sendChallenge.mutateAsync({
+                    challengedId: opponent.id,
+                    difficulty: room.difficulty,
+                    context: 'rematch',
+                });
+                showToast('success', `Rematch challenge sent to ${opponent.username}`);
+                onClose();
+            } catch (error) {
+                logger.mutate({ log: { context: 'handlePlayAgain rematch failed', error }, severity: 'error' });
+                showToast('error', 'Failed to send rematch challenge.');
+            }
+            return;
+        }
+
+        try {
+            const newRoom = await joinRoomMutation.mutateAsync({
+                difficulty: room.difficulty,
+                type: room.type,
+            });
+            if (room.type === 'time_trial') {
+                showToast('success', 'Starting a new time trial!');
+                onClose();
+                if (newRoom?.id) {
+                    setTimeout(() => {
+                        router.push(`/game?roomId=${newRoom.id}`);
+                    }, 0);
+                }
+            } else if (room.type === '2v2') {
+                showToast('success', 'Queued for a new 2v2 match.');
+                onClose();
+            }
+        } catch (error) {
+            logger.mutate({ log: { context: 'handlePlayAgain queue failed', error }, severity: 'error' });
+            showToast('error', 'Failed to start a new game.');
+        }
+    };
+
+    const playAgainLabel = useMemo(() => {
+        if (!room) return 'Play Again';
+        if (room.type === '1v1') {
+            return 'Request Rematch';
+        }
+        if (room.type === 'time_trial') {
+            return 'Play Again';
+        }
+        if (room.type === '2v2') {
+            return 'Find New Match';
+        }
+        return 'Play Again';
+    }, [room]);
 
     return (
         <Dialog
@@ -707,6 +781,42 @@ export const GameSummaryModal: React.FC<GameSummaryModalProps> = ({
                     </View>
 
                     <View className="px-2 pb-2">
+                        {room.type !== 'free4all' && (
+                            <View
+                                className={cn(
+                                    "border-[1.5px] border-[#343434] dark:border-neutral-600 bg-[#FAFAF7] dark:bg-neutral-800 w-full h-16 rounded-sm mt-2",
+                                    isPlayAgainProcessing && "opacity-75",
+                                )}
+                            >
+                                <Pressable
+                                    onPress={handlePlayAgain}
+                                    disabled={isPlayAgainProcessing}
+                                    style={({ pressed }) => ({
+                                        backgroundColor: pressed
+                                            ? '#F0F0ED'
+                                            : '#FAFAF7'
+                                    })}
+                                    className={cn(
+                                        "flex-1 justify-center items-center relative dark:bg-neutral-800",
+                                        "active:bg-[#F0F0ED] active:dark:bg-neutral-700",
+                                    )}
+                                >
+                                    <View className="w-full h-full flex flex-col items-center justify-center">
+                                        {isPlayAgainProcessing ? (
+                                            <ActivityIndicator size="small" color="#8B0000" />
+                                        ) : (
+                                            <View className="flex-row items-center gap-2">
+                                                <Swords color={homeIconColor} />
+                                                <Text className="text-base font-['Times_New_Roman'] text-[#2B2B2B] dark:text-[#DDE1E5]">
+                                                    {playAgainLabel}
+                                                </Text>
+                                            </View>
+                                        )}
+                                    </View>
+                                </Pressable>
+                            </View>
+                        )}
+
                         <View
                             className={cn(
                                 "border-[1.5px] border-[#343434] dark:border-neutral-600 bg-[#FAFAF7] dark:bg-neutral-800 w-full h-16 rounded-sm mt-2",

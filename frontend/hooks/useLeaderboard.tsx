@@ -16,6 +16,25 @@ export type LeaderboardResponse = {
   currentPlayerEntry?: LeaderboardEntry;
 };
 
+export type LeaderboardUser = {
+  id: number;
+  username: string;
+  eloRating: number;
+  photo?: string | null;
+  gamesWon?: number;
+  gamesLost?: number;
+  guessAccuracy?: number;
+  winRate?: number;
+};
+
+export type GlobalLeaderboardResponse = {
+  topElo: Array<{
+    rank: number;
+    user: LeaderboardUser;
+  }>;
+  topTimeTrials: LeaderboardEntry[];
+};
+
 export const useTimeTrialLeaderboard = (roomId: number | undefined, limit: number = 10) => {
   return useQuery<LeaderboardResponse>({
     queryKey: ['leaderboard', 'time-trial', roomId, limit],
@@ -29,7 +48,21 @@ export const useTimeTrialLeaderboard = (roomId: number | undefined, limit: numbe
       );
     },
     enabled: !!roomId,
-    staleTime: 1000 * 60, // Consider data fresh for 1 minute
+    staleTime: 1000 * 60,
+    retry: 1,
+  });
+};
+
+export const useGlobalLeaderboard = (limit: number = 10) => {
+  return useQuery<GlobalLeaderboardResponse>({
+    queryKey: ['leaderboard', 'global', limit],
+    queryFn: async () => {
+      return await get<GlobalLeaderboardResponse>(
+        '/leaderboard',
+        { params: { limit: limit.toString() } }
+      );
+    },
+    staleTime: 1000 * 60,
     retry: 1,
   });
 };

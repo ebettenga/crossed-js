@@ -36,6 +36,7 @@ export type Challenge = {
   roomId: number;
   challengedId: number;
   difficulty: string;
+  context?: string;
 };
 
 async function verifyUser(
@@ -291,11 +292,12 @@ export default function (
 
       socket.on("challenge", async (data: string) => {
         try {
-          const { challengedId, difficulty } = JSON.parse(data) as Challenge;
+          const { challengedId, difficulty, context } = JSON.parse(data) as Challenge;
           const room = await roomService.createChallengeRoom(
             user.id,
             challengedId,
             difficulty,
+            context,
           );
           socket.join(room.id.toString());
           fastify.io.to(room.id.toString()).emit("room", room.toJSON());

@@ -347,6 +347,8 @@ export default function Friends() {
 
     const isLoading = friendsLoading || pendingLoading;
     const error = friendsError;
+    const challengeCount = challenges?.length ?? 0;
+    const displayChallengeCount = challengeCount > 99 ? '99+' : String(challengeCount);
 
     return (
         <View className="flex-1 bg-[#F6FAFE] dark:bg-[#0F1417]" style={{ paddingTop: insets.top }}>
@@ -373,21 +375,30 @@ export default function Friends() {
                 </TouchableOpacity>
                 <TouchableOpacity
                     className={cn(
-                        "flex-1 py-4 items-center border-b-2",
+                        "relative flex-1 py-4 items-center border-b-2",
                         activeTab === 'challenges'
                             ? "border-[#8B0000]"
                             : "border-transparent"
                     )}
                     onPress={() => setActiveTab('challenges')}
                 >
-                    <Text className={cn(
-                        "text-base font-['Times_New_Roman']",
-                        activeTab === 'challenges'
-                            ? "text-[#8B0000]"
-                            : "text-[#666666] dark:text-neutral-400"
-                    )}>
-                        Challenges
-                    </Text>
+                    <View className="relative">
+                        <Text className={cn(
+                            "text-base font-['Times_New_Roman']",
+                            activeTab === 'challenges'
+                                ? "text-[#8B0000]"
+                                : "text-[#666666] dark:text-neutral-400"
+                        )}>
+                            Challenges
+                        </Text>
+                        {challengeCount > 0 && (
+                            <View className="absolute -top-2 -right-5 min-w-[20px] h-5 px-1 rounded-full bg-[#8B0000] items-center justify-center">
+                                <Text className="text-white text-xs font-['Times_New_Roman']">
+                                    {displayChallengeCount}
+                                </Text>
+                            </View>
+                        )}
+                    </View>
                 </TouchableOpacity>
             </View>
 
