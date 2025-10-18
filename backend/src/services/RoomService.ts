@@ -663,6 +663,7 @@ export class RoomService {
     challengerId: number,
     challengedId: number,
     difficulty: string,
+    context?: string,
   ): Promise<Room> {
     const [challenger, challenged] = await Promise.all([
       this.ormConnection.getRepository(User).findOneBy({ id: challengerId }),
@@ -693,16 +694,14 @@ export class RoomService {
     const savedRoom = await this.ormConnection.getRepository(Room).save(room);
 
     // Emit a challenge event through socket.io
-    fastify.io.to(`user_${challenged.id.toString()}`).emit(
-      "challenge_received",
-      {
-        room: savedRoom.toJSON(),
-        challenger: {
-          id: challenger.id,
-          username: challenger.username,
-        },
+    fastify.io.to(`user_${challenged.id.toString()}`).emit("challenge_received", {
+      room: savedRoom.toJSON(),
+      challenger: {
+        id: challenger.id,
+        username: challenger.username,
       },
-    );
+      context,
+    });
 
     return savedRoom;
   }
