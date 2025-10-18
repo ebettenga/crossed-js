@@ -16,6 +16,7 @@ import { CluesButton } from '../components/game/CluesButton';
 import { SupportModal } from '../components/game/SupportModal';
 import { GameSummaryModal } from '../components/game/GameSummaryModal';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { showToast } from '~/components/shared/Toast';
 
 
 type MenuOption = {
@@ -24,7 +25,7 @@ type MenuOption = {
     style?: { color: string };
 };
 
-const CLUE_DISPLAY_HEIGHT = 80;
+const CLUE_DISPLAY_HEIGHT = 70;
 
 export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
     const insets = useSafeAreaInsets();
@@ -42,6 +43,19 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
     useEffect(() => {
         refresh(roomId);
     }, []);
+
+    useEffect(() => {
+        if (!room) return;
+
+        if (room.status === 'pending') {
+            showToast(
+                'info',
+                'Your game is waiting for more players.',
+                'We will redirect you once the game begins.',
+            );
+            router.replace('/(root)/(tabs)');
+        }
+    }, [room?.status, router]);
 
     useEffect(() => {
         if (!room) return;
@@ -66,6 +80,44 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
 
         prevScores.current = room.scores;
     }, [room?.scores]);
+
+    /*
+This useEffect is to move the cursor for the player if the letter gets filled in by someone else / the job
+
+TODO: figure out why there's a error happening with this hook not getting loaded
+*/
+    // useEffect(() => {
+    //     if (!room?.board || !selectedCell) {
+    //         return;
+    //     }
+
+    //     if (room.type == 'time_trial') {
+    //         return;
+    //     }
+
+    //     const updatedCell = room.board[selectedCell.x]?.[selectedCell.y];
+    //     if (!updatedCell) {
+    //         return;
+    //     }
+
+    //     const wasSolved = selectedCell.squareType === SquareType.SOLVED;
+    //     const isNowSolved = updatedCell.squareType === SquareType.SOLVED;
+
+    //     if (!wasSolved && isNowSolved) {
+    //         const next =
+    //             findNextEditableCellInWord(updatedCell, room.board, isAcrossMode) ??
+    //             findNextClueTarget(updatedCell, room.board, isAcrossMode, 'next');
+    //         if (next) {
+    //             setSelectedCell(next);
+    //             return;
+    //         }
+    //     }
+
+    //     if (selectedCell !== updatedCell) {
+    //         setSelectedCell(updatedCell);
+    //     }
+    // }, [room?.board, selectedCell, isAcrossMode]);
+
 
     // Format clues and firstCellsMap for the CluesModal
     const formattedClues = useMemo(() => {
@@ -131,40 +183,6 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
         return cellsMap;
     }, [room?.board]);
 
-    /*
-This useEffect is to move the cursor for the player if the letter gets filled in by someone else / the job
-*/
-    useEffect(() => {
-        if (!room?.board || !selectedCell) {
-            return;
-        }
-
-        if (room.type == 'time_trial') {
-            return;
-        }
-
-        const updatedCell = room.board[selectedCell.x]?.[selectedCell.y];
-        if (!updatedCell) {
-            return;
-        }
-
-        const wasSolved = selectedCell.squareType === SquareType.SOLVED;
-        const isNowSolved = updatedCell.squareType === SquareType.SOLVED;
-
-        if (!wasSolved && isNowSolved) {
-            const next =
-                findNextEditableCellInWord(updatedCell, room.board, isAcrossMode) ??
-                findNextClueTarget(updatedCell, room.board, isAcrossMode, 'next');
-            if (next) {
-                setSelectedCell(next);
-                return;
-            }
-        }
-
-        if (selectedCell !== updatedCell) {
-            setSelectedCell(updatedCell);
-        }
-    }, [room?.board, selectedCell, isAcrossMode]);
 
     if (!room || room.id !== roomId) {
         return <LoadingGame />;
@@ -373,7 +391,7 @@ This useEffect is to move the cursor for the player if the letter gets filled in
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
             <View className="flex-1">
-                <View className="flex-row justify-between items-center px-4 mt-2">
+                <View className="flex-row justify-between items-center px-4 mt-3">
                     <View className="flex-row items-center gap-2">
                         {currentUser && (
                             <Avatar user={currentUser} imageUrl={currentUser.photo} size={32} />
@@ -409,7 +427,7 @@ This useEffect is to move the cursor for the player if the letter gets filled in
                     players={room.players}
                     scores={room.scores}
                 />
-                <View className="flex-1 px-2 pb-2">
+                <View className="flex-1 px-2">
                     <View className="flex-1 items-center justify-center">
                         <CrosswordBoard
                             board={room?.board}
@@ -425,8 +443,7 @@ This useEffect is to move the cursor for the player if the letter gets filled in
                     </View>
                 </View>
                 <View
-                    className="w-full bg-[#F5F5EB] dark:bg-[#0F1417] border-t border-[#E5E5D8] dark:border-neutral-700"
-                    style={{ paddingBottom: insets.bottom }}
+                    className="w-full bg-[#F5F5EB] dark:bg-[#0F1417]"
                 >
                     <View
                         style={{ height: CLUE_DISPLAY_HEIGHT }}
@@ -446,20 +463,24 @@ This useEffect is to move the cursor for the player if the letter gets filled in
                             </View>
                         )}
                     </View>
-                    <Keyboard
-                        onKeyPress={handleKeyPress}
-                        disabledKeys={[]}
-                    />
+                    <View className="flex-row items-end justify-between bg-neutral-100 dark:bg-neutral-800 border-t border-neutral-200 dark:border-neutral-700 px-4 pt-2 pb-2 gap-4 shadow-lg">
+                        <CluesButton
+                            clues={formattedClues}
+                            onCluePress={(square, isAcrossMode) => {
+                                setSelectedCell(square);
+                                setIsAcrossMode(isAcrossMode);
+                            }}
+                        />
+                        <View className="flex-1">
+                            <Keyboard
+                                onKeyPress={handleKeyPress}
+                                disabledKeys={[]}
+                            />
+                        </View>
+                        <GameMenu options={menuOptions} />
+                    </View>
                 </View>
             </View>
-            <GameMenu options={menuOptions} />
-            <CluesButton
-                clues={formattedClues}
-                onCluePress={(square, isAcrossMode) => {
-                    setSelectedCell(square);
-                    setIsAcrossMode(isAcrossMode);
-                }}
-            />
             <SupportModal
                 isVisible={showSupportModal}
                 onClose={() => setShowSupportModal(false)}

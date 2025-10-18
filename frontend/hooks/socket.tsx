@@ -557,6 +557,10 @@ export const useRoom = (roomId?: number) => {
     const handleRoom = (data: Room & { revealedLetterIndex?: number }) => {
       if (!data) return;
 
+      if (roomId !== undefined && data.id !== roomId) {
+        return;
+      }
+
       if (data.status === 'finished') {
         // Invalidate user stats and data
         queryClient.invalidateQueries({ queryKey: ['me'] });
@@ -574,6 +578,9 @@ export const useRoom = (roomId?: number) => {
 
     const handleGameStarted = (data: { message: string, room: Room, navigate?: { screen: string, params: any } }) => {
       console.log("Game started:", data.message);
+      if (roomId !== undefined && data.room.id !== roomId) {
+        return;
+      }
       // Only redirect if the current user is a player in this game
       if (currentUser && data.room.players.some(player => player.id === currentUser.id)) {
         setRoom(data.room);
@@ -588,6 +595,9 @@ export const useRoom = (roomId?: number) => {
 
     const handleGameForfeited = (data: { message: string, forfeitedBy: number, room: Room }) => {
       console.log("Game forfeited:", data.message);
+      if (roomId !== undefined && data.room.id !== roomId) {
+        return;
+      }
       setRoom(data.room);
 
       if (currentUser) {

@@ -62,9 +62,7 @@ function AppContent() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaView style={{ flex: 1 }} className="bg-[#F6FAFE] dark:bg-[#0F1417]">
-        <Slot screenOptions={{ headerShown: false }} />
-      </SafeAreaView>
+      <Slot screenOptions={{ headerShown: false }} />
       <PortalHost />
     </GestureHandlerRootView>
   );

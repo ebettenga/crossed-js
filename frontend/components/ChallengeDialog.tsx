@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, Modal, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useChallenge } from '~/hooks/useChallenge';
 import { Swords, X } from 'lucide-react-native';
 import { useSound } from '~/hooks/useSound';
 import { useSoundPreference } from '~/hooks/useSoundPreference';
 import { pencilSounds, randomPencilKey } from '~/assets/sounds/randomButtonSound';
+import { showToast } from '~/components/shared/Toast';
 
 type ChallengeDialogProps = {
   isVisible: boolean;
@@ -19,17 +20,24 @@ export const ChallengeDialog = ({ isVisible, onClose, friendId, friendName }: Ch
   const { isSoundEnabled } = useSoundPreference();
   const { play } = useSound(pencilSounds, { enabled: isSoundEnabled });
 
-  const handleChallenge = async () => {
-    console.log('[ChallengeDialog] Sending challenge');
-    sendChallenge.mutate({
-      challengedId: friendId,
-      difficulty: selectedDifficulty,
-    });
-    console.log('[ChallengeDialog] Playing sound before closing dialog');
-    await play(randomPencilKey());
-    console.log('[ChallengeDialog] Sound completed, closing dialog');
-    onClose();
-  };
+  const handleChallenge = useCallback(async () => {
+    if (!friendId || sendChallenge.isPending) return;
+
+    try {
+      await sendChallenge.mutateAsync({
+        challengedId: friendId,
+        difficulty: selectedDifficulty,
+      });
+
+      const successMessage = friendName ? `Challenge sent to ${friendName}` : 'Challenge sent';
+      showToast('success', successMessage);
+      setSelectedDifficulty('easy');
+      void play(randomPencilKey()).catch(() => {});
+      onClose();
+    } catch (error) {
+      showToast('error', 'Failed to send challenge');
+    }
+  }, [friendId, friendName, onClose, play, selectedDifficulty, sendChallenge]);
 
   const difficulties = [
     { label: 'Easy', value: 'easy' },

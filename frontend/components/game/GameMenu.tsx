@@ -55,7 +55,7 @@ export const GameMenu: React.FC<GameMenuProps> = ({ options }) => {
   };
 
   return (
-    <View className="absolute bottom-5 right-4 items-end" pointerEvents="box-none">
+    <View className="items-end pb-2" pointerEvents="box-none">
       {/* Menu Options */}
       <Animated.View
         className={cn(

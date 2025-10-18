@@ -3,7 +3,6 @@ import { View, Text, ScrollView, TouchableOpacity, Image, ActivityIndicator, Tex
 import { Swords, X, UserPlus, Check } from 'lucide-react-native';
 import { PageHeader } from '~/components/Header';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
 import {
     Friend,
     useFriendsList,
@@ -43,6 +42,7 @@ interface FriendRowProps {
     isSender?: boolean;
     roomId?: number;
     otherUser: OtherUser;
+    hasActiveChallenge?: boolean;
 }
 
 const FriendRow: React.FC<FriendRowProps> = ({
@@ -56,7 +56,8 @@ const FriendRow: React.FC<FriendRowProps> = ({
     isPending = false,
     isSender = false,
     roomId,
-    otherUser
+    otherUser,
+    hasActiveChallenge = false
 }) => {
     const isReceiver = friend.receiver.id === currentUserId;
     return (
@@ -99,14 +100,20 @@ const FriendRow: React.FC<FriendRowProps> = ({
                             wants to play a game!
                         </Text>
                     )}
+                    {!isPending && hasActiveChallenge && (
+                        <Text className="text-xs text-[#8B0000] dark:text-red-400 font-['Times_New_Roman']">
+                            challenge pending
+                        </Text>
+                    )}
                 </View>
             </View>
 
             {!isChallenge && !isPending && (
                 <View className="flex-row items-center gap-1.5 ml-auto pl-3">
                     <TouchableOpacity
-                        className="flex-row items-center p-2 rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900"
+                        className={`flex-row items-center p-2 rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900 ${hasActiveChallenge ? 'opacity-50' : ''}`}
                         onPress={() => onChallenge(friend)}
+                        disabled={hasActiveChallenge}
                     >
                         <Swords size={16} color="#8B0000" />
                     </TouchableOpacity>
@@ -319,10 +326,24 @@ export default function Friends() {
         };
     }, [user.id]);
 
+    const hasOutgoingChallengeToFriend = useCallback((friendUserId: number) => {
+        return challenges.some((room) => {
+            if (!room?.players?.length) return false;
+            const challenger = room.players[0];
+            if (!challenger || challenger.id !== user.id) return false;
+            if (room.status && room.status !== 'pending') return false;
+            return room.players.some((player) => player.id === friendUserId);
+        });
+    }, [challenges, user.id]);
+
     const handleChallenge = useCallback((friend: Friend) => {
         const target = getFriendStatus(friend);
+        if (hasOutgoingChallengeToFriend(target.id)) {
+            showToast('info', `You already have a pending challenge with ${target.username}`);
+            return;
+        }
         setChallengeTarget({ id: target.id, name: target.username });
-    }, [getFriendStatus]);
+    }, [getFriendStatus, hasOutgoingChallengeToFriend]);
 
     const isLoading = friendsLoading || pendingLoading;
     const error = friendsError;
@@ -454,6 +475,8 @@ export default function Friends() {
                         >
                             {pendingRequests?.map((friend) => {
                                 const isSender = friend.sender.id === user.id;
+                                const otherUser = getFriendStatus(friend);
+                                const hasActiveChallenge = hasOutgoingChallengeToFriend(otherUser.id);
                                 return (
                                     <FriendRow
                                         key={friend.id}
@@ -465,20 +488,26 @@ export default function Friends() {
                                         onReject={handleRejectFriend}
                                         isPending={true}
                                         isSender={isSender}
-                                        otherUser={getFriendStatus(friend)}
+                                        otherUser={otherUser}
+                                        hasActiveChallenge={hasActiveChallenge}
                                     />
                                 );
                             })}
-                            {friends?.map((friend) => (
-                                <FriendRow
-                                    key={friend.id}
-                                    friend={friend}
-                                    currentUserId={user.id}
-                                    onChallenge={handleChallenge}
-                                    onRemove={handleRemoveFriend}
-                                    otherUser={getFriendStatus(friend)}
-                                />
-                            ))}
+                            {friends?.map((friend) => {
+                                const otherUser = getFriendStatus(friend);
+                                const hasActiveChallenge = hasOutgoingChallengeToFriend(otherUser.id);
+                                return (
+                                    <FriendRow
+                                        key={friend.id}
+                                        friend={friend}
+                                        currentUserId={user.id}
+                                        onChallenge={handleChallenge}
+                                        onRemove={handleRemoveFriend}
+                                        otherUser={otherUser}
+                                        hasActiveChallenge={hasActiveChallenge}
+                                    />
+                                );
+                            })}
                         </ScrollView>
                     )}
                 </View>

@@ -22,7 +22,7 @@ export const CluesButton: React.FC<CluesButtonProps> = ({
     const { isDark } = useColorMode();
 
     return (
-        <View className="absolute bottom-5 left-4 items-start">
+        <View className="items-start pb-2">
             <TouchableOpacity
                 className={cn(
                     "w-9 h-9 rounded-full bg-neutral-200 dark:bg-neutral-700",

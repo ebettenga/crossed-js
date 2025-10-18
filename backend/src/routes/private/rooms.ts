@@ -35,8 +35,30 @@ export default function (
 
   fastify.post("/rooms/:roomId/cancel", async (request, reply) => {
     const { roomId } = request.params as { roomId: string };
-    const room = await roomService.cancelRoom(parseInt(roomId));
-    reply.send(room.toJSON());
+    const cancelledRoom = await roomService.cancelRoom(
+      parseInt(roomId, 10),
+      request.user.id,
+    );
+
+    const playerIds = cancelledRoom.players.map((player) => player.id);
+    const cancellationPayload = {
+      message: "Game was cancelled",
+      roomId: cancelledRoom.id,
+      reason: "user_cancelled",
+    };
+
+    await socketEventService.emitToRoom(
+      cancelledRoom.id,
+      "room_cancelled",
+      cancellationPayload,
+    );
+    await socketEventService.emitToUsers(
+      playerIds,
+      "room_cancelled",
+      cancellationPayload,
+    );
+
+    reply.send(cancelledRoom.toJSON());
   });
 
   fastify.post("/rooms/join", async (request, reply) => {
