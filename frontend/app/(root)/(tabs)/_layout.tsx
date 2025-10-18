@@ -34,12 +34,14 @@ const TabsLayout = () => {
         StatusBar.setBarStyle(isDark ? 'light-content' : 'dark-content');
     }, [isDark]);
 
+    const height = __DEV__ ? 70 : 120
+
     return (
         <Tabs
             screenOptions={{
                 tabBarShowLabel: false,
                 tabBarStyle: {
-                    height: 70,
+                    height: height,
                     backgroundColor: isDark ? '#0F1417' : '#F6FAFE',
                     position: 'absolute',
                     display: hideTabBar ? 'none' : 'flex',
