@@ -6,6 +6,13 @@ import jwt from "jsonwebtoken";
 import { DataSource } from "typeorm";
 import type { PluginDataSource } from "typeorm-fastify-plugin";
 
+jest.mock("../../src/fastify", () => {
+  const createFastify = require("fastify");
+  return {
+    fastify: createFastify({ logger: false }),
+  };
+});
+
 import socketsRoutes from "../../src/routes/private/sockets";
 import { User } from "../../src/entities/User";
 import { Room } from "../../src/entities/Room";
