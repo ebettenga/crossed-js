@@ -11,7 +11,10 @@ import { ensureApprovedSnapshot } from "../utils/approval";
 import { createPostgresTestManager } from "../utils/postgres";
 
 process.on("unhandledRejection", (reason) => {
-  console.error("Unhandled rejection in tests/routes/crosswords.route.test.ts:", reason);
+  console.error(
+    "Unhandled rejection in tests/routes/crosswords.route.test.ts:",
+    reason,
+  );
 });
 
 const postgres = createPostgresTestManager({
@@ -147,7 +150,7 @@ const createCrossword = async (overrides: Partial<Crossword> = {}) => {
     created_by: "Tester",
     creator_link: "https://example.com",
     circles: [],
-    date: new Date("2024-01-01"),
+    date: new Date("2024-01-01T00:00:00.000Z"),
     dow: "Monday",
     grid: Array(16).fill("A"),
     gridnums: [],
@@ -196,7 +199,10 @@ beforeEach(async () => {
   try {
     await postgres.truncate(TABLES_TO_TRUNCATE);
   } catch (error) {
-    console.error("Failed to truncate tables for Crosswords route tests:", error);
+    console.error(
+      "Failed to truncate tables for Crosswords route tests:",
+      error,
+    );
     throw error;
   }
 });
@@ -212,7 +218,7 @@ describe("crosswords routes (integration)", () => {
       await createCrossword({
         title: "Monday Mini",
         dow: "Monday",
-        date: new Date("2024-01-01"),
+        date: new Date("2023-12-31T00:00:00.000Z"),
         col_size: 4,
         row_size: 4,
         grid: Array(16).fill("M"),
@@ -220,7 +226,7 @@ describe("crosswords routes (integration)", () => {
       await createCrossword({
         title: "Tuesday Standard",
         dow: "Tuesday",
-        date: new Date("2024-01-02"),
+        date: new Date("2024-01-01T00:00:00.000Z"),
         col_size: 5,
         row_size: 5,
         grid: Array(25).fill("T"),
@@ -228,7 +234,7 @@ describe("crosswords routes (integration)", () => {
       await createCrossword({
         title: "Wednesday Challenge",
         dow: "Wednesday",
-        date: new Date("2024-01-03"),
+        date: new Date("2024-01-02T00:00:00.000Z"),
         col_size: 6,
         row_size: 6,
         grid: Array(36).fill("W"),
@@ -269,7 +275,7 @@ describe("crosswords routes (integration)", () => {
       await createCrossword({
         title: "Monday Mini",
         dow: "Monday",
-        date: new Date("2024-01-01"),
+        date: new Date("2023-12-31T00:00:00.000Z"),
         col_size: 4,
         row_size: 4,
         grid: Array(16).fill("M"),
@@ -277,7 +283,7 @@ describe("crosswords routes (integration)", () => {
       await createCrossword({
         title: "Tuesday Standard",
         dow: "Tuesday",
-        date: new Date("2024-01-02"),
+        date: new Date("2024-01-01T00:00:00.000Z"),
         col_size: 5,
         row_size: 5,
         grid: Array(25).fill("T"),
@@ -285,7 +291,7 @@ describe("crosswords routes (integration)", () => {
       await createCrossword({
         title: "Wednesday Challenge",
         dow: "Wednesday",
-        date: new Date("2024-01-03"),
+        date: new Date("2024-01-02T00:00:00.000Z"),
         col_size: 6,
         row_size: 6,
         grid: Array(36).fill("W"),
@@ -359,7 +365,7 @@ describe("crosswords routes (integration)", () => {
     const crossword = await createCrossword({
       title: "Difficulty Rated Crossword",
       dow: "Thursday",
-      date: new Date("2024-02-01"),
+      date: new Date("2024-02-01T00:00:00.000Z"),
     });
 
     let app: Awaited<ReturnType<typeof buildServer>> | undefined;
@@ -404,7 +410,7 @@ describe("crosswords routes (integration)", () => {
     const crossword = await createCrossword({
       title: "Quality Rated Crossword",
       dow: "Friday",
-      date: new Date("2024-02-02"),
+      date: new Date("2024-02-02T00:00:00.000Z"),
     });
 
     let app: Awaited<ReturnType<typeof buildServer>> | undefined;
@@ -445,7 +451,7 @@ describe("crosswords routes (integration)", () => {
     const crossword = await createCrossword({
       title: "Aggregated Crossword",
       dow: "Saturday",
-      date: new Date("2024-02-03"),
+      date: new Date("2024-02-03T00:00:00.000Z"),
     });
 
     const userA = await createUser({

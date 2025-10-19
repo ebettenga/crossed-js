@@ -76,7 +76,7 @@ const createCrossword = async (
     created_by: "Tester",
     creator_link: "https://example.com",
     circles: [],
-    date: new Date("2025-01-01"),
+    date: new Date("2025-01-01T00:00:00.000Z"),
     dow: "Monday",
     grid: Array(16).fill("A"),
     gridnums: [],
@@ -127,7 +127,7 @@ describe("CrosswordService integration", () => {
         clues: { across: [], down: [] },
         answers: { across: [], down: [] },
         circles: [],
-        date: new Date("2024-12-30"),
+        date: new Date("2024-12-30T00:00:00.000Z"),
         shadecircles: false,
         jnote: "Test jnote",
         notepad: "Test notepad",
@@ -144,7 +144,7 @@ describe("CrosswordService integration", () => {
         clues: { across: [], down: [] },
         answers: { across: [], down: [] },
         circles: [],
-        date: new Date("2024-12-31"),
+        date: new Date("2024-12-31T00:00:00.000Z"),
         shadecircles: false,
         jnote: "Test jnote",
         notepad: "Test notepad",
@@ -161,7 +161,7 @@ describe("CrosswordService integration", () => {
         clues: { across: [], down: [] },
         answers: { across: [], down: [] },
         circles: [],
-        date: new Date("2025-01-02"),
+        date: new Date("2025-01-02T00:00:00.000Z"),
         shadecircles: false,
         jnote: "Test jnote",
         notepad: "Test notepad",
@@ -270,24 +270,24 @@ describe("CrosswordService integration", () => {
     await createCrossword({
       title: "Monday Puzzle",
       dow: "Monday",
-      date: new Date("2024-01-01"),
+      date: new Date("2024-01-01T00:00:00.000Z"),
     });
     await createCrossword({
       title: "Tuesday Puzzle",
       dow: "Tuesday",
-      date: new Date("2024-01-02"),
+      date: new Date("2024-01-02T00:00:00.000Z"),
     });
     await createCrossword({
       title: "Wednesday Puzzle",
       dow: "Wednesday",
       grid: Array(16).fill("W"),
-      date: new Date("2024-01-03"),
+      date: new Date("2024-01-03T00:00:00.000Z"),
     });
     await createCrossword({
       title: "Thursday Puzzle",
       dow: "Thursday",
       grid: Array(16).fill("T"),
-      date: new Date("2024-01-04"),
+      date: new Date("2024-01-04T00:00:00.000Z"),
     });
 
     const easy = await service.getCrosswordByDifficulty("easy");

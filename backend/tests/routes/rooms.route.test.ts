@@ -251,7 +251,7 @@ const createCrossword = async (overrides: Partial<Crossword> = {}) => {
     row_size: rowSize,
     jnote: "Test note",
     notepad: "Test notepad",
-    date: new Date("2024-01-01"),
+    date: new Date("2024-01-01T00:00:00.000Z"),
     dow: "Monday",
     ...overrides,
   });
