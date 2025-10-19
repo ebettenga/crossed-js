@@ -70,10 +70,17 @@ export const ensureApprovedSnapshot = async ({
     diffOutput = serialized;
   }
 
-  if (diffOutput) {
+  if (
+    diffOutput &&
+    diffOutput.trim() !== "" &&
+    !diffOutput.includes("Compared values have no visual difference")
+  ) {
     console.log("\n--- Snapshot Diff ---");
     console.log(diffOutput);
     console.log("---------------------\n");
+  } else if (existing) {
+    // No meaningful diff; treat as approved without prompting
+    return;
   }
 
   const accepted = await promptYesNo(

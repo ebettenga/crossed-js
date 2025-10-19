@@ -90,9 +90,10 @@ export default function (
   // Remove friend
   fastify.delete("/friends/:id", async (request, reply) => {
     const { id } = request.params as { id: string };
+    const friendshipId = parseInt(id, 10);
     const friendship = await friendService.removeFriend(
       request.user.id,
-      parseInt(id),
+      friendshipId,
     );
     const recipients = Array.from(
       new Set([friendship.senderId, friendship.receiverId]),
@@ -101,7 +102,7 @@ export default function (
       recipients,
       "friends:updated",
       {
-        friendshipId: friendship.id,
+        friendshipId,
         status: friendship.status,
         action: "removed",
       },
