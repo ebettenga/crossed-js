@@ -1,0 +1,112 @@
+d480bf05f385606c062cf084da2f22d2
+"use strict";
+
+/* istanbul ignore next */
+function cov_d0gy46x73() {
+  var path = "/Users/ethanbett/Documents/Repos/crossed-js/backend/src/config/config-production.ts";
+  var hash = "ecfdf33ac959400611908b35f9f1af043e30765f";
+  var global = new Function("return this")();
+  var gcv = "__coverage__";
+  var coverageData = {
+    path: "/Users/ethanbett/Documents/Repos/crossed-js/backend/src/config/config-production.ts",
+    statementMap: {
+      "0": {
+        start: {
+          line: 2,
+          column: 0
+        },
+        end: {
+          line: 2,
+          column: 62
+        }
+      },
+      "1": {
+        start: {
+          line: 3,
+          column: 0
+        },
+        end: {
+          line: 3,
+          column: 24
+        }
+      },
+      "2": {
+        start: {
+          line: 4,
+          column: 0
+        },
+        end: {
+          line: 28,
+          column: 2
+        }
+      }
+    },
+    fnMap: {},
+    branchMap: {},
+    s: {
+      "0": 0,
+      "1": 0,
+      "2": 0
+    },
+    f: {},
+    b: {},
+    inputSourceMap: {
+      file: "/Users/ethanbett/Documents/Repos/crossed-js/backend/src/config/config-production.ts",
+      mappings: ";;;AAEa,QAAA,MAAM,GAAG;IACpB,MAAM,EAAE;QACN,SAAS,EAAE;YACT,MAAM,EAAE,aAAa;YACrB,OAAO,EAAE,EAAE;SACZ;KACF;IACD,EAAE,EAAE;QACF,IAAI,EAAE,UAAU;QAChB,IAAI,EAAE,OAAO,CAAC,GAAG,CAAC,MAAM;QACxB,IAAI,EAAE,QAAQ,CAAC,OAAO,CAAC,GAAG,CAAC,MAAM,CAAC;QAClC,QAAQ,EAAE,OAAO,CAAC,GAAG,CAAC,MAAM;QAC5B,QAAQ,EAAE,OAAO,CAAC,GAAG,CAAC,UAAU;QAChC,QAAQ,EAAE,OAAO,CAAC,GAAG,CAAC,WAAW;QACjC,WAAW,EAAE,KAAK;QAClB,OAAO,EAAE,KAAK;QACd,QAAQ,EAAE,CAAC,wBAAwB,CAAC;KACR;IAC9B,IAAI,EAAE;QACJ,iBAAiB,EAAE,OAAO,CAAC,GAAG,CAAC,mBAAoB;QACnD,sBAAsB,EAAE,IAAI;QAC5B,eAAe,EAAE,IAAI;KACtB;IACD,aAAa,EAAE,OAAO,CAAC,GAAG,CAAC,eAAgB;CAC5C,CAAC",
+      names: [],
+      sources: ["/Users/ethanbett/Documents/Repos/crossed-js/backend/src/config/config-production.ts"],
+      sourcesContent: ["import { PostgresConnectionOptions } from \"typeorm/driver/postgres/PostgresConnectionOptions\";\n\nexport const config = {\n  logger: {\n    transport: {\n      target: \"pino-pretty\",\n      options: {},\n    },\n  },\n  db: {\n    type: \"postgres\",\n    host: process.env.PGHOST,\n    port: parseInt(process.env.PGPORT),\n    username: process.env.PGUSER,\n    password: process.env.PGPASSWORD,\n    database: process.env.POSTGRES_DB,\n    synchronize: false,\n    logging: false,\n    entities: [\"./src/entities/**/*.ts\"],\n  } as PostgresConnectionOptions,\n  auth: {\n    secretAccessToken: process.env.SECRET_ACCESS_TOKEN!,\n    authRefreshTokenExpiry: \"3w\",\n    authTokenExpiry: \"2h\",\n  },\n  secretKeyPath: process.env.SECRET_KEY_PATH!,\n};\n"],
+      version: 3
+    },
+    _coverageSchema: "1a1c01bbd47fc00a2c39e90264f33305004495a9",
+    hash: "ecfdf33ac959400611908b35f9f1af043e30765f"
+  };
+  var coverage = global[gcv] || (global[gcv] = {});
+  if (!coverage[path] || coverage[path].hash !== hash) {
+    coverage[path] = coverageData;
+  }
+  var actualCoverage = coverage[path];
+  {
+    // @ts-ignore
+    cov_d0gy46x73 = function () {
+      return actualCoverage;
+    };
+  }
+  return actualCoverage;
+}
+cov_d0gy46x73();
+cov_d0gy46x73().s[0]++;
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+/* istanbul ignore next */
+cov_d0gy46x73().s[1]++;
+exports.config = void 0;
+/* istanbul ignore next */
+cov_d0gy46x73().s[2]++;
+exports.config = {
+  logger: {
+    transport: {
+      target: "pino-pretty",
+      options: {}
+    }
+  },
+  db: {
+    type: "postgres",
+    host: process.env.PGHOST,
+    port: parseInt(process.env.PGPORT),
+    username: process.env.PGUSER,
+    password: process.env.PGPASSWORD,
+    database: process.env.POSTGRES_DB,
+    synchronize: false,
+    logging: false,
+    entities: ["./src/entities/**/*.ts"]
+  },
+  auth: {
+    secretAccessToken: process.env.SECRET_ACCESS_TOKEN,
+    authRefreshTokenExpiry: "3w",
+    authTokenExpiry: "2h"
+  },
+  secretKeyPath: process.env.SECRET_KEY_PATH
+};
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJuYW1lcyI6WyJjb3ZfZDBneTQ2eDczIiwiYWN0dWFsQ292ZXJhZ2UiLCJzIiwiZXhwb3J0cyIsImNvbmZpZyIsImxvZ2dlciIsInRyYW5zcG9ydCIsInRhcmdldCIsIm9wdGlvbnMiLCJkYiIsInR5cGUiLCJob3N0IiwicHJvY2VzcyIsImVudiIsIlBHSE9TVCIsInBvcnQiLCJwYXJzZUludCIsIlBHUE9SVCIsInVzZXJuYW1lIiwiUEdVU0VSIiwicGFzc3dvcmQiLCJQR1BBU1NXT1JEIiwiZGF0YWJhc2UiLCJQT1NUR1JFU19EQiIsInN5bmNocm9uaXplIiwibG9nZ2luZyIsImVudGl0aWVzIiwiYXV0aCIsInNlY3JldEFjY2Vzc1Rva2VuIiwiU0VDUkVUX0FDQ0VTU19UT0tFTiIsImF1dGhSZWZyZXNoVG9rZW5FeHBpcnkiLCJhdXRoVG9rZW5FeHBpcnkiLCJzZWNyZXRLZXlQYXRoIiwiU0VDUkVUX0tFWV9QQVRIIl0sInNvdXJjZXMiOlsiL1VzZXJzL2V0aGFuYmV0dC9Eb2N1bWVudHMvUmVwb3MvY3Jvc3NlZC1qcy9iYWNrZW5kL3NyYy9jb25maWcvY29uZmlnLXByb2R1Y3Rpb24udHMiXSwic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0IHsgUG9zdGdyZXNDb25uZWN0aW9uT3B0aW9ucyB9IGZyb20gXCJ0eXBlb3JtL2RyaXZlci9wb3N0Z3Jlcy9Qb3N0Z3Jlc0Nvbm5lY3Rpb25PcHRpb25zXCI7XG5cbmV4cG9ydCBjb25zdCBjb25maWcgPSB7XG4gIGxvZ2dlcjoge1xuICAgIHRyYW5zcG9ydDoge1xuICAgICAgdGFyZ2V0OiBcInBpbm8tcHJldHR5XCIsXG4gICAgICBvcHRpb25zOiB7fSxcbiAgICB9LFxuICB9LFxuICBkYjoge1xuICAgIHR5cGU6IFwicG9zdGdyZXNcIixcbiAgICBob3N0OiBwcm9jZXNzLmVudi5QR0hPU1QsXG4gICAgcG9ydDogcGFyc2VJbnQocHJvY2Vzcy5lbnYuUEdQT1JUKSxcbiAgICB1c2VybmFtZTogcHJvY2Vzcy5lbnYuUEdVU0VSLFxuICAgIHBhc3N3b3JkOiBwcm9jZXNzLmVudi5QR1BBU1NXT1JELFxuICAgIGRhdGFiYXNlOiBwcm9jZXNzLmVudi5QT1NUR1JFU19EQixcbiAgICBzeW5jaHJvbml6ZTogZmFsc2UsXG4gICAgbG9nZ2luZzogZmFsc2UsXG4gICAgZW50aXRpZXM6IFtcIi4vc3JjL2VudGl0aWVzLyoqLyoudHNcIl0sXG4gIH0gYXMgUG9zdGdyZXNDb25uZWN0aW9uT3B0aW9ucyxcbiAgYXV0aDoge1xuICAgIHNlY3JldEFjY2Vzc1Rva2VuOiBwcm9jZXNzLmVudi5TRUNSRVRfQUNDRVNTX1RPS0VOISxcbiAgICBhdXRoUmVmcmVzaFRva2VuRXhwaXJ5OiBcIjN3XCIsXG4gICAgYXV0aFRva2VuRXhwaXJ5OiBcIjJoXCIsXG4gIH0sXG4gIHNlY3JldEtleVBhdGg6IHByb2Nlc3MuZW52LlNFQ1JFVF9LRVlfUEFUSCEsXG59O1xuIl0sIm1hcHBpbmdzIjoiOzs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7OztJQWNJO0lBQUFBLGFBQUEsWUFBQUEsQ0FBQTtNQUFBLE9BQUFDLGNBQUE7SUFBQTtFQUFBO0VBQUEsT0FBQUEsY0FBQTtBQUFBO0FBQUFELGFBQUE7QUFBQUEsYUFBQSxHQUFBRSxDQUFBOzs7Ozs7Ozs7QUFaU0MsT0FBQSxDQUFBQyxNQUFNLEdBQUc7RUFDcEJDLE1BQU0sRUFBRTtJQUNOQyxTQUFTLEVBQUU7TUFDVEMsTUFBTSxFQUFFLGFBQWE7TUFDckJDLE9BQU8sRUFBRTs7R0FFWjtFQUNEQyxFQUFFLEVBQUU7SUFDRkMsSUFBSSxFQUFFLFVBQVU7SUFDaEJDLElBQUksRUFBRUMsT0FBTyxDQUFDQyxHQUFHLENBQUNDLE1BQU07SUFDeEJDLElBQUksRUFBRUMsUUFBUSxDQUFDSixPQUFPLENBQUNDLEdBQUcsQ0FBQ0ksTUFBTSxDQUFDO0lBQ2xDQyxRQUFRLEVBQUVOLE9BQU8sQ0FBQ0MsR0FBRyxDQUFDTSxNQUFNO0lBQzVCQyxRQUFRLEVBQUVSLE9BQU8sQ0FBQ0MsR0FBRyxDQUFDUSxVQUFVO0lBQ2hDQyxRQUFRLEVBQUVWLE9BQU8sQ0FBQ0MsR0FBRyxDQUFDVSxXQUFXO0lBQ2pDQyxXQUFXLEVBQUUsS0FBSztJQUNsQkMsT0FBTyxFQUFFLEtBQUs7SUFDZEMsUUFBUSxFQUFFLENBQUMsd0JBQXdCO0dBQ1A7RUFDOUJDLElBQUksRUFBRTtJQUNKQyxpQkFBaUIsRUFBRWhCLE9BQU8sQ0FBQ0MsR0FBRyxDQUFDZ0IsbUJBQW9CO0lBQ25EQyxzQkFBc0IsRUFBRSxJQUFJO0lBQzVCQyxlQUFlLEVBQUU7R0FDbEI7RUFDREMsYUFBYSxFQUFFcEIsT0FBTyxDQUFDQyxHQUFHLENBQUNvQjtDQUM1QiIsImlnbm9yZUxpc3QiOltdfQ==

@@ -1,0 +1,375 @@
+235955a3d3bcd095655d2ea21c7840cb
+"use strict";
+
+/* istanbul ignore next */
+function cov_2js3tn7ehc() {
+  var path = "/Users/ethanbett/Documents/Repos/crossed-js/backend/src/config/config.ts";
+  var hash = "aaa125f4e66bf5c21af7b4a5ec383a47d5ac8007";
+  var global = new Function("return this")();
+  var gcv = "__coverage__";
+  var coverageData = {
+    path: "/Users/ethanbett/Documents/Repos/crossed-js/backend/src/config/config.ts",
+    statementMap: {
+      "0": {
+        start: {
+          line: 2,
+          column: 0
+        },
+        end: {
+          line: 2,
+          column: 62
+        }
+      },
+      "1": {
+        start: {
+          line: 3,
+          column: 0
+        },
+        end: {
+          line: 3,
+          column: 44
+        }
+      },
+      "2": {
+        start: {
+          line: 4,
+          column: 24
+        },
+        end: {
+          line: 4,
+          column: 50
+        }
+      },
+      "3": {
+        start: {
+          line: 5,
+          column: 23
+        },
+        end: {
+          line: 5,
+          column: 48
+        }
+      },
+      "4": {
+        start: {
+          line: 6,
+          column: 20
+        },
+        end: {
+          line: 6,
+          column: 42
+        }
+      },
+      "5": {
+        start: {
+          line: 7,
+          column: 28
+        },
+        end: {
+          line: 7,
+          column: 58
+        }
+      },
+      "6": {
+        start: {
+          line: 8,
+          column: 18
+        },
+        end: {
+          line: 19,
+          column: 1
+        }
+      },
+      "7": {
+        start: {
+          line: 9,
+          column: 16
+        },
+        end: {
+          line: 9,
+          column: 36
+        }
+      },
+      "8": {
+        start: {
+          line: 10,
+          column: 4
+        },
+        end: {
+          line: 18,
+          column: 5
+        }
+      },
+      "9": {
+        start: {
+          line: 12,
+          column: 12
+        },
+        end: {
+          line: 12,
+          column: 86
+        }
+      },
+      "10": {
+        start: {
+          line: 14,
+          column: 12
+        },
+        end: {
+          line: 16,
+          column: 13
+        }
+      },
+      "11": {
+        start: {
+          line: 15,
+          column: 16
+        },
+        end: {
+          line: 15,
+          column: 82
+        }
+      },
+      "12": {
+        start: {
+          line: 17,
+          column: 12
+        },
+        end: {
+          line: 17,
+          column: 81
+        }
+      },
+      "13": {
+        start: {
+          line: 20,
+          column: 0
+        },
+        end: {
+          line: 20,
+          column: 30
+        }
+      },
+      "14": {
+        start: {
+          line: 21,
+          column: 0
+        },
+        end: {
+          line: 21,
+          column: 42
+        }
+      }
+    },
+    fnMap: {
+      "0": {
+        name: "(anonymous_0)",
+        decl: {
+          start: {
+            line: 8,
+            column: 18
+          },
+          end: {
+            line: 8,
+            column: 19
+          }
+        },
+        loc: {
+          start: {
+            line: 8,
+            column: 24
+          },
+          end: {
+            line: 19,
+            column: 1
+          }
+        },
+        line: 8
+      }
+    },
+    branchMap: {
+      "0": {
+        loc: {
+          start: {
+            line: 10,
+            column: 4
+          },
+          end: {
+            line: 18,
+            column: 5
+          }
+        },
+        type: "switch",
+        locations: [{
+          start: {
+            line: 11,
+            column: 8
+          },
+          end: {
+            line: 12,
+            column: 86
+          }
+        }, {
+          start: {
+            line: 13,
+            column: 8
+          },
+          end: {
+            line: 17,
+            column: 81
+          }
+        }],
+        line: 10
+      },
+      "1": {
+        loc: {
+          start: {
+            line: 14,
+            column: 12
+          },
+          end: {
+            line: 16,
+            column: 13
+          }
+        },
+        type: "if",
+        locations: [{
+          start: {
+            line: 14,
+            column: 12
+          },
+          end: {
+            line: 16,
+            column: 13
+          }
+        }, {
+          start: {
+            line: undefined,
+            column: undefined
+          },
+          end: {
+            line: undefined,
+            column: undefined
+          }
+        }],
+        line: 14
+      }
+    },
+    s: {
+      "0": 0,
+      "1": 0,
+      "2": 0,
+      "3": 0,
+      "4": 0,
+      "5": 0,
+      "6": 0,
+      "7": 0,
+      "8": 0,
+      "9": 0,
+      "10": 0,
+      "11": 0,
+      "12": 0,
+      "13": 0,
+      "14": 0
+    },
+    f: {
+      "0": 0
+    },
+    b: {
+      "0": [0, 0],
+      "1": [0, 0]
+    },
+    inputSourceMap: {
+      file: "/Users/ethanbett/Documents/Repos/crossed-js/backend/src/config/config.ts",
+      mappings: ";;;AAAA,mDAA+C;AAC/C,iDAAuD;AACvD,2CAAiD;AACjD,2DAAiE;AAE1D,MAAM,SAAS,GAAG,GAAG,EAAE;IAC5B,MAAM,GAAG,GAAG,OAAO,CAAC,GAAG,CAAC,QAAQ,CAAC;IAEjC,QAAQ,GAAG,EAAE,CAAC;QACZ,KAAK,YAAY;YACf,OAAO,EAAE,GAAG,4BAAY,EAAE,GAAG,0BAAgB,EAAE,CAAC;QAClD;YACE,IAAI,OAAO,CAAC,GAAG,CAAC,EAAE,KAAK,MAAM,EAAE,CAAC;gBAC9B,OAAO,EAAE,GAAG,4BAAY,EAAE,GAAG,kBAAQ,EAAE,CAAC;YAC1C,CAAC;YACD,OAAO,EAAE,GAAG,4BAAY,EAAE,GAAG,qBAAW,EAAE,CAAC;IAC/C,CAAC;AACH,CAAC,CAAC;AAZW,QAAA,SAAS,aAYpB;AAEW,QAAA,MAAM,GAAG,IAAA,iBAAS,GAAE,CAAC",
+      names: [],
+      sources: ["/Users/ethanbett/Documents/Repos/crossed-js/backend/src/config/config.ts"],
+      sourcesContent: ["import { commonConfig } from \"./config-common\";\nimport { config as localConfig } from \"./config-local\";\nimport { config as ciConfig } from \"./config-ci\";\nimport { config as productionConfig } from \"./config-production\";\n\nexport const getConfig = () => {\n  const env = process.env.NODE_ENV;\n\n  switch (env) {\n    case \"production\":\n      return { ...commonConfig, ...productionConfig };\n    default:\n      if (process.env.CI === \"true\") {\n        return { ...commonConfig, ...ciConfig };\n      }\n      return { ...commonConfig, ...localConfig };\n  }\n};\n\nexport const config = getConfig();\n"],
+      version: 3
+    },
+    _coverageSchema: "1a1c01bbd47fc00a2c39e90264f33305004495a9",
+    hash: "aaa125f4e66bf5c21af7b4a5ec383a47d5ac8007"
+  };
+  var coverage = global[gcv] || (global[gcv] = {});
+  if (!coverage[path] || coverage[path].hash !== hash) {
+    coverage[path] = coverageData;
+  }
+  var actualCoverage = coverage[path];
+  {
+    // @ts-ignore
+    cov_2js3tn7ehc = function () {
+      return actualCoverage;
+    };
+  }
+  return actualCoverage;
+}
+cov_2js3tn7ehc();
+cov_2js3tn7ehc().s[0]++;
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+/* istanbul ignore next */
+cov_2js3tn7ehc().s[1]++;
+exports.config = exports.getConfig = void 0;
+const config_common_1 =
+/* istanbul ignore next */
+(cov_2js3tn7ehc().s[2]++, require("./config-common"));
+const config_local_1 =
+/* istanbul ignore next */
+(cov_2js3tn7ehc().s[3]++, require("./config-local"));
+const config_ci_1 =
+/* istanbul ignore next */
+(cov_2js3tn7ehc().s[4]++, require("./config-ci"));
+const config_production_1 =
+/* istanbul ignore next */
+(cov_2js3tn7ehc().s[5]++, require("./config-production"));
+/* istanbul ignore next */
+cov_2js3tn7ehc().s[6]++;
+const getConfig = () => {
+  /* istanbul ignore next */
+  cov_2js3tn7ehc().f[0]++;
+  const env =
+  /* istanbul ignore next */
+  (cov_2js3tn7ehc().s[7]++, process.env.NODE_ENV);
+  /* istanbul ignore next */
+  cov_2js3tn7ehc().s[8]++;
+  switch (env) {
+    case "production":
+      /* istanbul ignore next */
+      cov_2js3tn7ehc().b[0][0]++;
+      cov_2js3tn7ehc().s[9]++;
+      return {
+        ...config_common_1.commonConfig,
+        ...config_production_1.config
+      };
+    default:
+      /* istanbul ignore next */
+      cov_2js3tn7ehc().b[0][1]++;
+      cov_2js3tn7ehc().s[10]++;
+      if (process.env.CI === "true") {
+        /* istanbul ignore next */
+        cov_2js3tn7ehc().b[1][0]++;
+        cov_2js3tn7ehc().s[11]++;
+        return {
+          ...config_common_1.commonConfig,
+          ...config_ci_1.config
+        };
+      } else
+      /* istanbul ignore next */
+      {
+        cov_2js3tn7ehc().b[1][1]++;
+      }
+      cov_2js3tn7ehc().s[12]++;
+      return {
+        ...config_common_1.commonConfig,
+        ...config_local_1.config
+      };
+  }
+};
+/* istanbul ignore next */
+cov_2js3tn7ehc().s[13]++;
+exports.getConfig = getConfig;
+/* istanbul ignore next */
+cov_2js3tn7ehc().s[14]++;
+exports.config = (0, exports.getConfig)();
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJuYW1lcyI6WyJjb3ZfMmpzM3RuN2VoYyIsImFjdHVhbENvdmVyYWdlIiwicyIsImNvbmZpZ19jb21tb25fMSIsInJlcXVpcmUiLCJjb25maWdfbG9jYWxfMSIsImNvbmZpZ19jaV8xIiwiY29uZmlnX3Byb2R1Y3Rpb25fMSIsImdldENvbmZpZyIsImYiLCJlbnYiLCJwcm9jZXNzIiwiTk9ERV9FTlYiLCJiIiwiY29tbW9uQ29uZmlnIiwiY29uZmlnIiwiQ0kiLCJleHBvcnRzIl0sInNvdXJjZXMiOlsiL1VzZXJzL2V0aGFuYmV0dC9Eb2N1bWVudHMvUmVwb3MvY3Jvc3NlZC1qcy9iYWNrZW5kL3NyYy9jb25maWcvY29uZmlnLnRzIl0sInNvdXJjZXNDb250ZW50IjpbImltcG9ydCB7IGNvbW1vbkNvbmZpZyB9IGZyb20gXCIuL2NvbmZpZy1jb21tb25cIjtcbmltcG9ydCB7IGNvbmZpZyBhcyBsb2NhbENvbmZpZyB9IGZyb20gXCIuL2NvbmZpZy1sb2NhbFwiO1xuaW1wb3J0IHsgY29uZmlnIGFzIGNpQ29uZmlnIH0gZnJvbSBcIi4vY29uZmlnLWNpXCI7XG5pbXBvcnQgeyBjb25maWcgYXMgcHJvZHVjdGlvbkNvbmZpZyB9IGZyb20gXCIuL2NvbmZpZy1wcm9kdWN0aW9uXCI7XG5cbmV4cG9ydCBjb25zdCBnZXRDb25maWcgPSAoKSA9PiB7XG4gIGNvbnN0IGVudiA9IHByb2Nlc3MuZW52Lk5PREVfRU5WO1xuXG4gIHN3aXRjaCAoZW52KSB7XG4gICAgY2FzZSBcInByb2R1Y3Rpb25cIjpcbiAgICAgIHJldHVybiB7IC4uLmNvbW1vbkNvbmZpZywgLi4ucHJvZHVjdGlvbkNvbmZpZyB9O1xuICAgIGRlZmF1bHQ6XG4gICAgICBpZiAocHJvY2Vzcy5lbnYuQ0kgPT09IFwidHJ1ZVwiKSB7XG4gICAgICAgIHJldHVybiB7IC4uLmNvbW1vbkNvbmZpZywgLi4uY2lDb25maWcgfTtcbiAgICAgIH1cbiAgICAgIHJldHVybiB7IC4uLmNvbW1vbkNvbmZpZywgLi4ubG9jYWxDb25maWcgfTtcbiAgfVxufTtcblxuZXhwb3J0IGNvbnN0IGNvbmZpZyA9IGdldENvbmZpZygpO1xuIl0sIm1hcHBpbmdzIjoiOzs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7SUFjTTtJQUFBQSxjQUFBLFlBQUFBLENBQUE7TUFBQSxPQUFBQyxjQUFBO0lBQUE7RUFBQTtFQUFBLE9BQUFBLGNBQUE7QUFBQTtBQUFBRCxjQUFBO0FBQUFBLGNBQUEsR0FBQUUsQ0FBQTs7Ozs7OztBQWROLE1BQUFDLGVBQUE7QUFBQTtBQUFBLENBQUFILGNBQUEsR0FBQUUsQ0FBQSxPQUFBRSxPQUFBO0FBQ0EsTUFBQUMsY0FBQTtBQUFBO0FBQUEsQ0FBQUwsY0FBQSxHQUFBRSxDQUFBLE9BQUFFLE9BQUE7QUFDQSxNQUFBRSxXQUFBO0FBQUE7QUFBQSxDQUFBTixjQUFBLEdBQUFFLENBQUEsT0FBQUUsT0FBQTtBQUNBLE1BQUFHLG1CQUFBO0FBQUE7QUFBQSxDQUFBUCxjQUFBLEdBQUFFLENBQUEsT0FBQUUsT0FBQTtBQUFpRTtBQUFBSixjQUFBLEdBQUFFLENBQUE7QUFFMUQsTUFBTU0sU0FBUyxHQUFHQSxDQUFBLEtBQUs7RUFBQTtFQUFBUixjQUFBLEdBQUFTLENBQUE7RUFDNUIsTUFBTUMsR0FBRztFQUFBO0VBQUEsQ0FBQVYsY0FBQSxHQUFBRSxDQUFBLE9BQUdTLE9BQU8sQ0FBQ0QsR0FBRyxDQUFDRSxRQUFRO0VBQUM7RUFBQVosY0FBQSxHQUFBRSxDQUFBO0VBRWpDLFFBQVFRLEdBQUc7SUFDVCxLQUFLLFlBQVk7TUFBQTtNQUFBVixjQUFBLEdBQUFhLENBQUE7TUFBQWIsY0FBQSxHQUFBRSxDQUFBO01BQ2YsT0FBTztRQUFFLEdBQUdDLGVBQUEsQ0FBQVcsWUFBWTtRQUFFLEdBQUdQLG1CQUFBLENBQUFRO01BQWdCLENBQUU7SUFDakQ7TUFBQTtNQUFBZixjQUFBLEdBQUFhLENBQUE7TUFBQWIsY0FBQSxHQUFBRSxDQUFBO01BQ0UsSUFBSVMsT0FBTyxDQUFDRCxHQUFHLENBQUNNLEVBQUUsS0FBSyxNQUFNLEVBQUU7UUFBQTtRQUFBaEIsY0FBQSxHQUFBYSxDQUFBO1FBQUFiLGNBQUEsR0FBQUUsQ0FBQTtRQUM3QixPQUFPO1VBQUUsR0FBR0MsZUFBQSxDQUFBVyxZQUFZO1VBQUUsR0FBR1IsV0FBQSxDQUFBUztRQUFRLENBQUU7TUFDekMsQ0FBQztNQUFBO01BQUE7UUFBQWYsY0FBQSxHQUFBYSxDQUFBO01BQUE7TUFBQWIsY0FBQSxHQUFBRSxDQUFBO01BQ0QsT0FBTztRQUFFLEdBQUdDLGVBQUEsQ0FBQVcsWUFBWTtRQUFFLEdBQUdULGNBQUEsQ0FBQVU7TUFBVyxDQUFFO0VBQzlDO0FBQ0YsQ0FBQztBQUFDO0FBQUFmLGNBQUEsR0FBQUUsQ0FBQTtBQVpXZSxPQUFBLENBQUFULFNBQVMsR0FBQUEsU0FBQTtBQVlwQjtBQUFBUixjQUFBLEdBQUFFLENBQUE7QUFFV2UsT0FBQSxDQUFBRixNQUFNLEdBQUcsSUFBQUUsT0FBQSxDQUFBVCxTQUFTLEdBQUUiLCJpZ25vcmVMaXN0IjpbXX0=

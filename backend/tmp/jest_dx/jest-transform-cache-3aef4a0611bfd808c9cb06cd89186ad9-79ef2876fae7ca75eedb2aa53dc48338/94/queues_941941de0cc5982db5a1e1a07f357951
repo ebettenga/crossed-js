@@ -1,0 +1,201 @@
+f20d0869d6e107daa9ffea01f0868c9a
+"use strict";
+
+/* istanbul ignore next */
+function cov_2gvtnaskbw() {
+  var path = "/Users/ethanbett/Documents/Repos/crossed-js/backend/src/jobs/queues.ts";
+  var hash = "9c6df7d188f62173f01464472968ad86b645402b";
+  var global = new Function("return this")();
+  var gcv = "__coverage__";
+  var coverageData = {
+    path: "/Users/ethanbett/Documents/Repos/crossed-js/backend/src/jobs/queues.ts",
+    statementMap: {
+      "0": {
+        start: {
+          line: 2,
+          column: 0
+        },
+        end: {
+          line: 2,
+          column: 62
+        }
+      },
+      "1": {
+        start: {
+          line: 3,
+          column: 0
+        },
+        end: {
+          line: 3,
+          column: 114
+        }
+      },
+      "2": {
+        start: {
+          line: 4,
+          column: 17
+        },
+        end: {
+          line: 4,
+          column: 34
+        }
+      },
+      "3": {
+        start: {
+          line: 5,
+          column: 17
+        },
+        end: {
+          line: 5,
+          column: 44
+        }
+      },
+      "4": {
+        start: {
+          line: 7,
+          column: 0
+        },
+        end: {
+          line: 9,
+          column: 3
+        }
+      },
+      "5": {
+        start: {
+          line: 10,
+          column: 0
+        },
+        end: {
+          line: 16,
+          column: 3
+        }
+      },
+      "6": {
+        start: {
+          line: 17,
+          column: 0
+        },
+        end: {
+          line: 23,
+          column: 3
+        }
+      },
+      "7": {
+        start: {
+          line: 24,
+          column: 0
+        },
+        end: {
+          line: 30,
+          column: 3
+        }
+      },
+      "8": {
+        start: {
+          line: 32,
+          column: 0
+        },
+        end: {
+          line: 38,
+          column: 3
+        }
+      }
+    },
+    fnMap: {},
+    branchMap: {},
+    s: {
+      "0": 0,
+      "1": 0,
+      "2": 0,
+      "3": 0,
+      "4": 0,
+      "5": 0,
+      "6": 0,
+      "7": 0,
+      "8": 0
+    },
+    f: {},
+    b: {},
+    inputSourceMap: {
+      file: "/Users/ethanbett/Documents/Repos/crossed-js/backend/src/jobs/queues.ts",
+      mappings: ";;;AAAA,mCAA+B;AAC/B,6CAA0C;AAkB1C,2BAA2B;AACd,QAAA,UAAU,GAAG,IAAI,cAAK,CAAe,OAAO,EAAE;IACzD,UAAU,EAAE,eAAM,CAAC,KAAK,CAAC,OAAO;CACjC,CAAC,CAAC;AAEU,QAAA,kBAAkB,GAAG,IAAI,cAAK,CAAC,gBAAgB,EAAE;IAC5D,UAAU,EAAE,eAAM,CAAC,KAAK,CAAC,OAAO;IAChC,iBAAiB,EAAE;QACjB,gBAAgB,EAAE,IAAI;QACtB,YAAY,EAAE,IAAI;KACnB;CACF,CAAC,CAAC;AAEU,QAAA,gBAAgB,GAAG,IAAI,cAAK,CAAqB,cAAc,EAAE;IAC5E,UAAU,EAAE,eAAM,CAAC,KAAK,CAAC,OAAO;IAChC,iBAAiB,EAAE;QACjB,gBAAgB,EAAE,IAAI;QACtB,YAAY,EAAE,IAAI;KACnB;CACF,CAAC,CAAC;AAEU,QAAA,mBAAmB,GAAG,IAAI,cAAK,CAC1C,iBAAiB,EACjB;IACE,UAAU,EAAE,eAAM,CAAC,KAAK,CAAC,OAAO;IAChC,iBAAiB,EAAE;QACjB,gBAAgB,EAAE,IAAI;QACtB,YAAY,EAAE,IAAI;KACnB;CACF,CACF,CAAC;AAEF,6BAA6B;AAC7B,0BAAkB,CAAC,kBAAkB,CACnC,gBAAgB,EAChB;IACE,KAAK,EAAE,eAAM,CAAC,MAAM,CAAC,OAAO,CAAC,QAAQ;CACtC,EACD;IACE,IAAI,EAAE,gBAAgB;IACtB,IAAI,EAAE,EAAE;IACR,IAAI,EAAE,EAAE,EAAE,kCAAkC;CAC7C,CACF,CAAC;AAEF,4BAA4B",
+      names: [],
+      sources: ["/Users/ethanbett/Documents/Repos/crossed-js/backend/src/jobs/queues.ts"],
+      sourcesContent: ["import { Queue } from \"bullmq\";\nimport { config } from \"../config/config\";\n\n// Define your job types here\nexport interface EmailJobData {\n  to: string;\n  subject: string;\n  body: string;\n}\n\nexport interface GameTimeoutJobData {\n  roomId: number;\n}\n\nexport interface GameInactivityJobData {\n  roomId: number;\n  lastActivityTimestamp?: number;\n}\n\n// Create and export queues\nexport const emailQueue = new Queue<EmailJobData>(\"email\", {\n  connection: config.redis.default,\n});\n\nexport const statusCleanupQueue = new Queue(\"status-cleanup\", {\n  connection: config.redis.default,\n  defaultJobOptions: {\n    removeOnComplete: true,\n    removeOnFail: 1000,\n  },\n});\n\nexport const gameTimeoutQueue = new Queue<GameTimeoutJobData>(\"game-timeout\", {\n  connection: config.redis.default,\n  defaultJobOptions: {\n    removeOnComplete: true,\n    removeOnFail: 1000,\n  },\n});\n\nexport const gameInactivityQueue = new Queue<GameInactivityJobData>(\n  \"game-inactivity\",\n  {\n    connection: config.redis.default,\n    defaultJobOptions: {\n      removeOnComplete: true,\n      removeOnFail: 1000,\n    },\n  },\n);\n\n// Add initial repeatable job\nstatusCleanupQueue.upsertJobScheduler(\n  \"status-cleanup\",\n  {\n    every: config.status.cleanup.interval,\n  },\n  {\n    name: \"status-cleanup\",\n    data: {},\n    opts: {}, // Optional additional job options\n  },\n);\n\n// Add more queues as needed\n"],
+      version: 3
+    },
+    _coverageSchema: "1a1c01bbd47fc00a2c39e90264f33305004495a9",
+    hash: "9c6df7d188f62173f01464472968ad86b645402b"
+  };
+  var coverage = global[gcv] || (global[gcv] = {});
+  if (!coverage[path] || coverage[path].hash !== hash) {
+    coverage[path] = coverageData;
+  }
+  var actualCoverage = coverage[path];
+  {
+    // @ts-ignore
+    cov_2gvtnaskbw = function () {
+      return actualCoverage;
+    };
+  }
+  return actualCoverage;
+}
+cov_2gvtnaskbw();
+cov_2gvtnaskbw().s[0]++;
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+/* istanbul ignore next */
+cov_2gvtnaskbw().s[1]++;
+exports.gameInactivityQueue = exports.gameTimeoutQueue = exports.statusCleanupQueue = exports.emailQueue = void 0;
+const bullmq_1 =
+/* istanbul ignore next */
+(cov_2gvtnaskbw().s[2]++, require("bullmq"));
+const config_1 =
+/* istanbul ignore next */
+(cov_2gvtnaskbw().s[3]++, require("../config/config"));
+// Create and export queues
+/* istanbul ignore next */
+cov_2gvtnaskbw().s[4]++;
+exports.emailQueue = new bullmq_1.Queue("email", {
+  connection: config_1.config.redis.default
+});
+/* istanbul ignore next */
+cov_2gvtnaskbw().s[5]++;
+exports.statusCleanupQueue = new bullmq_1.Queue("status-cleanup", {
+  connection: config_1.config.redis.default,
+  defaultJobOptions: {
+    removeOnComplete: true,
+    removeOnFail: 1000
+  }
+});
+/* istanbul ignore next */
+cov_2gvtnaskbw().s[6]++;
+exports.gameTimeoutQueue = new bullmq_1.Queue("game-timeout", {
+  connection: config_1.config.redis.default,
+  defaultJobOptions: {
+    removeOnComplete: true,
+    removeOnFail: 1000
+  }
+});
+/* istanbul ignore next */
+cov_2gvtnaskbw().s[7]++;
+exports.gameInactivityQueue = new bullmq_1.Queue("game-inactivity", {
+  connection: config_1.config.redis.default,
+  defaultJobOptions: {
+    removeOnComplete: true,
+    removeOnFail: 1000
+  }
+});
+// Add initial repeatable job
+/* istanbul ignore next */
+cov_2gvtnaskbw().s[8]++;
+exports.statusCleanupQueue.upsertJobScheduler("status-cleanup", {
+  every: config_1.config.status.cleanup.interval
+}, {
+  name: "status-cleanup",
+  data: {},
+  opts: {} // Optional additional job options
+});
+// Add more queues as needed
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJuYW1lcyI6WyJjb3ZfMmd2dG5hc2tidyIsImFjdHVhbENvdmVyYWdlIiwicyIsImJ1bGxtcV8xIiwicmVxdWlyZSIsImNvbmZpZ18xIiwiZXhwb3J0cyIsImVtYWlsUXVldWUiLCJRdWV1ZSIsImNvbm5lY3Rpb24iLCJjb25maWciLCJyZWRpcyIsImRlZmF1bHQiLCJzdGF0dXNDbGVhbnVwUXVldWUiLCJkZWZhdWx0Sm9iT3B0aW9ucyIsInJlbW92ZU9uQ29tcGxldGUiLCJyZW1vdmVPbkZhaWwiLCJnYW1lVGltZW91dFF1ZXVlIiwiZ2FtZUluYWN0aXZpdHlRdWV1ZSIsInVwc2VydEpvYlNjaGVkdWxlciIsImV2ZXJ5Iiwic3RhdHVzIiwiY2xlYW51cCIsImludGVydmFsIiwibmFtZSIsImRhdGEiLCJvcHRzIl0sInNvdXJjZXMiOlsiL1VzZXJzL2V0aGFuYmV0dC9Eb2N1bWVudHMvUmVwb3MvY3Jvc3NlZC1qcy9iYWNrZW5kL3NyYy9qb2JzL3F1ZXVlcy50cyJdLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQgeyBRdWV1ZSB9IGZyb20gXCJidWxsbXFcIjtcbmltcG9ydCB7IGNvbmZpZyB9IGZyb20gXCIuLi9jb25maWcvY29uZmlnXCI7XG5cbi8vIERlZmluZSB5b3VyIGpvYiB0eXBlcyBoZXJlXG5leHBvcnQgaW50ZXJmYWNlIEVtYWlsSm9iRGF0YSB7XG4gIHRvOiBzdHJpbmc7XG4gIHN1YmplY3Q6IHN0cmluZztcbiAgYm9keTogc3RyaW5nO1xufVxuXG5leHBvcnQgaW50ZXJmYWNlIEdhbWVUaW1lb3V0Sm9iRGF0YSB7XG4gIHJvb21JZDogbnVtYmVyO1xufVxuXG5leHBvcnQgaW50ZXJmYWNlIEdhbWVJbmFjdGl2aXR5Sm9iRGF0YSB7XG4gIHJvb21JZDogbnVtYmVyO1xuICBsYXN0QWN0aXZpdHlUaW1lc3RhbXA/OiBudW1iZXI7XG59XG5cbi8vIENyZWF0ZSBhbmQgZXhwb3J0IHF1ZXVlc1xuZXhwb3J0IGNvbnN0IGVtYWlsUXVldWUgPSBuZXcgUXVldWU8RW1haWxKb2JEYXRhPihcImVtYWlsXCIsIHtcbiAgY29ubmVjdGlvbjogY29uZmlnLnJlZGlzLmRlZmF1bHQsXG59KTtcblxuZXhwb3J0IGNvbnN0IHN0YXR1c0NsZWFudXBRdWV1ZSA9IG5ldyBRdWV1ZShcInN0YXR1cy1jbGVhbnVwXCIsIHtcbiAgY29ubmVjdGlvbjogY29uZmlnLnJlZGlzLmRlZmF1bHQsXG4gIGRlZmF1bHRKb2JPcHRpb25zOiB7XG4gICAgcmVtb3ZlT25Db21wbGV0ZTogdHJ1ZSxcbiAgICByZW1vdmVPbkZhaWw6IDEwMDAsXG4gIH0sXG59KTtcblxuZXhwb3J0IGNvbnN0IGdhbWVUaW1lb3V0UXVldWUgPSBuZXcgUXVldWU8R2FtZVRpbWVvdXRKb2JEYXRhPihcImdhbWUtdGltZW91dFwiLCB7XG4gIGNvbm5lY3Rpb246IGNvbmZpZy5yZWRpcy5kZWZhdWx0LFxuICBkZWZhdWx0Sm9iT3B0aW9uczoge1xuICAgIHJlbW92ZU9uQ29tcGxldGU6IHRydWUsXG4gICAgcmVtb3ZlT25GYWlsOiAxMDAwLFxuICB9LFxufSk7XG5cbmV4cG9ydCBjb25zdCBnYW1lSW5hY3Rpdml0eVF1ZXVlID0gbmV3IFF1ZXVlPEdhbWVJbmFjdGl2aXR5Sm9iRGF0YT4oXG4gIFwiZ2FtZS1pbmFjdGl2aXR5XCIsXG4gIHtcbiAgICBjb25uZWN0aW9uOiBjb25maWcucmVkaXMuZGVmYXVsdCxcbiAgICBkZWZhdWx0Sm9iT3B0aW9uczoge1xuICAgICAgcmVtb3ZlT25Db21wbGV0ZTogdHJ1ZSxcbiAgICAgIHJlbW92ZU9uRmFpbDogMTAwMCxcbiAgICB9LFxuICB9LFxuKTtcblxuLy8gQWRkIGluaXRpYWwgcmVwZWF0YWJsZSBqb2JcbnN0YXR1c0NsZWFudXBRdWV1ZS51cHNlcnRKb2JTY2hlZHVsZXIoXG4gIFwic3RhdHVzLWNsZWFudXBcIixcbiAge1xuICAgIGV2ZXJ5OiBjb25maWcuc3RhdHVzLmNsZWFudXAuaW50ZXJ2YWwsXG4gIH0sXG4gIHtcbiAgICBuYW1lOiBcInN0YXR1cy1jbGVhbnVwXCIsXG4gICAgZGF0YToge30sXG4gICAgb3B0czoge30sIC8vIE9wdGlvbmFsIGFkZGl0aW9uYWwgam9iIG9wdGlvbnNcbiAgfSxcbik7XG5cbi8vIEFkZCBtb3JlIHF1ZXVlcyBhcyBuZWVkZWRcbiJdLCJtYXBwaW5ncyI6Ijs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7SUE4Qkc7SUFBQUEsY0FBQSxZQUFBQSxDQUFBO01BQUEsT0FBQUMsY0FBQTtJQUFBO0VBQUE7RUFBQSxPQUFBQSxjQUFBO0FBQUE7QUFBQUQsY0FBQTtBQUFBQSxjQUFBLEdBQUFFLENBQUE7Ozs7Ozs7QUE5QkgsTUFBQUMsUUFBQTtBQUFBO0FBQUEsQ0FBQUgsY0FBQSxHQUFBRSxDQUFBLE9BQUFFLE9BQUE7QUFDQSxNQUFBQyxRQUFBO0FBQUE7QUFBQSxDQUFBTCxjQUFBLEdBQUFFLENBQUEsT0FBQUUsT0FBQTtBQWtCQTtBQUFBO0FBQUFKLGNBQUEsR0FBQUUsQ0FBQTtBQUNhSSxPQUFBLENBQUFDLFVBQVUsR0FBRyxJQUFJSixRQUFBLENBQUFLLEtBQUssQ0FBZSxPQUFPLEVBQUU7RUFDekRDLFVBQVUsRUFBRUosUUFBQSxDQUFBSyxNQUFNLENBQUNDLEtBQUssQ0FBQ0M7Q0FDMUIsQ0FBQztBQUFDO0FBQUFaLGNBQUEsR0FBQUUsQ0FBQTtBQUVVSSxPQUFBLENBQUFPLGtCQUFrQixHQUFHLElBQUlWLFFBQUEsQ0FBQUssS0FBSyxDQUFDLGdCQUFnQixFQUFFO0VBQzVEQyxVQUFVLEVBQUVKLFFBQUEsQ0FBQUssTUFBTSxDQUFDQyxLQUFLLENBQUNDLE9BQU87RUFDaENFLGlCQUFpQixFQUFFO0lBQ2pCQyxnQkFBZ0IsRUFBRSxJQUFJO0lBQ3RCQyxZQUFZLEVBQUU7O0NBRWpCLENBQUM7QUFBQztBQUFBaEIsY0FBQSxHQUFBRSxDQUFBO0FBRVVJLE9BQUEsQ0FBQVcsZ0JBQWdCLEdBQUcsSUFBSWQsUUFBQSxDQUFBSyxLQUFLLENBQXFCLGNBQWMsRUFBRTtFQUM1RUMsVUFBVSxFQUFFSixRQUFBLENBQUFLLE1BQU0sQ0FBQ0MsS0FBSyxDQUFDQyxPQUFPO0VBQ2hDRSxpQkFBaUIsRUFBRTtJQUNqQkMsZ0JBQWdCLEVBQUUsSUFBSTtJQUN0QkMsWUFBWSxFQUFFOztDQUVqQixDQUFDO0FBQUM7QUFBQWhCLGNBQUEsR0FBQUUsQ0FBQTtBQUVVSSxPQUFBLENBQUFZLG1CQUFtQixHQUFHLElBQUlmLFFBQUEsQ0FBQUssS0FBSyxDQUMxQyxpQkFBaUIsRUFDakI7RUFDRUMsVUFBVSxFQUFFSixRQUFBLENBQUFLLE1BQU0sQ0FBQ0MsS0FBSyxDQUFDQyxPQUFPO0VBQ2hDRSxpQkFBaUIsRUFBRTtJQUNqQkMsZ0JBQWdCLEVBQUUsSUFBSTtJQUN0QkMsWUFBWSxFQUFFOztDQUVqQixDQUNGO0FBRUQ7QUFBQTtBQUFBaEIsY0FBQSxHQUFBRSxDQUFBO0FBQ0FJLE9BQUEsQ0FBQU8sa0JBQWtCLENBQUNNLGtCQUFrQixDQUNuQyxnQkFBZ0IsRUFDaEI7RUFDRUMsS0FBSyxFQUFFZixRQUFBLENBQUFLLE1BQU0sQ0FBQ1csTUFBTSxDQUFDQyxPQUFPLENBQUNDO0NBQzlCLEVBQ0Q7RUFDRUMsSUFBSSxFQUFFLGdCQUFnQjtFQUN0QkMsSUFBSSxFQUFFLEVBQUU7RUFDUkMsSUFBSSxFQUFFLEVBQUUsQ0FBRTtDQUNYLENBQ0Y7QUFFRCIsImlnbm9yZUxpc3QiOltdfQ==
