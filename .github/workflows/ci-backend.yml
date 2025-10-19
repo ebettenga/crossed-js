@@ -25,6 +25,8 @@ jobs:
           POSTGRES_DB: crossed_test
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
+          TZ: America/Chicago
+          PGTZ: America/Chicago
         options: >-
           --health-cmd="pg_isready -U postgres"
           --health-interval=10s
