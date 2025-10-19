@@ -20,6 +20,32 @@ const ensureDirectory = (dir: string) => {
   }
 };
 
+/**
+ * Recursively removes `created_at` and `updated_at` fields from objects and arrays.
+ * This ensures snapshot comparisons ignore dynamic timestamp fields.
+ */
+const stripTimestampFields = (value: unknown): unknown => {
+  if (value === null || value === undefined) {
+    return value;
+  }
+
+  if (Array.isArray(value)) {
+    return value.map(stripTimestampFields);
+  }
+
+  if (typeof value === "object") {
+    const result: Record<string, unknown> = {};
+    for (const [key, val] of Object.entries(value)) {
+      if (key !== "created_at" && key !== "updated_at") {
+        result[key] = stripTimestampFields(val);
+      }
+    }
+    return result;
+  }
+
+  return value;
+};
+
 const promptYesNo = async (question: string) => {
   const rl = readline.createInterface({ input, output });
   try {
@@ -43,7 +69,10 @@ export const ensureApprovedSnapshot = async ({
   );
   const filename = `${sanitizeFilename(snapshotName)}.json`;
   const snapshotPath = path.join(snapshotDir, filename);
-  const serialized = JSON.stringify(received, null, 2);
+
+  // Strip timestamp fields from received data before comparison
+  const strippedReceived = stripTimestampFields(received);
+  const serialized = JSON.stringify(strippedReceived, null, 2);
 
   let existing: string | undefined;
   try {
@@ -60,7 +89,9 @@ export const ensureApprovedSnapshot = async ({
   if (existing) {
     try {
       const parsedExisting = JSON.parse(existing);
-      diffOutput = diffValues(parsedExisting, received, {
+      // Strip timestamp fields from existing snapshot before comparison
+      const strippedExisting = stripTimestampFields(parsedExisting);
+      diffOutput = diffValues(strippedExisting, strippedReceived, {
         expand: false,
       }) ?? "";
     } catch {

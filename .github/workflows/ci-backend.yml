@@ -74,14 +74,9 @@ jobs:
             sleep 1
           done
 
-      - name: Load test data
-        run: yarn ci:load-test-data
-        env:
-          PGPASSWORD: test_password
-        working-directory: backend
 
       - name: Run tests
         env:
           DATABASE_URL: postgres://test_user:test_password@localhost:5432/test_db
-        run: yarn test
+        run: yarn test --forceExit
         working-directory: backend
