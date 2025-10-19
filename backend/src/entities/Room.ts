@@ -74,6 +74,14 @@ export class Room {
   })
   join_type?: JoinMethod;
 
+  get join(): JoinMethod | undefined {
+    return this.join_type;
+  }
+
+  set join(value: JoinMethod | undefined) {
+    this.join_type = value;
+  }
+
   @ManyToMany("User", { eager: true })
   @JoinTable({
     name: "room_players",
