@@ -135,7 +135,7 @@ export class RoomService {
       if (!cachedGameInfo.correctGuessDetails[player.id]) {
         cachedGameInfo.correctGuessDetails[player.id] = [];
       }
-      this.redisService.cacheGame(room.id.toString(), cachedGameInfo);
+      await this.redisService.cacheGame(room.id.toString(), cachedGameInfo);
     }
 
     // If room is full based on game type, change status to playing
@@ -580,7 +580,7 @@ export class RoomService {
     }
 
     // Update cache after DB write
-    this.redisService.cacheGame(room.id.toString(), cachedGameInfo);
+    await this.redisService.cacheGame(room.id.toString(), cachedGameInfo);
 
     // Invalidate view cache so clients receive updated view
     room.markModified();

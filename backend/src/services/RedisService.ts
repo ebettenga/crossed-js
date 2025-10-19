@@ -45,9 +45,13 @@ export class RedisService {
     return this.serverId;
   }
 
-  cacheGame(gameId: string, game: CachedGameInfo) {
-    // Cache
-    this.redis.set(gameId, JSON.stringify(game), "EX", config.redis.gameTTL);
+  async cacheGame(gameId: string, game: CachedGameInfo): Promise<void> {
+    await this.redis.set(
+      gameId,
+      JSON.stringify(game),
+      "EX",
+      config.redis.gameTTL,
+    );
   }
 
   async getGame(gameId: string): Promise<CachedGameInfo | null> {

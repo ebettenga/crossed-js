@@ -309,7 +309,7 @@ export const createGameInactivityWorker = (
         }
 
         // Commit the transaction
-        redisService.cacheGame(room.id.toString(), cachedGameInfo);
+        await redisService.cacheGame(room.id.toString(), cachedGameInfo);
         await queryRunner.commitTransaction();
       } catch (error) {
         // Rollback transaction on error
