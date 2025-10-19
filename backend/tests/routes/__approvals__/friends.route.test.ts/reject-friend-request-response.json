@@ -1,0 +1,9 @@
+{
+  "id": 1,
+  "status": "rejected",
+  "senderId": 2,
+  "receiverId": 1,
+  "senderUsername": "reject_sender",
+  "receiverUsername": "reject_receiver",
+  "accepted": false
+}
