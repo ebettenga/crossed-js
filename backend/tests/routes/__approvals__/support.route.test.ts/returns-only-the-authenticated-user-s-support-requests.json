@@ -1,0 +1,18 @@
+[
+  {
+    "id": 1,
+    "type": "support",
+    "comment": "My first request",
+    "userId": 1,
+    "username": "user1",
+    "hasCreatedAt": true
+  },
+  {
+    "id": 2,
+    "type": "suggestion",
+    "comment": "My suggestion",
+    "userId": 1,
+    "username": "user1",
+    "hasCreatedAt": true
+  }
+]

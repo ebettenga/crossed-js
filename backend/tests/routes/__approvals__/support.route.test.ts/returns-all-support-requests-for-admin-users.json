@@ -1,0 +1,26 @@
+[
+  {
+    "id": 1,
+    "type": "support",
+    "comment": "I need help with my account",
+    "userId": 2,
+    "username": "user1",
+    "hasCreatedAt": true
+  },
+  {
+    "id": 2,
+    "type": "suggestion",
+    "comment": "Add dark mode please",
+    "userId": 3,
+    "username": "user2",
+    "hasCreatedAt": true
+  },
+  {
+    "id": 3,
+    "type": "support",
+    "comment": "Admin support request",
+    "userId": 1,
+    "username": "admin",
+    "hasCreatedAt": true
+  }
+]

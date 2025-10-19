@@ -1,0 +1,8 @@
+{
+  "id": 1,
+  "type": "support",
+  "comment": "I need help with my account settings",
+  "userId": 1,
+  "username": "support_creator",
+  "hasCreatedAt": true
+}
