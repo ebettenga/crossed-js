@@ -221,12 +221,14 @@ afterAll(async () => {
 
 describe("RoomService integration", () => {
   it("creates a new room, persists stats, and enqueues timeout jobs", async () => {
+    const host = await createUser();
+    const hostRecord = await dataSource
+      .getRepository(User)
+      .findOneByOrFail({ id: host.id });
+    await createCrossword({ dow: "Monday" });
     const service = createRoomService();
 
-    const host = await createUser();
-    await createCrossword();
-
-    const room = await service.joinRoom(host, "easy", "1v1");
+    const room = await service.joinRoom(hostRecord, "easy", "1v1");
 
     expect(room.id).toBeGreaterThan(0);
     expect(room.join).toBe(JoinMethod.RANDOM);
@@ -254,13 +256,22 @@ describe("RoomService integration", () => {
   });
 
   it("adds a player to an existing room, starts the game, and syncs redis cache", async () => {
-    const service = createRoomService();
-
     const existingPlayer = await createUser();
     const joiningPlayer = await createUser();
-    const crossword = await createCrossword();
+    const existingRecord = await dataSource
+      .getRepository(User)
+      .findOneByOrFail({ id: existingPlayer.id });
+    const joiningRecord = await dataSource
+      .getRepository(User)
+      .findOneByOrFail({ id: joiningPlayer.id });
+    const crossword = await createCrossword({ dow: "Monday" });
+    const service = createRoomService();
 
-    const pendingRoom = await service.joinRoom(existingPlayer, "easy", "1v1");
+    const pendingRoom = await service.joinRoom(
+      existingRecord,
+      "easy",
+      "1v1",
+    );
     const cachedGameInfo = {
       lastActivityAt: Date.now(),
       foundLetters: Array(crossword.grid.length).fill("*"),
@@ -284,15 +295,15 @@ describe("RoomService integration", () => {
     });
     expect(hydratedRoom).not.toBeNull();
 
-    await service.joinExistingRoom(hydratedRoom!, joiningPlayer.id);
+    await service.joinExistingRoom(hydratedRoom!, joiningRecord.id);
 
     const updatedRoom = await roomRepository.findOneBy({ id: pendingRoom.id });
     expect(updatedRoom?.status).toBe("playing");
     expect(updatedRoom?.players.map((p) => p.id).sort()).toEqual(
-      [existingPlayer.id, joiningPlayer.id].sort(),
+      [existingRecord.id, joiningRecord.id].sort(),
     );
 
-    expect(inSpy).toHaveBeenCalledWith(`user_${joiningPlayer.id}`);
+    expect(inSpy).toHaveBeenCalledWith(`user_${joiningRecord.id}`);
     expect(toSpy).toHaveBeenCalledWith(pendingRoom.id.toString());
     expect(emitSpy).toHaveBeenCalledWith(
       "game_started",
@@ -304,11 +315,11 @@ describe("RoomService integration", () => {
     const cached = await redisClient.get(pendingRoom.id.toString());
     expect(cached).not.toBeNull();
     const parsed = JSON.parse(cached!);
-    expect(parsed.userGuessCounts[joiningPlayer.id]).toEqual({
+    expect(parsed.userGuessCounts[joiningRecord.id]).toEqual({
       correct: 0,
       incorrect: 0,
     });
-    expect(parsed.correctGuessDetails[joiningPlayer.id]).toEqual([]);
+    expect(parsed.correctGuessDetails[joiningRecord.id]).toEqual([]);
 
     const inactivityJobs = await gameInactivityQueue.getDelayed();
     const hasJob = inactivityJobs.some(
@@ -318,15 +329,22 @@ describe("RoomService integration", () => {
   });
 
   it("rejects cancellation attempts by non-participants", async () => {
-    const service = createRoomService();
-
     const owner = await createUser();
     const outsider = await createUser();
-    await createCrossword();
+    const ownerRecord = await dataSource
+      .getRepository(User)
+      .findOneByOrFail({ id: owner.id });
+    const outsiderRecord = await dataSource
+      .getRepository(User)
+      .findOneByOrFail({ id: outsider.id });
+    await createCrossword({ dow: "Monday" });
+    const service = createRoomService();
 
-    const room = await service.joinRoom(owner, "easy", "1v1");
+    const room = await service.joinRoom(ownerRecord, "easy", "1v1");
 
-    await expect(service.cancelRoom(room.id, outsider.id)).rejects.toThrow(
+    await expect(
+      service.cancelRoom(room.id, outsiderRecord.id),
+    ).rejects.toThrow(
       ForbiddenError,
     );
 
@@ -337,13 +355,15 @@ describe("RoomService integration", () => {
   });
 
   it("allows a participant to cancel a pending room", async () => {
+    const owner = await createUser();
+    const ownerRecord = await dataSource
+      .getRepository(User)
+      .findOneByOrFail({ id: owner.id });
+    await createCrossword({ dow: "Monday" });
     const service = createRoomService();
 
-    const owner = await createUser();
-    await createCrossword();
-
-    const room = await service.joinRoom(owner, "easy", "1v1");
-    const cancelled = await service.cancelRoom(room.id, owner.id);
+    const room = await service.joinRoom(ownerRecord, "easy", "1v1");
+    const cancelled = await service.cancelRoom(room.id, ownerRecord.id);
 
     expect(cancelled.status).toBe("cancelled");
 

@@ -9,4 +9,5 @@ module.exports = {
   },
   collectCoverage: true,
   coverageDirectory: 'coverage',
+  maxWorkers: 1,
 };
