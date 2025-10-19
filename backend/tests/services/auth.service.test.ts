@@ -36,12 +36,20 @@ const postgres = createPostgresTestManager({
   label: "AuthService tests",
   entities: [User, GameStats, Room, Crossword, Friend],
   env: {
-    database: ["AUTH_SERVICE_TEST_DB"],
-    schema: ["AUTH_SERVICE_TEST_SCHEMA"],
-    host: ["AUTH_SERVICE_TEST_DB_HOST"],
-    port: ["AUTH_SERVICE_TEST_DB_PORT"],
-    username: ["AUTH_SERVICE_TEST_DB_USER"],
-    password: ["AUTH_SERVICE_TEST_DB_PASSWORD"],
+    database: ["AUTH_SERVICE_TEST_DB", "ROOM_SERVICE_TEST_DB", "POSTGRES_DB"],
+    schema: ["AUTH_SERVICE_TEST_SCHEMA", "ROOM_SERVICE_TEST_SCHEMA"],
+    host: ["AUTH_SERVICE_TEST_DB_HOST", "ROOM_SERVICE_TEST_DB_HOST", "PGHOST"],
+    port: ["AUTH_SERVICE_TEST_DB_PORT", "ROOM_SERVICE_TEST_DB_PORT", "PGPORT"],
+    username: [
+      "AUTH_SERVICE_TEST_DB_USER",
+      "ROOM_SERVICE_TEST_DB_USER",
+      "PGUSER",
+    ],
+    password: [
+      "AUTH_SERVICE_TEST_DB_PASSWORD",
+      "ROOM_SERVICE_TEST_DB_PASSWORD",
+      "PGPASSWORD",
+    ],
   },
   defaults: {
     database: "crossed_test",
