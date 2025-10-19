@@ -6,9 +6,14 @@ import { User } from "../../src/entities/User";
 import { Crossword } from "../../src/entities/Crossword";
 import { GameStats } from "../../src/entities/GameStats";
 import { fastify } from "../../src/fastify";
-import { gameTimeoutQueue, gameInactivityQueue } from "../../src/jobs/queues";
+import {
+  gameTimeoutQueue,
+  gameInactivityQueue,
+  statusCleanupQueue,
+  emailQueue,
+} from "../../src/jobs/queues";
 import { config } from "../../src/config/config";
-import { RedisService } from "../../src/services/RedisService";
+import { RedisService, redisService } from "../../src/services/RedisService";
 import { ForbiddenError } from "../../src/errors/api";
 
 jest.setTimeout(60000);
@@ -212,11 +217,14 @@ afterAll(async () => {
   await Promise.allSettled([
     gameTimeoutQueue.close(),
     gameInactivityQueue.close(),
+    statusCleanupQueue.close(),
+    emailQueue.close(),
   ]);
 
   if (dataSource?.isInitialized) {
     await dataSource.destroy();
   }
+  await redisService.close();
 });
 
 describe("RoomService integration", () => {
