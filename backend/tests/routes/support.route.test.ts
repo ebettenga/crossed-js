@@ -51,7 +51,7 @@ const postgres = createPostgresTestManager({
     database: "crossed_test",
     schema: "support_route_test",
     host: "127.0.0.1",
-    port: 5433,
+    port: 5432,
     username: "postgres",
     password: "postgres",
   },

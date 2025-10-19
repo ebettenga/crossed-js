@@ -1,9 +1,5 @@
 /**
  * AuthService Unit Tests
- *
- * Prerequisites:
- * - PostgreSQL must be running
- * - Database 'crossed_test' must exist on port 5433
  */
 
 import { DataSource } from "typeorm";
@@ -55,7 +51,7 @@ const postgres = createPostgresTestManager({
     database: "crossed_test",
     schema: "auth_service_test",
     host: "127.0.0.1",
-    port: 5433,
+    port: 5432,
     username: "postgres",
     password: "postgres",
   },
