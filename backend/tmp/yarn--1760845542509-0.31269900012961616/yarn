@@ -1,3 +1,0 @@
-#!/bin/sh
-
-exec "/Users/ethanbett/.nvm/versions/node/v22.20.0/bin/node" "/Users/ethanbett/.cache/node/corepack/v1/yarn/1.22.22/bin/yarn.js" "$@"
