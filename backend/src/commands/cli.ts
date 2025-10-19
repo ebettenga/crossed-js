@@ -11,11 +11,9 @@ import {
   MoreThan,
   Not,
 } from "typeorm";
-import { loadTestData } from "../scripts/loadTestData";
 import { loadIpuzCrosswords } from "../scripts/loadIpuzCrosswords";
 import { CrosswordService } from "../services/CrosswordService";
 import AppDataSource from "../db";
-import { gameInactivityQueue } from "../jobs/queues";
 import { v4 as uuidv4 } from "uuid";
 import { AuthService } from "../services/AuthService";
 import { User } from "../entities/User";
@@ -78,18 +76,6 @@ program
   });
 
 program
-  .command("load-test-data")
-  .description("Load test data into the database")
-  .action(async () => {
-    try {
-      await loadTestData();
-      console.log("Test data loaded successfully");
-    } catch (error) {
-      console.error("Error loading test data:", error);
-    }
-  });
-
-program
   .command("add-inactivity-check")
   .description("Add an inactivity check job for a room")
   .requiredOption("-r, --roomId <number>", "Room ID to check")
@@ -102,6 +88,7 @@ program
     try {
       const { roomId, delay } = options;
       const now = Date.now();
+      const { gameInactivityQueue } = await import("../jobs/queues");
 
       console.log(
         `Adding inactivity check for room ${roomId} with delay ${delay}ms`,
@@ -145,6 +132,7 @@ program
   .action(async (options) => {
     try {
       const { roomId } = options;
+      const { gameInactivityQueue } = await import("../jobs/queues");
 
       if (roomId) {
         console.log(`Removing inactivity jobs for room ${roomId}`);
@@ -374,6 +362,7 @@ program
       // Start inactivity timer if requested
       if (startTimer) {
         const { config } = await import("../config/config");
+        const { gameInactivityQueue } = await import("../jobs/queues");
         await gameInactivityQueue.add(
           "game-inactivity",
           {

@@ -1,0 +1,9 @@
+{
+  "id": 1,
+  "status": "pending",
+  "senderId": 1,
+  "receiverId": 2,
+  "senderUsername": null,
+  "receiverUsername": null,
+  "accepted": false
+}

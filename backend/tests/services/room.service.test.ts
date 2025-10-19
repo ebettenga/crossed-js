@@ -1,59 +1,50 @@
 import { DataSource } from "typeorm";
 import Redis from "ioredis";
 import { RoomService } from "../../src/services/RoomService";
-import { Room, JoinMethod } from "../../src/entities/Room";
+import { JoinMethod, Room } from "../../src/entities/Room";
 import { User } from "../../src/entities/User";
 import { Crossword } from "../../src/entities/Crossword";
 import { GameStats } from "../../src/entities/GameStats";
 import { fastify } from "../../src/fastify";
 import {
-  gameTimeoutQueue,
-  gameInactivityQueue,
-  statusCleanupQueue,
   emailQueue,
+  gameInactivityQueue,
+  gameTimeoutQueue,
+  statusCleanupQueue,
 } from "../../src/jobs/queues";
 import { config } from "../../src/config/config";
 import { RedisService, redisService } from "../../src/services/RedisService";
 import { ForbiddenError } from "../../src/errors/api";
+import { createPostgresTestManager } from "../utils/postgres";
+import { createRedisTestManager, RedisTestManager } from "../utils/redis";
 
 jest.setTimeout(60000);
 
-const TEST_DB =
-  process.env.ROOM_SERVICE_TEST_DB ||
-  process.env.POSTGRES_DB ||
-  "crossed_test";
-const TEST_SCHEMA =
-  process.env.ROOM_SERVICE_TEST_SCHEMA || "room_service_test";
-const TEST_HOST =
-  process.env.ROOM_SERVICE_TEST_DB_HOST || process.env.PGHOST || "127.0.0.1";
-const TEST_PORT = parseInt(
-  process.env.ROOM_SERVICE_TEST_DB_PORT || process.env.PGPORT || "5432",
-  10,
-);
-const TEST_USER =
-  process.env.ROOM_SERVICE_TEST_DB_USER || process.env.PGUSER || "postgres";
-const TEST_PASSWORD =
-  process.env.ROOM_SERVICE_TEST_DB_PASSWORD ||
-  process.env.PGPASSWORD ||
-  "postgres";
+const postgres = createPostgresTestManager({
+  label: "RoomService tests",
+  entities: [Room, User, Crossword, GameStats],
+  env: {
+    database: ["ROOM_SERVICE_TEST_DB", "POSTGRES_DB"],
+    schema: ["ROOM_SERVICE_TEST_SCHEMA"],
+    host: ["ROOM_SERVICE_TEST_DB_HOST", "PGHOST"],
+    port: ["ROOM_SERVICE_TEST_DB_PORT", "PGPORT"],
+    username: ["ROOM_SERVICE_TEST_DB_USER", "PGUSER"],
+    password: ["ROOM_SERVICE_TEST_DB_PASSWORD", "PGPASSWORD"],
+  },
+  defaults: {
+    database: "crossed_test",
+    schema: "room_service_test",
+    host: "127.0.0.1",
+    port: 5432,
+    username: "postgres",
+    password: "postgres",
+  },
+});
 
-if (!/_test$/i.test(TEST_DB)) {
-  throw new Error(
-    `RoomService integration tests require a dedicated test database (got "${TEST_DB}"). Set ROOM_SERVICE_TEST_DB to a database whose name ends with "_test".`,
-  );
-}
-
-const baseConnectionOptions = {
-  type: "postgres" as const,
-  host: TEST_HOST,
-  port: TEST_PORT,
-  username: TEST_USER,
-  password: TEST_PASSWORD,
-  database: TEST_DB,
-};
-
-const qualified = (tableName: string) =>
-  `"${TEST_SCHEMA}"."${tableName}"`;
+const redisManager = createRedisTestManager({
+  url: config.redis.default,
+  label: "RoomService tests Redis",
+});
 
 let dataSource: DataSource;
 let redisClient: Redis;
@@ -65,32 +56,6 @@ let emitSpy: jest.Mock;
 let toSpy: jest.Mock;
 
 let userCounter = 1;
-
-const ensureTestSchema = async () => {
-  const adminDataSource = new DataSource({
-    ...baseConnectionOptions,
-    synchronize: false,
-    schema: undefined,
-    entities: [],
-  });
-
-  await adminDataSource.initialize();
-  await adminDataSource.query(
-    `CREATE SCHEMA IF NOT EXISTS "${TEST_SCHEMA}"`,
-  );
-  await adminDataSource.destroy();
-};
-
-const initialiseDataSource = async () => {
-  dataSource = new DataSource({
-    ...baseConnectionOptions,
-    schema: TEST_SCHEMA,
-    synchronize: true,
-    entities: [Room, User, Crossword, GameStats],
-  });
-
-  await dataSource.initialize();
-};
 
 const flushQueues = async () => {
   await gameTimeoutQueue.waitUntilReady();
@@ -114,14 +79,14 @@ const flushQueues = async () => {
   );
 };
 
-const flushRedis = async () => {
-  await redisClient.flushdb();
-};
-
 const clearDatabase = async () => {
-  await dataSource.query(
-    `TRUNCATE TABLE ${qualified("game_stats")}, ${qualified("room_players")}, ${qualified("room")}, ${qualified("user")}, ${qualified("crossword")} RESTART IDENTITY CASCADE`,
-  );
+  await postgres.truncate([
+    "game_stats",
+    "room_players",
+    "room",
+    "user",
+    "crossword",
+  ]);
 };
 
 const createUser = async (overrides: Partial<User> = {}) => {
@@ -172,10 +137,11 @@ const createRoomService = () => {
 
 beforeAll(async () => {
   try {
-    await ensureTestSchema();
-    await initialiseDataSource();
-    redisClient = new Redis(config.redis.default);
-    await flushRedis();
+    await postgres.setup();
+    dataSource = postgres.dataSource;
+
+    redisClient = await redisManager.setup();
+    await redisManager.flush();
     await flushQueues();
   } catch (error) {
     console.error(
@@ -193,7 +159,7 @@ beforeEach(async () => {
   (fastify as any).io = { in: inSpy, to: toSpy };
 
   await clearDatabase();
-  await flushRedis();
+  await redisManager.flush();
   await flushQueues();
 });
 
@@ -210,8 +176,11 @@ afterEach(async () => {
 
 afterAll(async () => {
   if (redisClient) {
-    await redisClient.flushdb();
-    await redisClient.quit();
+    try {
+      await redisManager.flush();
+    } catch {
+      // ignore cleanup errors
+    }
   }
 
   await Promise.allSettled([
@@ -221,9 +190,8 @@ afterAll(async () => {
     emailQueue.close(),
   ]);
 
-  if (dataSource?.isInitialized) {
-    await dataSource.destroy();
-  }
+  await redisManager.close();
+  await postgres.close();
   await redisService.close();
 });
 

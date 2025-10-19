@@ -17,6 +17,8 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: crossed
+      TZ: 'GMT'
+      PGTZ: 'GMT'
     ports:
       - "5432:5432"
     volumes:
@@ -29,6 +31,8 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: crossed_test
+      TZ: 'GMT'
+      PGTZ: 'GMT'
     ports:
       - "5433:5432"
     volumes:

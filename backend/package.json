@@ -12,7 +12,6 @@
     "commands": "tsx --env-file .env ./src/commands/cli.ts",
     "start-game": "yarn commands start-game",
     "prepare": "if [ \"$CI\" != \"true\" ]; then pre-commit install; fi",
-    "ci:load-test-data": "tsx ./src/commands/cli.ts load-test-data",
     "test": "tsx --experimental-vm-modules node_modules/jest/bin/jest.js --verbose --coverage",
     "serve:coverage": "npx serve coverage/lcov-report",
     "migration:run": "npx typeorm-ts-node-esm migration:run -d ./src/data-source.ts",
@@ -65,6 +64,7 @@
     "pkgroll": "^2.5.1",
     "pre-commit": "^1.2.2",
     "prettier": "^3.0.0",
+    "socket.io-client": "^4.7.2",
     "ts-jest": "^29.0.0",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2"

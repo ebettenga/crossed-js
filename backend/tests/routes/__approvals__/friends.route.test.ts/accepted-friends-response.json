@@ -1,0 +1,20 @@
+[
+  {
+    "id": 1,
+    "status": "accepted",
+    "senderId": 1,
+    "receiverId": 2,
+    "senderUsername": "owner",
+    "receiverUsername": "receiver_friend",
+    "accepted": false
+  },
+  {
+    "id": 2,
+    "status": "accepted",
+    "senderId": 3,
+    "receiverId": 1,
+    "senderUsername": "sender_friend",
+    "receiverUsername": "owner",
+    "accepted": false
+  }
+]

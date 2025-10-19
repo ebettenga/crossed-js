@@ -1,0 +1,44 @@
+{
+  "id": 1,
+  "status": "pending",
+  "type": "1v1",
+  "difficulty": "medium",
+  "player_count": 1,
+  "created_at": "2025-10-19T10:23:20.654Z",
+  "completed_at": null,
+  "players": [
+    {
+      "id": 1,
+      "username": "owner",
+      "score": 0,
+      "eloRating": 1200
+    }
+  ],
+  "scores": {
+    "1": 0
+  },
+  "crossword": {
+    "id": 1,
+    "title": "Room View Puzzle",
+    "col_size": 4,
+    "row_size": 4
+  },
+  "found_letters": [
+    "*",
+    "*",
+    "*",
+    "*",
+    "*",
+    "*",
+    "*",
+    "*",
+    "*",
+    "*",
+    "*",
+    "*",
+    "*",
+    "*",
+    "*",
+    "*"
+  ]
+}
