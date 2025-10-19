@@ -1,0 +1,20 @@
+{
+  "success": true,
+  "rating": {
+    "id": 1,
+    "userId": 1,
+    "crosswordId": 1,
+    "difficultyRating": null,
+    "qualityRating": 4,
+    "user": {
+      "id": 1,
+      "username": "reviewer",
+      "email": "reviewer@example.com",
+      "roles": [
+        "user"
+      ],
+      "status": "online",
+      "eloRating": 1200
+    }
+  }
+}

@@ -1,10 +1,8 @@
 import { EloService } from "../../src/services/EloService";
 import { config } from "../../src/config/config";
-import {
-  createEloTestScenario,
-  createFreeForAllScenario,
-} from "../test-data/rooms";
 import { GameStats } from "../../src/entities/GameStats";
+import { Room } from "../../src/entities/Room";
+import { User } from "../../src/entities/User";
 
 type GamesPlayedMap = Record<number, number>;
 
@@ -51,6 +49,90 @@ const createService = (gamesPlayed: GamesPlayedMap = {}) => {
 
 const expectedScore = (playerRating: number, opponentRating: number) =>
   1 / (1 + Math.pow(10, (opponentRating - playerRating) / 400));
+
+const createEloTestScenario = () => {
+  const roomId = 101;
+
+  const rookie = Object.assign(new User(), {
+    id: 1,
+    username: "rookie_player",
+    eloRating: 1200,
+    gameStats: [] as GameStats[],
+  });
+
+  const veteran = Object.assign(new User(), {
+    id: 2,
+    username: "veteran_player",
+    eloRating: 1200,
+    gameStats: [] as GameStats[],
+  });
+
+  const room = Object.assign(new Room(), {
+    id: roomId,
+    type: "1v1" as Room["type"],
+    status: "finished" as Room["status"],
+    players: [
+      { id: rookie.id } as User,
+      { id: veteran.id } as User,
+    ],
+    scores: {
+      [rookie.id]: 15,
+      [veteran.id]: 10,
+    },
+  });
+
+  return {
+    room,
+    rookie,
+    veteran,
+  };
+};
+
+const createFreeForAllScenario = () => {
+  const roomId = 202;
+
+  const leader = Object.assign(new User(), {
+    id: 10,
+    username: "ffa_leader",
+    eloRating: 1400,
+    gameStats: [] as GameStats[],
+  });
+
+  const chaser = Object.assign(new User(), {
+    id: 11,
+    username: "ffa_chaser",
+    eloRating: 1300,
+    gameStats: [] as GameStats[],
+  });
+
+  const challenger = Object.assign(new User(), {
+    id: 12,
+    username: "ffa_challenger",
+    eloRating: 1200,
+    gameStats: [] as GameStats[],
+  });
+
+  const room = Object.assign(new Room(), {
+    id: roomId,
+    type: "free4all" as Room["type"],
+    status: "finished" as Room["status"],
+    players: [
+      { id: leader.id } as User,
+      { id: chaser.id } as User,
+      { id: challenger.id } as User,
+    ],
+    scores: {
+      [leader.id]: 30,
+      [chaser.id]: 20,
+      [challenger.id]: 10,
+    },
+  });
+
+  return {
+    room,
+    players: [leader, chaser, challenger] satisfies User[],
+  };
+};
 
 describe("EloService", () => {
   afterEach(() => {
