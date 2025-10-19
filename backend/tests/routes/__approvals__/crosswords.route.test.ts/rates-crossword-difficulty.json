@@ -1,0 +1,22 @@
+{
+  "success": true,
+  "rating": {
+    "id": 1,
+    "userId": 1,
+    "crosswordId": 1,
+    "difficultyRating": "too_hard",
+    "qualityRating": null,
+    "created_at": "[timestamp]",
+    "updated_at": null,
+    "user": {
+      "id": 1,
+      "username": "solver",
+      "email": "solver@example.com",
+      "roles": [
+        "user"
+      ],
+      "status": "online",
+      "eloRating": 1200
+    }
+  }
+}
