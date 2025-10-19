@@ -202,6 +202,70 @@ describe("support routes", () => {
         await app.close();
       }
     });
+
+    it("orders support requests by created_at descending", async () => {
+      const admin = await createUser({ username: "admin", roles: ["admin"] });
+      const user1 = await createUser({ username: "user1" });
+
+      const first = await createSupportRequest(user1, {
+        comment: "First request",
+      });
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      const second = await createSupportRequest(user1, {
+        comment: "Second request",
+      });
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      const third = await createSupportRequest(user1, {
+        comment: "Third request",
+      });
+
+      const app = await buildServer(admin);
+      try {
+        const response = await app.inject({
+          method: "GET",
+          url: "/support",
+        });
+
+        expect(response.statusCode).toBe(200);
+        const payload = response.json() as Array<any>;
+
+        expect(payload).toHaveLength(3);
+        // Should be in reverse order (newest first)
+        expect(payload[0].id).toBe(third.id);
+        expect(payload[1].id).toBe(second.id);
+        expect(payload[2].id).toBe(first.id);
+      } finally {
+        await app.close();
+      }
+    });
+
+    it("includes user information in the response", async () => {
+      const admin = await createUser({ username: "admin", roles: ["admin"] });
+      const user1 = await createUser({ username: "testuser123" });
+
+      await createSupportRequest(user1, {
+        type: "support",
+        comment: "Test request",
+      });
+
+      const app = await buildServer(admin);
+      try {
+        const response = await app.inject({
+          method: "GET",
+          url: "/support",
+        });
+
+        expect(response.statusCode).toBe(200);
+        const payload = response.json() as Array<any>;
+
+        expect(payload).toHaveLength(1);
+        expect(payload[0].user).toBeDefined();
+        expect(payload[0].user.username).toBe("testuser123");
+        expect(payload[0].user.id).toBe(user1.id);
+      } finally {
+        await app.close();
+      }
+    });
   });
 
   describe("GET /support/me", () => {
