@@ -51,8 +51,9 @@ export class EloService {
 
     // Dampen K-factor based on games played
     const gamesDampening = Math.max(
-      1,
-      this.GAMES_PLAYED_DAMPENING / Math.max(1, gamesPlayed),
+      0.5,
+      this.GAMES_PLAYED_DAMPENING /
+        (gamesPlayed + this.GAMES_PLAYED_DAMPENING),
     );
 
     // Calculate win streak bonus (capped at MAX_WIN_STREAK_BONUS)

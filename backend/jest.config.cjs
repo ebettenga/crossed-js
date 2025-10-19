@@ -3,9 +3,11 @@ module.exports = {
   testEnvironment: 'node',
   moduleFileExtensions: ['ts', 'js'],
   testMatch: ['**/tests/**/*.test.[tj]s?(x)'],
+  setupFiles: ['dotenv/config'],
   transform: {
     '^.+\\.ts$': ['ts-jest', { tsconfig: './tsconfig.json' }],
   },
   collectCoverage: true,
   coverageDirectory: 'coverage',
+  maxWorkers: 1,
 };
