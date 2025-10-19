@@ -8,6 +8,7 @@ import { User } from "../../src/entities/User";
 import { Crossword } from "../../src/entities/Crossword";
 import friendsRoutes from "../../src/routes/private/friends";
 import { createPostgresTestManager } from "../utils/postgres";
+import { ensureApprovedSnapshot } from "../utils/approval";
 
 var emitToUsersMock: jest.Mock;
 var createSocketEventServiceMock: jest.Mock;
@@ -135,6 +136,16 @@ const createFriendship = async (
   return repository.save(friendship);
 };
 
+const sanitizeFriendRecord = (record: any) => ({
+  id: record.id,
+  status: record.status,
+  senderId: record.senderId,
+  receiverId: record.receiverId,
+  senderUsername: record.sender ? record.sender.username : null,
+  receiverUsername: record.receiver ? record.receiver.username : null,
+  accepted: Boolean(record.acceptedAt),
+});
+
 beforeAll(async () => {
   await postgres.setup();
   dataSource = postgres.dataSource;
@@ -180,12 +191,7 @@ describe("friends routes", () => {
       });
       expect(response.statusCode).toBe(200);
 
-      const payload = response.json() as Array<{
-        id: number;
-        status: FriendshipStatus;
-        senderId: number;
-        receiverId: number;
-      }>;
+      const payload = response.json() as Array<any>;
 
       expect(payload).toHaveLength(2);
       const sortedIds = payload.map((item) => item.id).sort((a, b) => a - b);
@@ -194,6 +200,14 @@ describe("friends routes", () => {
       );
       payload.forEach((item) => {
         expect(item.status).toBe(FriendshipStatus.ACCEPTED);
+      });
+      const sanitized = payload
+        .map(sanitizeFriendRecord)
+        .sort((a, b) => a.id - b.id);
+      await ensureApprovedSnapshot({
+        testFile: expect.getState().testPath ?? "friends.route.test.ts",
+        snapshotName: "accepted friends response",
+        received: sanitized,
       });
       const emitMock = getEmitToUsersMock();
       expect(emitMock).not.toHaveBeenCalled();
@@ -231,12 +245,7 @@ describe("friends routes", () => {
       });
       expect(response.statusCode).toBe(200);
 
-      const payload = response.json() as Array<{
-        id: number;
-        status: FriendshipStatus;
-        senderId: number;
-        receiverId: number;
-      }>;
+      const payload = response.json() as Array<any>;
 
       expect(payload).toHaveLength(2);
       const sortedIds = payload.map((item) => item.id).sort((a, b) => a - b);
@@ -245,6 +254,14 @@ describe("friends routes", () => {
       );
       payload.forEach((item) => {
         expect(item.status).toBe(FriendshipStatus.PENDING);
+      });
+      const sanitized = payload
+        .map(sanitizeFriendRecord)
+        .sort((a, b) => a.id - b.id);
+      await ensureApprovedSnapshot({
+        testFile: expect.getState().testPath ?? "friends.route.test.ts",
+        snapshotName: "pending friends response",
+        received: sanitized,
       });
       const emitMock = getEmitToUsersMock();
       expect(emitMock).not.toHaveBeenCalled();
@@ -266,16 +283,17 @@ describe("friends routes", () => {
       });
       expect(response.statusCode).toBe(200);
 
-      const payload = response.json() as {
-        id: number;
-        status: FriendshipStatus;
-        senderId: number;
-        receiverId: number;
-      };
+      const payload = response.json() as any;
 
       expect(payload.senderId).toBe(sender.id);
       expect(payload.receiverId).toBe(receiver.id);
       expect(payload.status).toBe(FriendshipStatus.PENDING);
+      const sanitized = sanitizeFriendRecord(payload);
+      await ensureApprovedSnapshot({
+        testFile: expect.getState().testPath ?? "friends.route.test.ts",
+        snapshotName: "create friend request response",
+        received: sanitized,
+      });
 
       const stored = await dataSource
         .getRepository(Friend)
@@ -316,18 +334,18 @@ describe("friends routes", () => {
       });
       expect(response.statusCode).toBe(200);
 
-      const payload = response.json() as {
-        id: number;
-        status: FriendshipStatus;
-        senderId: number;
-        receiverId: number;
-        acceptedAt?: string;
-      };
+      const payload = response.json() as any;
 
       expect(payload.status).toBe(FriendshipStatus.ACCEPTED);
       expect(payload.senderId).toBe(sender.id);
       expect(payload.receiverId).toBe(receiver.id);
       expect(payload.acceptedAt).toBeDefined();
+      const sanitized = sanitizeFriendRecord(payload);
+      await ensureApprovedSnapshot({
+        testFile: expect.getState().testPath ?? "friends.route.test.ts",
+        snapshotName: "accept friend request response",
+        received: sanitized,
+      });
 
       const stored = await dataSource
         .getRepository(Friend)
@@ -367,16 +385,17 @@ describe("friends routes", () => {
       });
       expect(response.statusCode).toBe(200);
 
-      const payload = response.json() as {
-        id: number;
-        status: FriendshipStatus;
-        senderId: number;
-        receiverId: number;
-      };
+      const payload = response.json() as any;
 
       expect(payload.status).toBe(FriendshipStatus.REJECTED);
       expect(payload.senderId).toBe(sender.id);
       expect(payload.receiverId).toBe(receiver.id);
+      const sanitized = sanitizeFriendRecord(payload);
+      await ensureApprovedSnapshot({
+        testFile: expect.getState().testPath ?? "friends.route.test.ts",
+        snapshotName: "reject friend request response",
+        received: sanitized,
+      });
 
       const stored = await dataSource
         .getRepository(Friend)
@@ -414,7 +433,13 @@ describe("friends routes", () => {
         url: `/friends/${friendship.id}`,
       });
       expect(response.statusCode).toBe(200);
-      expect(response.json()).toEqual({ success: true });
+      const payload = response.json();
+      expect(payload).toEqual({ success: true });
+      await ensureApprovedSnapshot({
+        testFile: expect.getState().testPath ?? "friends.route.test.ts",
+        snapshotName: "remove friend response",
+        received: payload,
+      });
 
       const stored = await dataSource
         .getRepository(Friend)
