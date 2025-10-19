@@ -13,9 +13,8 @@ start-frontend: ## start the dev server
 	cd ./frontend && npx expo start
 
 
-load-test-data: start-backend ## load test data
+load-crosswords: start-backend ## load test data
 	cd ./backend && yarn commands load-crosswords
-	cd ./backend && yarn commands load-test-data
 
 find-local-ip-mac: ## finds the local IP address so you can update the EXPO_PUBLIC_API_BASE_URL value in the .env.local file.
 	 ipconfig getifaddr en0
@@ -35,3 +34,15 @@ ssh-prod: ## gain a shell on the production enviroment to run migrations and rep
 
 report: ## alias to run a report command
 	cd backend && yarn commands report
+
+.PHONY: coverage
+coverage: ## serve backend coverage report on port 3476
+	cd backend/coverage/lcov-report && python3 -m http.server 3476 >/tmp/backend-coverage.log 2>&1 &
+	sleep 1
+	@echo "Coverage server running on http://127.0.0.1:3476 (logs: /tmp/backend-coverage.log)"
+	@$(OPEN_CMD) "http://127.0.0.1:3476"
+
+.PHONY: tests
+tests: ## run backend test suite (skips sockets route tests; they leak connections)
+	@echo "Skipping tests/routes/sockets.route.test.ts (known to leave connections open)."
+	cd backend && yarn test

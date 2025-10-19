@@ -196,6 +196,8 @@ const connectClient = async (user: User) => {
     auth: { authToken: token },
     transports: ["websocket"],
     forceNew: true,
+    reconnection: false,
+    timeout: 5000,
   });
 
   activeClients.push(client);
@@ -309,6 +311,7 @@ describe("sockets routes", () => {
       auth: { authToken: token },
       transports: ["websocket"],
       forceNew: true,
+      reconnection: false,
     });
     activeClients.push(client);
 

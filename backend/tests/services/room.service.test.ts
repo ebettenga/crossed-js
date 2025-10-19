@@ -1,22 +1,22 @@
 import { DataSource } from "typeorm";
 import Redis from "ioredis";
 import { RoomService } from "../../src/services/RoomService";
-import { Room, JoinMethod } from "../../src/entities/Room";
+import { JoinMethod, Room } from "../../src/entities/Room";
 import { User } from "../../src/entities/User";
 import { Crossword } from "../../src/entities/Crossword";
 import { GameStats } from "../../src/entities/GameStats";
 import { fastify } from "../../src/fastify";
 import {
-  gameTimeoutQueue,
-  gameInactivityQueue,
-  statusCleanupQueue,
   emailQueue,
+  gameInactivityQueue,
+  gameTimeoutQueue,
+  statusCleanupQueue,
 } from "../../src/jobs/queues";
 import { config } from "../../src/config/config";
 import { RedisService, redisService } from "../../src/services/RedisService";
 import { ForbiddenError } from "../../src/errors/api";
 import { createPostgresTestManager } from "../utils/postgres";
-import { createRedisTestManager } from "../utils/redis";
+import { createRedisTestManager, RedisTestManager } from "../utils/redis";
 
 jest.setTimeout(60000);
 
@@ -56,13 +56,6 @@ let emitSpy: jest.Mock;
 let toSpy: jest.Mock;
 
 let userCounter = 1;
-const TABLES_TO_TRUNCATE = [
-  "game_stats",
-  "room_players",
-  "room",
-  "user",
-  "crossword",
-];
 
 const flushQueues = async () => {
   await gameTimeoutQueue.waitUntilReady();
@@ -87,7 +80,13 @@ const flushQueues = async () => {
 };
 
 const clearDatabase = async () => {
-  await postgres.truncate(TABLES_TO_TRUNCATE);
+  await postgres.truncate([
+    "game_stats",
+    "room_players",
+    "room",
+    "user",
+    "crossword",
+  ]);
 };
 
 const createUser = async (overrides: Partial<User> = {}) => {
@@ -140,7 +139,7 @@ beforeAll(async () => {
   try {
     await postgres.setup();
     dataSource = postgres.dataSource;
-    await clearDatabase();
+
     redisClient = await redisManager.setup();
     await redisManager.flush();
     await flushQueues();
@@ -176,12 +175,13 @@ afterEach(async () => {
 });
 
 afterAll(async () => {
-  try {
-    await redisManager.flush();
-  } catch {
-    // ignore flush errors during teardown
+  if (redisClient) {
+    try {
+      await redisManager.flush();
+    } catch {
+      // ignore cleanup errors
+    }
   }
-  await redisManager.close();
 
   await Promise.allSettled([
     gameTimeoutQueue.close(),
@@ -190,6 +190,7 @@ afterAll(async () => {
     emailQueue.close(),
   ]);
 
+  await redisManager.close();
   await postgres.close();
   await redisService.close();
 });
