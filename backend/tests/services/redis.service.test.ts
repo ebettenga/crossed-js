@@ -1,24 +1,27 @@
 import Redis from "ioredis";
 import { RedisService, redisService } from "../../src/services/RedisService";
 import { config } from "../../src/config/config";
+import { createRedisTestManager } from "../utils/redis";
 
 jest.setTimeout(30000);
+
+const redisManager = createRedisTestManager({
+  url: config.redis.default,
+  label: "RedisService tests",
+});
 
 let adminRedis: Redis;
 
 beforeAll(async () => {
-  adminRedis = new Redis(config.redis.default);
-  await adminRedis.flushdb();
+  adminRedis = await redisManager.setup();
 });
 
 beforeEach(async () => {
-  await adminRedis.flushdb();
+  await redisManager.flush();
 });
 
 afterAll(async () => {
-  if (adminRedis) {
-    await adminRedis.quit();
-  }
+  await redisManager.close();
   const globalInstance = redisService as unknown as {
     redis: Redis;
   };

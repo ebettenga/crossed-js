@@ -5,6 +5,7 @@ import { DataSource } from "typeorm";
 import { CrosswordService } from "../../src/services/CrosswordService";
 import { Crossword } from "../../src/entities/Crossword";
 import { NotFoundError } from "../../src/errors/api";
+import { createPostgresTestManager } from "../utils/postgres";
 
 jest.mock("../../src/scripts/findConfigDir", () => ({
   findDir: jest.fn(),
@@ -16,88 +17,53 @@ const findDirMock = findDir as jest.MockedFunction<typeof findDir>;
 
 jest.setTimeout(60000);
 
-const TEST_DB =
-  process.env.CROSSWORD_SERVICE_TEST_DB ||
-  process.env.ROOM_SERVICE_TEST_DB ||
-  process.env.POSTGRES_DB ||
-  "crossed_test";
-
-if (!/_test$/i.test(TEST_DB)) {
-  throw new Error(
-    `CrosswordService tests need a dedicated test database (received "${TEST_DB}").`,
-  );
-}
-
-const TEST_SCHEMA =
-  process.env.CROSSWORD_SERVICE_TEST_SCHEMA ||
-  process.env.ROOM_SERVICE_TEST_SCHEMA ||
-  "crossword_service_test";
-
-const TEST_HOST =
-  process.env.CROSSWORD_SERVICE_TEST_DB_HOST ||
-  process.env.ROOM_SERVICE_TEST_DB_HOST ||
-  process.env.PGHOST ||
-  "127.0.0.1";
-const TEST_PORT = parseInt(
-  process.env.CROSSWORD_SERVICE_TEST_DB_PORT ||
-    process.env.ROOM_SERVICE_TEST_DB_PORT ||
-    process.env.PGPORT ||
-    "5432",
-  10,
-);
-const TEST_USER =
-  process.env.CROSSWORD_SERVICE_TEST_DB_USER ||
-  process.env.ROOM_SERVICE_TEST_DB_USER ||
-  process.env.PGUSER ||
-  "postgres";
-const TEST_PASSWORD =
-  process.env.CROSSWORD_SERVICE_TEST_DB_PASSWORD ||
-  process.env.ROOM_SERVICE_TEST_DB_PASSWORD ||
-  process.env.PGPASSWORD ||
-  "postgres";
-
-const baseConnectionOptions = {
-  type: "postgres" as const,
-  host: TEST_HOST,
-  port: TEST_PORT,
-  username: TEST_USER,
-  password: TEST_PASSWORD,
-  database: TEST_DB,
-};
-
-const qualified = (table: string) =>
-  `"${TEST_SCHEMA}"."${table}"`;
+const postgres = createPostgresTestManager({
+  label: "CrosswordService tests",
+  entities: [Crossword],
+  env: {
+    database: [
+      "CROSSWORD_SERVICE_TEST_DB",
+      "ROOM_SERVICE_TEST_DB",
+      "POSTGRES_DB",
+    ],
+    schema: [
+      "CROSSWORD_SERVICE_TEST_SCHEMA",
+      "ROOM_SERVICE_TEST_SCHEMA",
+    ],
+    host: [
+      "CROSSWORD_SERVICE_TEST_DB_HOST",
+      "ROOM_SERVICE_TEST_DB_HOST",
+      "PGHOST",
+    ],
+    port: [
+      "CROSSWORD_SERVICE_TEST_DB_PORT",
+      "ROOM_SERVICE_TEST_DB_PORT",
+      "PGPORT",
+    ],
+    username: [
+      "CROSSWORD_SERVICE_TEST_DB_USER",
+      "ROOM_SERVICE_TEST_DB_USER",
+      "PGUSER",
+    ],
+    password: [
+      "CROSSWORD_SERVICE_TEST_DB_PASSWORD",
+      "ROOM_SERVICE_TEST_DB_PASSWORD",
+      "PGPASSWORD",
+    ],
+  },
+  defaults: {
+    database: "crossed_test",
+    schema: "crossword_service_test",
+    host: "127.0.0.1",
+    port: 5432,
+    username: "postgres",
+    password: "postgres",
+  },
+});
 
 let dataSource: DataSource;
 let service: CrosswordService;
-
-const ensureSchema = async () => {
-  const admin = new DataSource({
-    ...baseConnectionOptions,
-    synchronize: false,
-    entities: [],
-  });
-  await admin.initialize();
-  await admin.query(`CREATE SCHEMA IF NOT EXISTS "${TEST_SCHEMA}"`);
-  await admin.destroy();
-};
-
-const initialiseDataSource = async () => {
-  dataSource = new DataSource({
-    ...baseConnectionOptions,
-    schema: TEST_SCHEMA,
-    synchronize: true,
-    entities: [Crossword],
-  });
-  await dataSource.initialize();
-  service = new CrosswordService(dataSource);
-};
-
-const clearCrosswords = async () => {
-  await dataSource.query(
-    `TRUNCATE TABLE ${qualified("crossword")} RESTART IDENTITY CASCADE`,
-  );
-};
+const CROSSWORD_TABLES = ["crossword"];
 
 const createCrossword = async (
   overrides: Partial<Crossword> = {},
@@ -127,8 +93,10 @@ const createCrossword = async (
 
 beforeAll(async () => {
   try {
-    await ensureSchema();
-    await initialiseDataSource();
+    await postgres.setup();
+    dataSource = postgres.dataSource;
+    service = new CrosswordService(dataSource);
+    await postgres.truncate(CROSSWORD_TABLES);
   } catch (error) {
     console.error(
       "Failed to initialise CrosswordService integration environment. Verify Postgres settings.",
@@ -139,13 +107,11 @@ beforeAll(async () => {
 
 beforeEach(async () => {
   jest.clearAllMocks();
-  await clearCrosswords();
+  await postgres.truncate(CROSSWORD_TABLES);
 });
 
 afterAll(async () => {
-  if (dataSource?.isInitialized) {
-    await dataSource.destroy();
-  }
+  await postgres.close();
 });
 
 describe("CrosswordService integration", () => {
@@ -335,9 +301,10 @@ describe("CrosswordService integration", () => {
     const hard = await service.getCrosswordByDifficulty("hard");
     expect(hard).toBeNull();
 
-    await expect(service.getCrosswordByDifficulty("impossible")).rejects.toThrow(
-      NotFoundError,
-    );
+    await expect(service.getCrosswordByDifficulty("impossible")).rejects
+      .toThrow(
+        NotFoundError,
+      );
   });
 
   it("validates guesses against crossword coordinates", async () => {
@@ -353,8 +320,8 @@ describe("CrosswordService integration", () => {
     expect(
       service.checkGuess(crossword, { x: 1, y: 0 }, "Z"),
     ).toBe(false);
-    expect(() =>
-      service.checkGuess(crossword, { x: 2, y: 0 }, "A"),
-    ).toThrow(NotFoundError);
+    expect(() => service.checkGuess(crossword, { x: 2, y: 0 }, "A")).toThrow(
+      NotFoundError,
+    );
   });
 });
