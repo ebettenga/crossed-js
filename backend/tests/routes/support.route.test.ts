@@ -19,6 +19,7 @@ const postgres = createPostgresTestManager({
   env: {
     database: [
       "SUPPORT_ROUTES_TEST_DB",
+      "POSTGRES_DB",
     ],
     schema: [
       "SUPPORT_ROUTES_TEST_SCHEMA",
@@ -29,6 +30,7 @@ const postgres = createPostgresTestManager({
     ],
     port: [
       "SUPPORT_ROUTES_TEST_DB_PORT",
+      "PGPORT",
     ],
     username: [
       "SUPPORT_ROUTES_TEST_DB_USER",
