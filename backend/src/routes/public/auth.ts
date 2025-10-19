@@ -34,7 +34,7 @@ export default function (
           "If an account exists with that email, you will receive a password reset link",
       });
     } catch (error) {
-      fastify.log.error("Error in forgot password:", error);
+      fastify.log.error({ error }, "Error in forgot password");
       reply.code(500).send({
         error: "Failed to process password reset request",
       });

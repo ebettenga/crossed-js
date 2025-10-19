@@ -1,0 +1,13 @@
+{
+  "id": 1,
+  "username": "testuser",
+  "email": "test@example.com",
+  "status": "offline",
+  "eloRating": 1200,
+  "lastActiveAt": "2025-10-19T12:44:41.255Z",
+  "gamesWon": 0,
+  "gamesLost": 0,
+  "guessAccuracy": 0,
+  "winRate": 0,
+  "photo": null
+}
