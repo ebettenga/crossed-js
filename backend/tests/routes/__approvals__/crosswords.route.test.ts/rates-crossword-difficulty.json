@@ -6,8 +6,6 @@
     "crosswordId": 1,
     "difficultyRating": "too_hard",
     "qualityRating": null,
-    "created_at": "[timestamp]",
-    "updated_at": null,
     "user": {
       "id": 1,
       "username": "solver",
