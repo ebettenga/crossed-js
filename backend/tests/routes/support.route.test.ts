@@ -19,25 +19,31 @@ const postgres = createPostgresTestManager({
   env: {
     database: [
       "SUPPORT_ROUTES_TEST_DB",
+      "ROOM_SERVICE_TEST_DB",
       "POSTGRES_DB",
     ],
     schema: [
       "SUPPORT_ROUTES_TEST_SCHEMA",
+      "ROOM_SERVICE_TEST_SCHEMA",
     ],
     host: [
       "SUPPORT_ROUTES_TEST_DB_HOST",
+      "ROOM_SERVICE_TEST_DB_HOST",
       "PGHOST",
     ],
     port: [
       "SUPPORT_ROUTES_TEST_DB_PORT",
+      "ROOM_SERVICE_TEST_DB_PORT",
       "PGPORT",
     ],
     username: [
       "SUPPORT_ROUTES_TEST_DB_USER",
+      "ROOM_SERVICE_TEST_DB_USER",
       "PGUSER",
     ],
     password: [
       "SUPPORT_ROUTES_TEST_DB_PASSWORD",
+      "ROOM_SERVICE_TEST_DB_PASSWORD",
       "PGPASSWORD",
     ],
   },
