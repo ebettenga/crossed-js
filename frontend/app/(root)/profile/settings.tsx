@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { PageHeader } from '~/components/Header';
 import { Switch } from '~/components/ui/switch';
-import { Moon, Sun, ChevronLeft, ChevronRight, Volume2, VolumeX, Eye, EyeOff, HelpCircle } from 'lucide-react-native';
+import { Moon, Sun, ChevronLeft, ChevronRight, Volume2, VolumeX, Eye, EyeOff, HelpCircle, Sparkles } from 'lucide-react-native';
 import { useColorMode } from '~/hooks/useColorMode';
 import { useSoundPreference } from '~/hooks/useSoundPreference';
 import { useEloVisibility } from '~/hooks/useEloVisibility';
@@ -96,6 +96,19 @@ export default function Settings() {
                                 <HelpCircle size={24} color={isDark ? '#DDE1E5' : '#1D2124'} />
                                 <Text className="text-base text-[#1D2124] dark:text-[#DDE1E5] font-['Times New Roman']">
                                     How to Play
+                                </Text>
+                            </View>
+                            <ChevronRight size={20} color={isDark ? '#DDE1E5' : '#1D2124'} />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            className="flex-row items-center justify-between"
+                            onPress={() => router.push('/profile/credits')}
+                            activeOpacity={0.7}
+                        >
+                            <View className="flex-row items-center gap-3">
+                                <Sparkles size={24} color={isDark ? '#DDE1E5' : '#1D2124'} />
+                                <Text className="text-base text-[#1D2124] dark:text-[#DDE1E5] font-['Times New Roman']">
+                                    Credits
                                 </Text>
                             </View>
                             <ChevronRight size={20} color={isDark ? '#DDE1E5' : '#1D2124'} />

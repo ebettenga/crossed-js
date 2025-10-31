@@ -8,6 +8,7 @@ import { GameBanner } from '~/components/home/GameBanner';
 import { DifficultyDialog } from '~/components/home/DifficultyDialog';
 import { useJoinRoom, Room } from '~/hooks/useJoinRoom';
 import { Link, useRouter } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import { useActiveRooms, usePendingRooms } from '~/hooks/useActiveRooms';
 import { useUser } from '~/hooks/users';
 import { cn } from '~/lib/utils';
@@ -15,6 +16,7 @@ import { useSound } from "~/hooks/useSound";
 import { pencilSounds, randomPencilKey } from '~/assets/sounds/randomButtonSound';
 import { useSoundPreference } from '~/hooks/useSoundPreference';
 import { useLogger } from '~/hooks/useLogs';
+import Toast from 'react-native-toast-message';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const PADDING = 6;
@@ -53,11 +55,6 @@ export default function Home() {
         setRefreshing(false);
     }, [refetchUser, refetchActiveRooms, refetchPendingRooms]);
 
-    const handleGameModePress = async (mode: GameMode) => {
-        setSelectedGameMode(mode);
-        setDifficultyDialogVisible(true);
-    };
-
     const handleDifficultySelect = async (difficulty: 'easy' | 'medium' | 'hard') => {
         setDifficultyDialogVisible(false);
         if (!selectedGameMode) return;
@@ -90,6 +87,63 @@ export default function Home() {
         setSelectedGameMode(null);
     };
 
+
+
+    const activeRoomsArray = activeRooms as Room[] || [];
+    const pendingRoomsArray = pendingRooms as Room[] || [];
+    const userId = user?.id;
+    const activeRoomForUser = activeRoomsArray.find((room) =>
+        room.players.some((player) => player.id === userId)
+    );
+    const pendingRoomForUser = pendingRoomsArray.find((room) =>
+        room.players.some((player) => player.id === userId)
+    );
+    const hasActiveGame = Boolean(activeRoomForUser);
+    const hasPendingGame = Boolean(pendingRoomForUser);
+    const isSchedulingBlocked = hasActiveGame || hasPendingGame;
+
+    const handleGameModePress = React.useCallback((mode: GameMode) => {
+        if (hasActiveGame || hasPendingGame) {
+            const message = hasActiveGame
+                ? 'You already have a game in progress.'
+                : 'Finish your pending game before starting a new one.';
+            Toast.show({
+                text1: message,
+                type: 'info'
+            });
+
+            if (hasActiveGame && activeRoomForUser) {
+                router.replace(`/game?roomId=${activeRoomForUser.id}`);
+            }
+            return;
+        }
+
+        setSelectedGameMode(mode);
+        setDifficultyDialogVisible(true);
+    }, [activeRoomForUser, hasActiveGame, hasPendingGame, router]);
+
+    const refreshRooms = React.useCallback(() => {
+        refetchActiveRooms();
+        refetchPendingRooms();
+    }, [refetchActiveRooms, refetchPendingRooms]);
+
+    useFocusEffect(React.useCallback(() => {
+        refreshRooms();
+
+        if (hasActiveGame && activeRoomForUser) {
+            router.replace(`/game?roomId=${activeRoomForUser.id}`);
+        }
+
+        const intervalId = setInterval(() => {
+            refreshRooms();
+        }, 5000);
+
+        return () => {
+            clearInterval(intervalId);
+        };
+    }, [activeRoomForUser, hasActiveGame, refreshRooms, router]));
+
+
     // Show loading state while any data is loading
     const isLoading = isLoadingUser || isLoadingRooms || isLoadingPendingRooms;
     if (isLoading || !user) {
@@ -99,9 +153,6 @@ export default function Home() {
             </View>
         );
     }
-
-    const activeRoomsArray = activeRooms as Room[] || [];
-    const pendingRoomsArray = pendingRooms as Room[] || [];
 
     return (
         <View
@@ -177,18 +228,27 @@ export default function Home() {
                             onPress={() => handleGameModePress('1v1')}
                             number={1}
                             size={BUTTON_SIZE}
+                            customStyle={{
+                                container: isSchedulingBlocked ? 'opacity-50' : undefined
+                            }}
                         />
                         <HomeSquareButton
                             name="Time Trial"
                             icon={<Timer size={24} />}
                             onPress={() => handleGameModePress('time_trial')}
                             size={BUTTON_SIZE}
+                            customStyle={{
+                                container: isSchedulingBlocked ? 'opacity-50' : undefined
+                            }}
                         />
                         <HomeSquareButton
                             name="Free for All"
                             icon={<Swords size={24} />}
                             onPress={() => handleGameModePress('free4all')}
                             size={BUTTON_SIZE}
+                            customStyle={{
+                                container: isSchedulingBlocked ? 'opacity-50' : undefined
+                            }}
                         />
                         <SocialSquare size={BUTTON_SIZE} />
                     </View>
