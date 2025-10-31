@@ -5,30 +5,23 @@ import { PageHeader } from '~/components/Header';
 import { useGlobalLeaderboard } from '~/hooks/useLeaderboard';
 
 type LeaderboardRowProps = {
-  rank: number;
   title: string;
   value: string;
   subtitle?: string;
+  backgroundClassName?: string;
 };
 
-const LeaderboardRow: React.FC<LeaderboardRowProps> = ({ rank, title, value, subtitle }) => (
-  <View className="flex-row items-center justify-between px-4 py-3">
-    <View className="flex-row items-center gap-3 flex-1">
-      <View className="h-9 w-9 rounded-full bg-[#8B0000] dark:bg-[#8B0000] items-center justify-center">
-        <Text className="text-white font-rubik-medium text-base">
-          {rank}
+const LeaderboardRow: React.FC<LeaderboardRowProps> = ({ title, value, subtitle, backgroundClassName }) => (
+  <View className={`flex-row items-center justify-between px-4 py-3 ${backgroundClassName ?? ''}`}>
+    <View className="flex-1 pr-3">
+      <Text numberOfLines={1} className="text-base font-rubik-medium text-[#1D2124] dark:text-[#DDE1E5]">
+        {title}
+      </Text>
+      {subtitle ? (
+        <Text numberOfLines={1} className="text-xs text-neutral-500 dark:text-neutral-400 font-rubik">
+          {subtitle}
         </Text>
-      </View>
-      <View className="flex-1">
-        <Text numberOfLines={1} className="text-base font-rubik-medium text-[#1D2124] dark:text-[#DDE1E5]">
-          {title}
-        </Text>
-        {subtitle ? (
-          <Text numberOfLines={1} className="text-xs text-neutral-500 dark:text-neutral-400 font-rubik">
-            {subtitle}
-          </Text>
-        ) : null}
-      </View>
+      ) : null}
     </View>
     <Text className="text-base font-rubik-medium text-[#1D2124] dark:text-[#DDE1E5]">
       {value}
@@ -41,7 +34,7 @@ const LeaderboardSection: React.FC<{ title: string; children: React.ReactNode }>
     <Text className="text-lg font-rubik-medium text-[#1D2124] dark:text-[#DDE1E5] mb-3">
       {title}
     </Text>
-    <View className="bg-neutral-50 dark:bg-neutral-800 rounded-2xl border border-neutral-200 dark:border-neutral-700">
+    <View className="bg-neutral-50 dark:bg-neutral-800 rounded-2xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
       {children}
     </View>
   </View>
@@ -98,13 +91,13 @@ const LeaderboardScreen: React.FC = () => {
               </Text>
             </View>
           ) : (
-            data.topElo.map((entry) => (
+            data.topElo.map((entry, index) => (
               <LeaderboardRow
                 key={entry.user.id}
-                rank={entry.rank}
                 title={entry.user.username || 'Anonymous'}
                 value={`${entry.user.eloRating} ELO`}
                 subtitle={entry.user.winRate != null ? `Win rate ${Math.round(entry.user.winRate)}%` : undefined}
+                backgroundClassName={index % 2 === 0 ? 'bg-white dark:bg-[#181D21]' : 'bg-[#EFF3F6] dark:bg-[#14181C]'}
               />
             ))
           )}
@@ -118,10 +111,9 @@ const LeaderboardScreen: React.FC = () => {
               </Text>
             </View>
           ) : (
-            data.topTimeTrials.map((entry) => (
+            data.topTimeTrials.map((entry, index) => (
               <LeaderboardRow
                 key={`${entry.roomId}-${entry.rank}`}
-                rank={entry.rank}
                 title={entry.user?.username || 'Anonymous'}
                 value={`${entry.score} pts`}
                 subtitle={
@@ -129,6 +121,7 @@ const LeaderboardScreen: React.FC = () => {
                     ? `Time ${formatDuration(entry.timeTakenMs)}`
                     : undefined
                 }
+                backgroundClassName={index % 2 === 0 ? 'bg-white dark:bg-[#181D21]' : 'bg-[#EFF3F6] dark:bg-[#14181C]'}
               />
             ))
           )}
