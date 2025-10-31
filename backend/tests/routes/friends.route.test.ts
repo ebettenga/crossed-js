@@ -317,6 +317,31 @@ describe("friends routes", () => {
     }
   });
 
+  it("rejects duplicate friend requests when already pending or friends", async () => {
+    const sender = await createUser({ username: "dup_sender" });
+    const receiver = await createUser({ username: "dup_receiver" });
+
+    await createFriendship({
+      sender,
+      receiver,
+      status: FriendshipStatus.PENDING,
+    });
+
+    const app = await buildServer(sender);
+    try {
+      const response = await app.inject({
+        method: "POST",
+        url: "/friends",
+        payload: { username: receiver.username },
+      });
+      expect(response.statusCode).toBe(400);
+      const payload = response.json() as any;
+      expect(payload.message).toBe("Friendship already exists");
+    } finally {
+      await app.close();
+    }
+  });
+
   it("accepts a friend request and emits socket updates", async () => {
     const receiver = await createUser({ username: "accept_receiver" });
     const sender = await createUser({ username: "accept_sender" });

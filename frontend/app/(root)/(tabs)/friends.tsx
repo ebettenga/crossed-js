@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Image, ActivityIndicator, TextInput, RefreshControl, FlatList } from 'react-native';
 import { Swords, X, UserPlus, Check } from 'lucide-react-native';
 import { PageHeader } from '~/components/Header';
@@ -14,7 +14,7 @@ import {
     useSearchUsers,
     useFriendsSocketEvents
 } from '~/hooks/useFriends';
-import { useUser } from '~/hooks/users';
+import { useUser, type User as SearchUser } from '~/hooks/users';
 import { ChallengeDialog } from '~/components/ChallengeDialog';
 import { useChallenge } from '~/hooks/useChallenge';
 import { ChallengeRow } from '~/components/ChallengeRow';
@@ -214,6 +214,30 @@ export default function Friends() {
     const { mutate: acceptFriend } = useAcceptFriendRequest();
     const { mutate: rejectFriend } = useRejectFriendRequest();
 
+    const blockedUserIds = useMemo(() => {
+        if (!user?.id) return new Set<number>();
+        const ids = new Set<number>();
+
+        friends?.forEach((friend) => {
+            const otherId =
+                friend.sender.id === user.id ? friend.receiver.id : friend.sender.id;
+            ids.add(otherId);
+        });
+
+        pendingRequests?.forEach((friend) => {
+            const otherId =
+                friend.sender.id === user.id ? friend.receiver.id : friend.sender.id;
+            ids.add(otherId);
+        });
+
+        return ids;
+    }, [friends, pendingRequests, user?.id]);
+
+    const filteredFoundUsers = useMemo(() => {
+        if (!foundUsers?.length) return [];
+        return foundUsers.filter((candidate) => !blockedUserIds.has(candidate.id));
+    }, [foundUsers, blockedUserIds]);
+
     const handleAddFriend = useCallback(async () => {
         if (!username.trim()) return;
 
@@ -236,12 +260,17 @@ export default function Friends() {
                 }
             });
         } else {
+            clearSearchResults();
         }
-    }, [searchUsers]);
+    }, [clearSearchResults, searchUsers]);
 
-    const handleSelectUser = useCallback((selectedUsername: string) => {
+    const handleSelectUser = useCallback((selectedUser: SearchUser) => {
+        if (blockedUserIds.has(selectedUser.id)) {
+            return;
+        }
+
         clearSearchResults(); // Clear the dropdown immediately
-        addFriend(selectedUsername, {
+        addFriend(selectedUser.username, {
             onSuccess: () => {
                 setUsername(''); // Clear input on success
                 showToast('success', 'Friend request sent');
@@ -251,7 +280,13 @@ export default function Friends() {
                 console.error('Failed to add friend:', err);
             }
         });
-    }, [addFriend, clearSearchResults]);
+    }, [addFriend, blockedUserIds, clearSearchResults, logger]);
+
+    useEffect(() => {
+        if (foundUsers && foundUsers.length > 0 && filteredFoundUsers.length === 0) {
+            clearSearchResults();
+        }
+    }, [foundUsers, filteredFoundUsers, clearSearchResults]);
 
     const handleRemoveFriend = useCallback(async (friendId: number) => {
         try {
@@ -427,15 +462,15 @@ export default function Friends() {
                                 </>
                             )}
                         </TouchableOpacity>
-                        {foundUsers && foundUsers.length > 0 && (
+                        {filteredFoundUsers.length > 0 && (
                             <View className="absolute top-[46px] left-0 right-[76px] bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg mt-1 z-10 shadow-lg">
                                 <FlatList
-                                    data={foundUsers}
+                                    data={filteredFoundUsers}
                                     keyExtractor={(item) => item.id.toString()}
                                     renderItem={({ item }) => (
                                         <TouchableOpacity
                                             className="flex-row items-center p-3 border-b border-neutral-200 dark:border-neutral-700"
-                                            onPress={() => handleSelectUser(item.username)}
+                                            onPress={() => handleSelectUser(item)}
                                         >
                                             <View className="relative">
                                                 {item.photo ? (
