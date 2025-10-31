@@ -1,11 +1,11 @@
 /**
- * Concurrency test: user guess and inactivity worker reveal the SAME letter "at the same time".
- * We simulate the user input by mutating the cachedGameInfo during the "game_inactive" emit
+ * Concurrency test: user guess and the auto-reveal worker expose the SAME letter simultaneously.
+ * We simulate the user input by mutating the cachedGameInfo during the legacy "game_inactive" emit
  * to set the exact same letter the worker just revealed.
  *
  * Validates idempotency:
  * - The final state equals a single correct reveal without duplication or conflict.
- * - The game continues scheduling the next inactivity check.
+ * - The game continues scheduling the next auto-reveal tick.
  */
 
 import type { DataSource } from "typeorm";
@@ -256,7 +256,7 @@ function resetCaptors() {
   jest.clearAllMocks();
 }
 
-describe("Game inactivity worker same-letter concurrency", () => {
+describe("Game auto-reveal worker same-letter concurrency", () => {
   beforeEach(() => {
     resetCaptors();
     jest.useFakeTimers({ now: Date.now() });

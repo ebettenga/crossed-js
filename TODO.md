@@ -4,7 +4,7 @@
 ## Features
 
 1. make sure crossword board always completely shows up on screen. even small screens
-2. rename game-inactivity-timer to a better name
+2. ensure "auto-reveal" naming is reflected everywhere (frontend, copy, docs)
 
 
 

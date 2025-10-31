@@ -316,7 +316,7 @@ describe("Game auto-reveal worker concurrency", () => {
     });
   });
 
-  test("No user input (true inactivity): reveals exactly one letter, emits events, schedules next job", async () => {
+  test("No user input (auto-reveal triggers): reveals one letter, emits events, schedules next job", async () => {
     const cw = makeCrossword(["A", "B", "C", "D"]);
     const room = makeRoom(202, ["A", "*", "C", "D"], cw);
     const { fakeDataSource } = makeFakeDataSource(room);
@@ -348,7 +348,7 @@ describe("Game auto-reveal worker concurrency", () => {
 
     await (worker as any).process(job);
 
-    // Worker should emit inactivity and room updates
+    // Worker should emit auto-reveal and room updates
     const socketMock = require("../../src/services/SocketEventService");
     const emits = (socketMock.emitToRoom as jest.Mock).mock.calls.filter((
       [_id, evt],
