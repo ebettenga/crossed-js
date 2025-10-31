@@ -22,7 +22,7 @@ export default function Credits() {
                 onPress={() => router.push('/profile/settings')}
             >
                 <ChevronLeft size={24} color={isDark ? '#DDE1E5' : '#2B2B2B'} />
-                <Text className="text-base text-[#2B2B2B] dark:text-[#DDE1E5] ml-1 font-['Times New Roman']">
+                <Text className="text-base text-[#2B2B2B] dark:text-[#DDE1E5] ml-1 font-rubik">
                     Back to Settings
                 </Text>
             </TouchableOpacity>
@@ -30,16 +30,16 @@ export default function Credits() {
             <ScrollView className="flex-1 px-4">
                 <View className="mt-8 bg-white dark:bg-[#1A2227] rounded-lg p-4 gap-6">
                     <View className="gap-2">
-                        <Text className="text-lg font-semibold text-[#1D2124] dark:text-[#DDE1E5] font-['Times New Roman']">
+                        <Text className="text-lg font-semibold text-[#1D2124] dark:text-[#DDE1E5] font-rubik">
                             Credits
                         </Text>
-                        <Text className="text-base text-[#666666] dark:text-[#DDE1E5]/70 font-['Times New Roman']">
+                        <Text className="text-base text-[#666666] dark:text-[#DDE1E5]/70 font-rubik">
                             Huge thanks to everyone who helps make CrossedJS special.
                         </Text>
                     </View>
 
                     <View className="gap-3">
-                        <Text className="text-base font-semibold text-[#1D2124] dark:text-[#DDE1E5] font-['Times New Roman']">
+                        <Text className="text-base font-semibold text-[#1D2124] dark:text-[#DDE1E5] font-rubik">
                             Music
                         </Text>
                         <TouchableOpacity
@@ -48,29 +48,29 @@ export default function Credits() {
                             onPress={handleOpenCadien}
                         >
                             <ExternalLink size={18} color={isDark ? '#DDE1E5' : '#1D2124'} />
-                            <Text className="text-base text-[#8B0000] dark:text-[#E39B9B] font-['Times New Roman']">
+                            <Text className="text-base text-[#8B0000] dark:text-[#E39B9B] font-rubik">
                                 cadien — listen on Spotify
                             </Text>
                         </TouchableOpacity>
                     </View>
 
                     <View className="gap-2">
-                        <Text className="text-base font-semibold text-[#1D2124] dark:text-[#DDE1E5] font-['Times New Roman']">
+                        <Text className="text-base font-semibold text-[#1D2124] dark:text-[#DDE1E5] font-rubik">
                             Testers
                         </Text>
-                        <Text className="text-base text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times New Roman']">
+                        <Text className="text-base text-[#2B2B2B] dark:text-[#DDE1E5] font-rubik">
                             jacjacbettenga
                         </Text>
-                        <Text className="text-base text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times New Roman']">
+                        <Text className="text-base text-[#2B2B2B] dark:text-[#DDE1E5] font-rubik">
                             Zackypoo
                         </Text>
                     </View>
 
                     <View className="gap-2">
-                        <Text className="text-base font-semibold text-[#1D2124] dark:text-[#DDE1E5] font-['Times New Roman']">
+                        <Text className="text-base font-semibold text-[#1D2124] dark:text-[#DDE1E5] font-rubik">
                             Creator
                         </Text>
-                        <Text className="text-base text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times New Roman']">
+                        <Text className="text-base text-[#2B2B2B] dark:text-[#DDE1E5] font-rubik">
                             zero
                         </Text>
                     </View>

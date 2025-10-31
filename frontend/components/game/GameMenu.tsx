@@ -77,7 +77,7 @@ export const GameMenu: React.FC<GameMenuProps> = ({ options }) => {
           >
             <Text
               className={cn(
-                "text-sm text-[#333333] dark:text-[#DDE1E5] font-['Times_New_Roman']",
+                "text-sm text-[#333333] dark:text-[#DDE1E5] font-rubik",
                 isDangerOption(option.style) && "text-[#8B0000] dark:text-red-400"
               )}
             >

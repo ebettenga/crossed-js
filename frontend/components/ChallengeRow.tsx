@@ -27,16 +27,16 @@ export const ChallengeRow = ({
             <View className="flex-1 flex-row items-center gap-3">
                 <View className="relative">
                     <View className="w-10 h-10 rounded-full bg-[#8B0000] items-center justify-center">
-                        <Text className="text-white text-lg font-bold font-['Times New Roman']">
+                        <Text className="text-white text-lg font-rubik-bold">
                             {username?.charAt(0).toUpperCase()}
                         </Text>
                     </View>
                 </View>
                 <View className="flex-1">
-                    <Text className="text-base text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times New Roman']">
+                    <Text className="text-base text-[#2B2B2B] dark:text-[#DDE1E5] font-rubik">
                         {username}
                     </Text>
-                    <Text className="text-xs text-[#666666] dark:text-[#DDE1E5]/70 font-['Times New Roman']">
+                    <Text className="text-xs text-[#666666] dark:text-[#DDE1E5]/70 font-rubik">
                         {challenger ? `You've challenged ${username} to a ${room.difficulty} game!` : `${username} wants to play a ${room.difficulty} game!`}
                     </Text>
                 </View>
@@ -55,7 +55,7 @@ export const ChallengeRow = ({
                             ) : (
                                 <>
                                     <Swords size={16} color="#34D399" />
-                                    <Text className="text-xs text-[#34D399] font-['Times New Roman']">Accept</Text>
+                                    <Text className="text-xs text-[#34D399] font-rubik">Accept</Text>
                                 </>
                             )}
                         </TouchableOpacity>
@@ -71,7 +71,7 @@ export const ChallengeRow = ({
                             ) : (
                                 <>
                                     <X size={16} color="#EF4444" />
-                                    <Text className="text-xs text-[#EF4444] font-['Times New Roman']">Decline</Text>
+                                    <Text className="text-xs text-[#EF4444] font-rubik">Decline</Text>
                                 </>
                             )}
                         </TouchableOpacity>

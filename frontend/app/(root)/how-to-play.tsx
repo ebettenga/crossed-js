@@ -112,7 +112,7 @@ export default function HowToPlay() {
     <View className={cn('flex-1', isDark ? 'bg-[#0F1417]' : 'bg-[#F6FAFE]')}>
       <View className="px-6 pt-16 pb-8">
         <Text className={cn(
-          'text-3xl font-semibold font-rubik-medium',
+          'text-3xl font-rubik-semibold',
           isDark ? 'text-[#F6FAFE]' : 'text-[#0F1417]',
         )}>
           How to Play
@@ -142,7 +142,7 @@ export default function HowToPlay() {
             <View className="rounded-3xl border border-[#D3D3D3] dark:border-neutral-700 bg-white dark:bg-[#1A2227] py-8 px-6 min-h-[420px] justify-between">
               <View>
                 <Text className={cn(
-                  'text-2xl font-semibold font-rubik-medium',
+                  'text-2xl font-rubik-semibold',
                   isDark ? 'text-[#F6FAFE]' : 'text-[#0F1417]'
                 )}>
                   {slide.title}

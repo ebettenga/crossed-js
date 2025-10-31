@@ -31,14 +31,14 @@ export default function Settings() {
                 onPress={() => router.push('/profile')}
             >
                 <ChevronLeft size={24} color={isDark ? '#DDE1E5' : '#2B2B2B'} />
-                <Text className="text-base text-[#2B2B2B] dark:text-[#DDE1E5] ml-1 font-['Times New Roman']">
+                <Text className="text-base text-[#2B2B2B] dark:text-[#DDE1E5] ml-1 font-rubik">
                     Back
                 </Text>
             </TouchableOpacity>
 
             <ScrollView className="flex-1 px-4">
                 <View className="mt-8">
-                    <Text className="text-lg font-semibold text-[#1D2124] dark:text-[#DDE1E5] font-['Times New Roman']">
+                    <Text className="text-lg font-semibold text-[#1D2124] dark:text-[#DDE1E5] font-rubik">
                         Game Settings
                     </Text>
 
@@ -54,7 +54,7 @@ export default function Settings() {
                                 ) : (
                                     <VolumeX size={24} color={isDark ? '#DDE1E5' : '#1D2124'} />
                                 )}
-                                <Text className="text-base text-[#1D2124] dark:text-[#DDE1E5] font-['Times New Roman']">
+                                <Text className="text-base text-[#1D2124] dark:text-[#DDE1E5] font-rubik">
                                     Sound Effects
                                 </Text>
                             </View>
@@ -72,7 +72,7 @@ export default function Settings() {
                                 ) : (
                                     <EyeOff size={24} color={isDark ? '#DDE1E5' : '#1D2124'} />
                                 )}
-                                <Text className="text-base text-[#1D2124] dark:text-[#DDE1E5] font-['Times New Roman']">
+                                <Text className="text-base text-[#1D2124] dark:text-[#DDE1E5] font-rubik">
                                     Show ELO Rating
                                 </Text>
                             </View>
@@ -82,7 +82,7 @@ export default function Settings() {
                 </View>
 
                 <View className="mt-10">
-                    <Text className="text-lg font-semibold text-[#1D2124] dark:text-[#DDE1E5] font-['Times New Roman']">
+                    <Text className="text-lg font-semibold text-[#1D2124] dark:text-[#DDE1E5] font-rubik">
                         Learn & Support
                     </Text>
 
@@ -94,7 +94,7 @@ export default function Settings() {
                         >
                             <View className="flex-row items-center gap-3">
                                 <HelpCircle size={24} color={isDark ? '#DDE1E5' : '#1D2124'} />
-                                <Text className="text-base text-[#1D2124] dark:text-[#DDE1E5] font-['Times New Roman']">
+                                <Text className="text-base text-[#1D2124] dark:text-[#DDE1E5] font-rubik">
                                     How to Play
                                 </Text>
                             </View>
@@ -107,7 +107,7 @@ export default function Settings() {
                         >
                             <View className="flex-row items-center gap-3">
                                 <Sparkles size={24} color={isDark ? '#DDE1E5' : '#1D2124'} />
-                                <Text className="text-base text-[#1D2124] dark:text-[#DDE1E5] font-['Times New Roman']">
+                                <Text className="text-base text-[#1D2124] dark:text-[#DDE1E5] font-rubik">
                                     Credits
                                 </Text>
                             </View>

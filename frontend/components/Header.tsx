@@ -54,10 +54,10 @@ export const PageHeader = () => {
                         />
                     )}
                     <View className="gap-0.5">
-                        <Text className="text-xs text-[#666666] dark:text-neutral-400 font-['Times_New_Roman']">
+                        <Text className="text-xs text-[#666666] dark:text-neutral-400 font-rubik">
                             Welcome back,
                         </Text>
-                        <Text className="text-base font-semibold text-[#1D2124] dark:text-[#DDE1E5] font-['Times_New_Roman']">
+                        <Text className="text-base font-semibold text-[#1D2124] dark:text-[#DDE1E5] font-rubik">
                             {user.username}
                         </Text>
                     </View>
@@ -71,7 +71,7 @@ export const PageHeader = () => {
                             <>
                                 <View className="items-center gap-0.5">
                                     <View className="flex-row items-center gap-1">
-                                        <Text className="text-base font-semibold text-[#1D2124] dark:text-[#DDE1E5] font-['Times_New_Roman']">
+                                        <Text className="text-base font-semibold text-[#1D2124] dark:text-[#DDE1E5] font-rubik">
                                             {user.eloRating}
                                         </Text>
                                         {eloChange !== 0 && (
@@ -81,13 +81,13 @@ export const PageHeader = () => {
                                                 ) : (
                                                     <TrendingDown size={12} color={eloChangeColor} />
                                                 )}
-                                                <Text className="text-xs font-['Times_New_Roman']" style={{ color: eloChangeColor }}>
+                                                <Text className="text-xs font-rubik" style={{ color: eloChangeColor }}>
                                                     {isEloUp ? '+' : ''}{eloChange}
                                                 </Text>
                                             </View>
                                         )}
                                     </View>
-                                    <Text className="text-xs text-[#666666] dark:text-neutral-400 font-['Times_New_Roman']">
+                                    <Text className="text-xs text-[#666666] dark:text-neutral-400 font-rubik">
                                         ELO
                                     </Text>
                                 </View>
@@ -98,11 +98,11 @@ export const PageHeader = () => {
                         <View className="items-center gap-0.5">
                             <View className="flex-row items-center gap-1">
                                 <Users size={16} color="#666666" />
-                                <Text className="text-base font-semibold text-[#1D2124] dark:text-[#DDE1E5] font-['Times_New_Roman']">
+                                <Text className="text-base font-semibold text-[#1D2124] dark:text-[#DDE1E5] font-rubik">
                                     {activeUsers?.toString() || 0}
                                 </Text>
                             </View>
-                            <Text className="text-xs text-[#666666] dark:text-neutral-400 font-['Times_New_Roman']">
+                            <Text className="text-xs text-[#666666] dark:text-neutral-400 font-rubik">
                                 Online
                             </Text>
                         </View>

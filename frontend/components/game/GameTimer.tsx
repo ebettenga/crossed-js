@@ -46,7 +46,7 @@ export const GameTimer: React.FC<GameTimerProps> = ({ startTime, completedAt }) 
   return (
     <View className="flex-row items-center gap-1 bg-white dark:bg-neutral-800 px-2.5 py-1 rounded-xl border border-neutral-200 dark:border-neutral-700">
       <Clock size={16} className="text-[#666666] dark:text-neutral-400" />
-      <Text className="text-sm text-[#666666] dark:text-neutral-400 font-['Times_New_Roman']">
+      <Text className="text-sm text-[#666666] dark:text-neutral-400 font-rubik">
         {elapsedTime}
       </Text>
     </View>

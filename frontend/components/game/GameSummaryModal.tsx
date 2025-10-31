@@ -152,13 +152,13 @@ const CompetitiveResults: React.FC<CompetitiveResultsProps> = ({ room, selectedP
 
     return (
         <View className="rounded-sm border-[1.5px] border-[#343434] dark:border-neutral-600 bg-[#FAFAF7] dark:bg-neutral-800 w-full pt-6">
-            <Text className="text-lg text-center text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman'] mb-4">
+            <Text className="text-lg text-center text-[#666666] dark:text-[#9CA3AF] font-rubik mb-4">
                 {outcome.isWinner ? 'Victory!' : 'Defeated'}
                 {room.type === '2v2' && outcome.teamScore !== undefined && (
                     <Text className="text-sm"> ({outcome.teamScore} - {outcome.opponentScore})</Text>
                 )}
             </Text>
-            <Text className="text-xl text-center text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman'] mb-2">
+            <Text className="text-xl text-center text-[#2B2B2B] dark:text-[#DDE1E5] font-rubik mb-2">
                 {selectedPlayer?.username || 'Player'}
             </Text>
 
@@ -166,10 +166,10 @@ const CompetitiveResults: React.FC<CompetitiveResultsProps> = ({ room, selectedP
             <View className="px-4 mb-4">
                 {/* Score */}
                 <View className="flex-row mb-1 justify-between">
-                    <Text className="text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">
+                    <Text className="text-[#666666] dark:text-[#9CA3AF] font-rubik">
                         Score:
                     </Text>
-                    <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman']">
+                    <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-rubik">
                         {room.scores[selectedPlayerId] || 0}
                     </Text>
                 </View>
@@ -177,21 +177,21 @@ const CompetitiveResults: React.FC<CompetitiveResultsProps> = ({ room, selectedP
 
                 {/* Match Outcome */}
                 <View className="flex-row mb-1 justify-between">
-                    <Text className="text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">
+                    <Text className="text-[#666666] dark:text-[#9CA3AF] font-rubik">
                         Margin:
                     </Text>
-                    <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman']">
+                    <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-rubik">
                         {outcome.isWinner ? '+' : '-'}{outcome.margin} pts
                     </Text>
                 </View>
 
                 {/* Elo Change */}
                 <View className="flex-row mb-1 justify-between">
-                    <Text className="text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">
+                    <Text className="text-[#666666] dark:text-[#9CA3AF] font-rubik">
                         Rating:
                     </Text>
                     <View className="flex-row items-center gap-2">
-                        <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman']">
+                        <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-rubik">
                             {eloAtGame}
                         </Text>
                         {eloChange !== undefined && eloChange !== 0 ? (
@@ -202,14 +202,14 @@ const CompetitiveResults: React.FC<CompetitiveResultsProps> = ({ room, selectedP
                                     <TrendingDown size={16} color="#dc2626" />
                                 )}
                                 <Text className={cn(
-                                    "font-['Times_New_Roman'] font-semibold",
+                                    "font-rubik-semibold",
                                     eloChange > 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
                                 )}>
                                     {eloChange > 0 ? '+' : ''}{eloChange}
                                 </Text>
                             </View>
                         ) : (
-                            <Text className="text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman'] text-xs">
+                            <Text className="text-[#666666] dark:text-[#9CA3AF] font-rubik text-xs">
                                 (unchanged)
                             </Text>
                         )}
@@ -219,10 +219,10 @@ const CompetitiveResults: React.FC<CompetitiveResultsProps> = ({ room, selectedP
                 {/* Accuracy */}
                 {playerStats && (
                     <View className="flex-row mb-1 justify-between">
-                        <Text className="text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">
+                        <Text className="text-[#666666] dark:text-[#9CA3AF] font-rubik">
                             Accuracy:
                         </Text>
-                        <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman']">
+                        <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-rubik">
                             {accuracy.toFixed(1)}% ({playerStats.correctGuesses} correct, {playerStats.incorrectGuesses} mistakes)
                         </Text>
                     </View>
@@ -231,10 +231,10 @@ const CompetitiveResults: React.FC<CompetitiveResultsProps> = ({ room, selectedP
                 {/* Contribution */}
                 {playerStats && gameStats && gameStats.length > 1 && (
                     <View className="flex-row mb-1 justify-between">
-                        <Text className="text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">
+                        <Text className="text-[#666666] dark:text-[#9CA3AF] font-rubik">
                             Contribution:
                         </Text>
-                        <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman']">
+                        <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-rubik">
                             {contribution.toFixed(1)}%
                         </Text>
                     </View>
@@ -242,10 +242,10 @@ const CompetitiveResults: React.FC<CompetitiveResultsProps> = ({ room, selectedP
 
                 {/* Grid Completion */}
                 <View className="flex-row mb-1 justify-between">
-                    <Text className="text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">
+                    <Text className="text-[#666666] dark:text-[#9CA3AF] font-rubik">
                         Grid Solved:
                     </Text>
-                    <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman']">
+                    <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-rubik">
                         {gridCompletion.toFixed(1)}%
                     </Text>
                 </View>
@@ -343,7 +343,7 @@ const TimeTrialResults: React.FC<TimeTrialResultsProps> = ({
 
     return (
         <View className="rounded-sm border-[1.5px] border-[#343434] dark:border-neutral-600 bg-[#FAFAF7] dark:bg-neutral-800 w-full pt-6">
-            <Text className="text-xl text-center text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman'] mb-4">
+            <Text className="text-xl text-center text-[#2B2B2B] dark:text-[#DDE1E5] font-rubik mb-4">
                 {selectedPlayer?.username || 'Player'}
             </Text>
 
@@ -351,10 +351,10 @@ const TimeTrialResults: React.FC<TimeTrialResultsProps> = ({
                 <View className="space-y-3">
                     {/* Score */}
                     <View className="flex-row justify-between">
-                        <Text className="text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">
+                        <Text className="text-[#666666] dark:text-[#9CA3AF] font-rubik">
                             Score:
                         </Text>
-                        <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman']">
+                        <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-rubik">
                             {room.scores[selectedPlayerId] || 0}
                         </Text>
                     </View>
@@ -362,10 +362,10 @@ const TimeTrialResults: React.FC<TimeTrialResultsProps> = ({
                     {/* Accuracy */}
                     {playerStats && (
                         <View className="flex-row justify-between">
-                            <Text className="text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">
+                            <Text className="text-[#666666] dark:text-[#9CA3AF] font-rubik">
                                 Accuracy:
                             </Text>
-                            <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman']">
+                            <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-rubik">
                                 {accuracy.toFixed(1)}% ({playerStats.correctGuesses} correct, {playerStats.incorrectGuesses} mistakes)
                             </Text>
                         </View>
@@ -374,10 +374,10 @@ const TimeTrialResults: React.FC<TimeTrialResultsProps> = ({
                     {/* Contribution */}
                     {playerStats && gameStats && gameStats.length > 1 && (
                         <View className="flex-row justify-between">
-                            <Text className="text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">
+                            <Text className="text-[#666666] dark:text-[#9CA3AF] font-rubik">
                                 Contribution:
                             </Text>
-                            <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman']">
+                            <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-rubik">
                                 {contribution.toFixed(1)}%
                             </Text>
                         </View>
@@ -385,10 +385,10 @@ const TimeTrialResults: React.FC<TimeTrialResultsProps> = ({
 
                     {/* Grid Completion */}
                     <View className="flex-row justify-between">
-                        <Text className="text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">
+                        <Text className="text-[#666666] dark:text-[#9CA3AF] font-rubik">
                             Grid Solved:
                         </Text>
-                        <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman']">
+                        <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-rubik">
                             {gridCompletion.toFixed(1)}%
                         </Text>
                     </View>
@@ -396,13 +396,13 @@ const TimeTrialResults: React.FC<TimeTrialResultsProps> = ({
 
                 {/* Leaderboard */}
                 <View className="mt-6 pt-4 border-t border-[#343434] dark:border-neutral-600">
-                    <Text className="text-lg text-center text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman'] mb-3">
+                    <Text className="text-lg text-center text-[#2B2B2B] dark:text-[#DDE1E5] font-rubik mb-3">
                         Top Scores
                     </Text>
                     {isLoading ? (
-                        <Text className="text-center text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">Loading...</Text>
+                        <Text className="text-center text-[#666666] dark:text-[#9CA3AF] font-rubik">Loading...</Text>
                     ) : error ? (
-                        <Text className="text-center text-[#8B0000] dark:text-[#FF6B6B] font-['Times_New_Roman']">
+                        <Text className="text-center text-[#8B0000] dark:text-[#FF6B6B] font-rubik">
                             {error instanceof Error ? error.message : 'Failed to load leaderboard'}
                         </Text>
                     ) : leaderboard && leaderboard.topEntries && leaderboard.topEntries.length > 0 ? (
@@ -415,12 +415,12 @@ const TimeTrialResults: React.FC<TimeTrialResultsProps> = ({
                                         isYou && "bg-[#F0F0ED] dark:bg-neutral-700 px-2 rounded"
                                     )}>
                                         <Text className={cn(
-                                            "text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']",
+                                            "text-[#666666] dark:text-[#9CA3AF] font-rubik",
                                             isYou && "font-semibold"
                                         )}>
                                             {entry.rank}. {entry.user?.username ?? 'Anonymous'}
                                         </Text>
-                                        <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman'] text-sm">
+                                        <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-rubik text-sm">
                                             {entry.score} pts • {formatMs(entry.timeTakenMs)}
                                         </Text>
                                     </View>
@@ -431,15 +431,15 @@ const TimeTrialResults: React.FC<TimeTrialResultsProps> = ({
                             {leaderboard.currentPlayerEntry && (
                                 <>
                                     <View className="flex-row justify-center py-1">
-                                        <Text className="text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">
+                                        <Text className="text-[#666666] dark:text-[#9CA3AF] font-rubik">
                                             ⋯
                                         </Text>
                                     </View>
                                     <View className="flex-row justify-between bg-[#F0F0ED] dark:bg-neutral-700 px-2 py-1 rounded">
-                                        <Text className="text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman'] font-semibold">
+                                        <Text className="text-[#666666] dark:text-[#9CA3AF] font-rubik-semibold">
                                             {leaderboard.currentPlayerEntry.rank}. {leaderboard.currentPlayerEntry.user?.username ?? 'Anonymous'}
                                         </Text>
-                                        <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman'] text-sm">
+                                        <Text className="text-[#2B2B2B] dark:text-[#DDE1E5] font-rubik text-sm">
                                             {leaderboard.currentPlayerEntry.score} pts • {formatMs(leaderboard.currentPlayerEntry.timeTakenMs)}
                                         </Text>
                                     </View>
@@ -447,7 +447,7 @@ const TimeTrialResults: React.FC<TimeTrialResultsProps> = ({
                             )}
                         </View>
                     ) : (
-                        <Text className="text-center text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">No results yet</Text>
+                        <Text className="text-center text-[#666666] dark:text-[#9CA3AF] font-rubik">No results yet</Text>
                     )}
                 </View>
             </View>
@@ -546,7 +546,7 @@ export const GameSummaryModal: React.FC<GameSummaryModalProps> = ({
         if (statsLoading) {
             return (
                 <View className="rounded-sm border-[1.5px] border-[#343434] dark:border-neutral-600 bg-[#FAFAF7] dark:bg-neutral-800 w-full pt-6 pb-6">
-                    <Text className="text-center text-[#666666] dark:text-[#9CA3AF] font-['Times_New_Roman']">
+                    <Text className="text-center text-[#666666] dark:text-[#9CA3AF] font-rubik">
                         Loading stats...
                     </Text>
                 </View>
@@ -557,7 +557,7 @@ export const GameSummaryModal: React.FC<GameSummaryModalProps> = ({
         if (statsError) {
             return (
                 <View className="rounded-sm border-[1.5px] border-[#343434] dark:border-neutral-600 bg-[#FAFAF7] dark:bg-neutral-800 w-full pt-6 pb-6">
-                    <Text className="text-center text-[#8B0000] dark:text-[#FF6B6B] font-['Times_New_Roman']">
+                    <Text className="text-center text-[#8B0000] dark:text-[#FF6B6B] font-rubik">
                         Failed to load game stats
                     </Text>
                 </View>
@@ -714,7 +714,7 @@ export const GameSummaryModal: React.FC<GameSummaryModalProps> = ({
                                 >
                                     <Text
                                         className={cn(
-                                            "font-['Times_New_Roman']",
+                                            "font-rubik",
                                             difficultyRating === 'too_easy'
                                                 ? "text-[#8B0000]"
                                                 : "text-[#2B2B2B] dark:text-[#E5E7EB]"
@@ -734,7 +734,7 @@ export const GameSummaryModal: React.FC<GameSummaryModalProps> = ({
                                 >
                                     <Text
                                         className={cn(
-                                            "font-['Times_New_Roman']",
+                                            "font-rubik",
                                             difficultyRating === 'just_right'
                                                 ? "text-[#8B0000]"
                                                 : "text-[#2B2B2B] dark:text-[#E5E7EB]"
@@ -754,7 +754,7 @@ export const GameSummaryModal: React.FC<GameSummaryModalProps> = ({
                                 >
                                     <Text
                                         className={cn(
-                                            "font-['Times_New_Roman']",
+                                            "font-rubik",
                                             difficultyRating === 'too_hard'
                                                 ? "text-[#8B0000]"
                                                 : "text-[#2B2B2B] dark:text-[#E5E7EB]"
@@ -807,7 +807,7 @@ export const GameSummaryModal: React.FC<GameSummaryModalProps> = ({
                                         ) : (
                                             <View className="flex-row items-center gap-2">
                                                 <Swords color={homeIconColor} />
-                                                <Text className="text-base font-['Times_New_Roman'] text-[#2B2B2B] dark:text-[#DDE1E5]">
+                                                <Text className="text-base font-rubik text-[#2B2B2B] dark:text-[#DDE1E5]">
                                                     {playAgainLabel}
                                                 </Text>
                                             </View>
@@ -834,7 +834,7 @@ export const GameSummaryModal: React.FC<GameSummaryModalProps> = ({
                                     "active:bg-[#F0F0ED] active:dark:bg-neutral-700",
                                 )}
                             >
-                                <Text className="absolute top-1 left-1 text-xs font-['Times_New_Roman'] text-[#666666] dark:text-neutral-400 font-medium">
+                                <Text className="absolute top-1 left-1 text-xs font-rubik text-[#666666] dark:text-neutral-400 font-medium">
                                     1
                                 </Text>
                                 <View className="w-full h-full flex flex-col items-center justify-center">

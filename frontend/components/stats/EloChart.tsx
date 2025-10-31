@@ -47,7 +47,7 @@ export const EloChart: React.FC<EloChartProps> = ({ startDate }) => {
                     svg={{
                         fontSize: 12,
                         fill: colorScheme === 'dark' ? '#9CA3AF' : '#666666',
-                        fontFamily: 'Times New Roman'
+                        fontFamily: 'Rubik-Regular'
                     }}
                     numberOfTicks={2}
                     formatLabel={(value: number) => Math.round(value)}

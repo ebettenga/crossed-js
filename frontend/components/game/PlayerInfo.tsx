@@ -41,7 +41,7 @@ const ScoreChange: React.FC<{ value: number }> = ({ value }) => {
 
     return (
         <Animated.Text
-            className={`absolute left-full ml-0.5 text-sm font-semibold font-['Times_New_Roman'] ${value > 0 ? 'text-green-500' : 'text-red-600'}`}
+            className={`absolute left-full ml-0.5 text-sm font-rubik-semibold ${value > 0 ? 'text-green-500' : 'text-red-600'}`}
             style={animatedStyle}
         >
             {value > 0 ? `+${value}` : value}
@@ -104,7 +104,7 @@ export const PlayerInfo: React.FC<PlayerInfoProps> = ({ players, scores }) => {
                     >
                         <View className="flex-row items-center gap-2">
                             <Text
-                                className={`text-sm font-semibold font-['Times_New_Roman'] ${player.id === currentUser?.id
+                                className={`text-sm font-rubik-semibold ${player.id === currentUser?.id
                                     ? 'text-white'
                                     : 'text-[#1D2124] dark:text-[#DDE1E5]'
                                     }`}
@@ -114,7 +114,7 @@ export const PlayerInfo: React.FC<PlayerInfoProps> = ({ players, scores }) => {
                         </View>
                         <View className="flex-row items-center relative">
                             <Text
-                                className={`text-lg font-semibold font-['Times_New_Roman'] ${player.id === currentUser?.id
+                                className={`text-lg font-rubik-semibold ${player.id === currentUser?.id
                                     ? 'text-white'
                                     : 'text-[#1D2124] dark:text-[#DDE1E5]'
                                     }`}

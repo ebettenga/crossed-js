@@ -75,7 +75,7 @@ export const HomeSquareButton: React.FC<HomeSquareButtonProps> = ({
                 )}
             >
                 {number !== undefined && (
-                    <Text className="absolute top-1 left-1 text-xs font-['Times_New_Roman'] text-[#666666] dark:text-neutral-400 font-medium">
+                    <Text className="absolute top-1 left-1 text-xs font-rubik text-[#666666] dark:text-neutral-400 font-medium">
                         {number}
                     </Text>
                 )}
@@ -86,7 +86,7 @@ export const HomeSquareButton: React.FC<HomeSquareButtonProps> = ({
                         </View>
                     )}
                     {name && (
-                        <Text className="text-[#2B2B2B] dark:text-neutral-200 text-base font-['Times_New_Roman'] text-center px-1">
+                        <Text className="text-[#2B2B2B] dark:text-neutral-200 text-base font-rubik text-center px-1">
                             {name}
                         </Text>
                     )}
@@ -140,7 +140,7 @@ export const RectButton: React.FC<RectButtonProps> = ({
                 )}
             >
                 {number !== undefined && (
-                    <Text className="absolute top-1 left-1 text-xs font-['Times_New_Roman'] text-[#666666] dark:text-neutral-400 font-medium">
+                    <Text className="absolute top-1 left-1 text-xs font-rubik text-[#666666] dark:text-neutral-400 font-medium">
                         {number}
                     </Text>
                 )}
@@ -151,7 +151,7 @@ export const RectButton: React.FC<RectButtonProps> = ({
                         </View>
                     )}
                     {name && (
-                        <Text className="text-[#2B2B2B] dark:text-neutral-200 text-base font-['Times_New_Roman'] text-center px-1">
+                        <Text className="text-[#2B2B2B] dark:text-neutral-200 text-base font-rubik text-center px-1">
                             {name}
                         </Text>
                     )}

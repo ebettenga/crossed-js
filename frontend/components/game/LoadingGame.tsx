@@ -26,7 +26,7 @@ export const LoadingGame: React.FC = () => {
             <Animated.View style={{ transform: [{ rotate: spin }] }}>
                 <Swords size={48} color='#8B0000' />
             </Animated.View>
-            <Text className="text-lg text-[#1D2124] dark:text-[#DDE1E5] font-['Times_New_Roman']">
+            <Text className="text-lg text-[#1D2124] dark:text-[#DDE1E5] font-rubik">
                 Loading game...
             </Text>
         </View>

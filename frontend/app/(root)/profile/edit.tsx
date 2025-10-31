@@ -135,7 +135,7 @@ export default function EditProfile() {
                     onPress={() => router.push('/profile')}
                 >
                     <ChevronLeft size={24} color={isDark ? '#DDE1E5' : '#2B2B2B'} />
-                    <Text className="text-base text-[#2B2B2B] dark:text-[#DDE1E5] ml-1 font-['Times New Roman']">
+                    <Text className="text-base text-[#2B2B2B] dark:text-[#DDE1E5] ml-1 font-rubik">
                         Back
                     </Text>
                 </TouchableOpacity>
@@ -160,17 +160,17 @@ export default function EditProfile() {
                                 <Camera size={32} color="#666666" />
                             </View>
                         )}
-                        <Text className="text-base text-[#8B0000] font-['Times New Roman']">
+                        <Text className="text-base text-[#8B0000] font-rubik">
                             Change Photo
                         </Text>
                     </TouchableOpacity>
 
                     <View className="gap-2">
-                        <Text className="text-base text-[#666666] dark:text-[#DDE1E5]/70 font-['Times New Roman']">
+                        <Text className="text-base text-[#666666] dark:text-[#DDE1E5]/70 font-rubik">
                             Email
                         </Text>
                         <TextInput
-                            className="h-[46px] border border-[#E5E5E5] dark:border-[#2A3136] rounded-lg px-3 bg-[#F8F8F5] dark:bg-[#1A2227] text-base text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times New Roman']"
+                            className="h-[46px] border border-[#E5E5E5] dark:border-[#2A3136] rounded-lg px-3 bg-[#F8F8F5] dark:bg-[#1A2227] text-base text-[#2B2B2B] dark:text-[#DDE1E5] font-rubik"
                             value={email}
                             onChangeText={setEmail}
                             placeholder="Enter email"
@@ -184,7 +184,7 @@ export default function EditProfile() {
                         className="items-center py-2"
                         onPress={() => setShowPasswordFields(!showPasswordFields)}
                     >
-                        <Text className="text-base text-[#8B0000] font-['Times New Roman']">
+                        <Text className="text-base text-[#8B0000] font-rubik">
                             {showPasswordFields ? 'Cancel Password Change' : 'Change Password'}
                         </Text>
                     </TouchableOpacity>
@@ -192,11 +192,11 @@ export default function EditProfile() {
                     {showPasswordFields && (
                         <>
                             <View className="gap-2">
-                                <Text className="text-base text-[#666666] dark:text-[#DDE1E5]/70 font-['Times New Roman']">
+                                <Text className="text-base text-[#666666] dark:text-[#DDE1E5]/70 font-rubik">
                                     Current Password
                                 </Text>
                                 <TextInput
-                                    className="h-[46px] border border-[#E5E5E5] dark:border-[#2A3136] rounded-lg px-3 bg-[#F8F8F5] dark:bg-[#1A2227] text-base text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times New Roman']"
+                                    className="h-[46px] border border-[#E5E5E5] dark:border-[#2A3136] rounded-lg px-3 bg-[#F8F8F5] dark:bg-[#1A2227] text-base text-[#2B2B2B] dark:text-[#DDE1E5] font-rubik"
                                     value={oldPassword}
                                     onChangeText={setOldPassword}
                                     placeholder="Enter current password"
@@ -206,11 +206,11 @@ export default function EditProfile() {
                             </View>
 
                             <View className="gap-2">
-                                <Text className="text-base text-[#666666] dark:text-[#DDE1E5]/70 font-['Times New Roman']">
+                                <Text className="text-base text-[#666666] dark:text-[#DDE1E5]/70 font-rubik">
                                     New Password
                                 </Text>
                                 <TextInput
-                                    className="h-[46px] border border-[#E5E5E5] dark:border-[#2A3136] rounded-lg px-3 bg-[#F8F8F5] dark:bg-[#1A2227] text-base text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times New Roman']"
+                                    className="h-[46px] border border-[#E5E5E5] dark:border-[#2A3136] rounded-lg px-3 bg-[#F8F8F5] dark:bg-[#1A2227] text-base text-[#2B2B2B] dark:text-[#DDE1E5] font-rubik"
                                     value={newPassword}
                                     onChangeText={setNewPassword}
                                     placeholder="Enter new password"
@@ -229,7 +229,7 @@ export default function EditProfile() {
                         {isLoading ? (
                             <ActivityIndicator color="#FFFFFF" />
                         ) : (
-                            <Text className="text-white text-base font-semibold font-['Times New Roman']">
+                            <Text className="text-white text-base font-rubik-semibold">
                                 Save Changes
                             </Text>
                         )}
