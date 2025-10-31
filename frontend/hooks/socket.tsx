@@ -566,6 +566,12 @@ export const useRoom = (roomId?: number) => {
         queryClient.invalidateQueries({ queryKey: ['me'] });
         queryClient.invalidateQueries({ queryKey: ['userGameStats'] });
         queryClient.invalidateQueries({ queryKey: ['recentGames'] });
+        queryClient.setQueryData<Room[]>(['rooms', 'playing'], (existing) =>
+          existing?.filter((roomItem) => roomItem.id !== data.id)
+        );
+        queryClient.setQueryData<Room[]>(['rooms', 'pending'], (existing) =>
+          existing?.filter((roomItem) => roomItem.id !== data.id)
+        );
         setShowGameSummary(true);
       }
 

@@ -48,7 +48,28 @@ export class CrosswordService {
   async loadCrosswords(pack: string = "general") {
     const repository = await this.ormConnection.getRepository(Crossword);
 
-    const crosswordsDir = findDir("../../", "crosswords");
+    const candidateDirs = [
+      process.env.CROSSWORDS_DIR,
+      "/crosswords",
+    ].filter((dir): dir is string => !!dir);
+
+    let crosswordsDir: string | null = null;
+    for (const dir of candidateDirs) {
+      if (fs.existsSync(dir) && fs.statSync(dir).isDirectory()) {
+        crosswordsDir = dir;
+        break;
+      }
+    }
+
+    if (!crosswordsDir) {
+      crosswordsDir = findDir("../../", "crosswords");
+    }
+
+    if (!crosswordsDir) {
+      throw new Error(
+        "Crosswords directory not found. Ensure a 'crosswords' folder is available on the server.",
+      );
+    }
     const crosswords = [];
 
     const loadFiles = (dir: string) => {
