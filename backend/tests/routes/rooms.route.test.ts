@@ -15,7 +15,7 @@ jest.mock("../../src/jobs/queues", () => {
       ...createQueueMock(),
       remove: jest.fn().mockResolvedValue(undefined),
     },
-    gameInactivityQueue: createQueueMock(),
+    gameAutoRevealQueue: createQueueMock(),
   };
 });
 
@@ -36,7 +36,7 @@ import { config } from "../../src/config/config";
 import { redisService } from "../../src/services/RedisService";
 import {
   emailQueue,
-  gameInactivityQueue,
+  gameAutoRevealQueue,
   gameTimeoutQueue,
   statusCleanupQueue,
 } from "../../src/jobs/queues";
@@ -328,7 +328,7 @@ afterAll(async () => {
     emailQueue.close(),
     statusCleanupQueue.close(),
     gameTimeoutQueue.close(),
-    gameInactivityQueue.close(),
+    gameAutoRevealQueue.close(),
   ]);
 
   // 3. Close RedisService connections (publisher, subscriber, main client)

@@ -5,7 +5,7 @@ import { Room } from "../../entities/Room";
 import { NotFoundError } from "../../errors/api";
 import { FastifyInstance } from "fastify";
 import { createSocketEventService } from "../../services/SocketEventService";
-import { gameInactivityQueue } from "../queues";
+import { gameAutoRevealQueue } from "../queues";
 import { v4 as uuidv4 } from "uuid";
 import { Crossword } from "../../entities/Crossword";
 import { RedisService } from "../../services/RedisService";
@@ -47,7 +47,7 @@ function findRandomUnsolvedLetter(
  */
 function calculateDynamicTimeout(completionRate: number): number {
   const { initial, minimum, accelerationRate, completionStep } =
-    config.game.timeout.inactivity;
+    config.game.timeout.autoReveal;
 
   // Calculate how many completion steps we've passed
   const steps = Math.floor(completionRate / completionStep);
@@ -65,7 +65,7 @@ function calculateDynamicTimeout(completionRate: number): number {
   return Math.round(timeout);
 }
 
-export const createGameInactivityWorker = (
+export const createGameAutoRevealWorker = (
   dataSource: DataSource,
   fastify: FastifyInstance,
 ) => {
@@ -80,9 +80,9 @@ export const createGameInactivityWorker = (
   };
 
   const worker = new Worker(
-    "game-inactivity",
+    "game-auto-reveal",
     async (job) => {
-      console.log("Game inactivity worker started");
+      console.log("Game auto-reveal worker started");
       await ensureConnection();
 
       // Start a transaction
@@ -198,7 +198,7 @@ export const createGameInactivityWorker = (
 
               // Save moved after state updates below
 
-              // Notify players about inactivity and revealed letter
+              // Notify players about the auto-reveal tick and the newly exposed letter
               await socketEventService.emitToRoom(room.id, "game_inactive", {
                 completionRate,
                 nextTimeout,
@@ -236,8 +236,8 @@ export const createGameInactivityWorker = (
           if (room.status === "playing") {
             try {
               const now = Date.now();
-              console.log(
-                `Scheduling next inactivity check for room ${room.id}:`,
+            console.log(
+              `Scheduling next auto-reveal tick for room ${room.id}:`,
                 {
                   nextTimeout,
                   lastActivityTimestamp: cachedGameInfo.lastActivityAt,
@@ -247,21 +247,21 @@ export const createGameInactivityWorker = (
                 },
               );
 
-              const nextJob = await gameInactivityQueue.add(
-                "game-inactivity",
+              const nextJob = await gameAutoRevealQueue.add(
+                "game-auto-reveal",
                 {
                   roomId: room.id,
                   lastActivityTimestamp: cachedGameInfo.lastActivityAt,
                 },
                 {
-                  jobId: `game-inactivity-${room.id}-${uuidv4()}`,
+                  jobId: `game-auto-reveal-${room.id}-${uuidv4()}`,
                   delay: nextTimeout,
                   removeOnComplete: { count: 1 },
                   removeOnFail: { count: 1 },
                 },
               );
 
-              console.log(`Successfully scheduled next inactivity check:`, {
+              console.log(`Successfully scheduled next auto-reveal tick:`, {
                 jobId: nextJob.id,
                 roomId: room.id,
                 scheduledFor: new Date(now + nextTimeout).toISOString(),
@@ -269,21 +269,21 @@ export const createGameInactivityWorker = (
               });
             } catch (error) {
               console.error(
-                `Failed to schedule next inactivity check for room ${room.id}:`,
+                `Failed to schedule next auto-reveal tick for room ${room.id}:`,
                 error,
               );
               // Try one more time with a shorter delay if scheduling failed
               try {
                 const retryDelay = Math.max(1000, Math.floor(nextTimeout / 2));
-                console.log(`Retrying with shorter delay of ${retryDelay}ms`);
-                await gameInactivityQueue.add(
-                  "game-inactivity",
+                console.log(`Retrying auto-reveal with shorter delay of ${retryDelay}ms`);
+                await gameAutoRevealQueue.add(
+                  "game-auto-reveal",
                   {
                     roomId: room.id,
                     lastActivityTimestamp: cachedGameInfo.lastActivityAt,
                   },
                   {
-                    jobId: `game-inactivity-${room.id}-${uuidv4()}-retry`,
+                    jobId: `game-auto-reveal-${room.id}-${uuidv4()}-retry`,
                     delay: retryDelay,
                     removeOnComplete: { count: 1 },
                     removeOnFail: { count: 1 },
@@ -291,7 +291,7 @@ export const createGameInactivityWorker = (
                 );
               } catch (retryError) {
                 console.error(
-                  `Retry also failed for room ${room.id}:`,
+                  `Auto-reveal retry also failed for room ${room.id}:`,
                   retryError,
                 );
                 throw retryError;
@@ -299,12 +299,12 @@ export const createGameInactivityWorker = (
             }
           } else {
             console.log(
-              `Not scheduling next check for room ${room.id} as status is ${room.status}`,
+              `Not scheduling next auto-reveal tick for room ${room.id} as status is ${room.status}`,
             );
           }
         } else {
           console.log(
-            `Skipping inactivity check for room ${room.id} as status is ${room.status}`,
+            `Skipping auto-reveal tick for room ${room.id} as status is ${room.status}`,
           );
         }
 
@@ -329,13 +329,13 @@ export const createGameInactivityWorker = (
 
   worker.on("completed", (job) => {
     console.log(
-      `Game inactivity job ${job.id} completed for room ${job.data.roomId}`,
+      `Game auto-reveal job ${job.id} completed for room ${job.data.roomId}`,
     );
   });
 
   worker.on("failed", (job, err) => {
     console.error(
-      `Game inactivity job ${job?.id} failed for room ${job?.data?.roomId}:`,
+      `Game auto-reveal job ${job?.id} failed for room ${job?.data?.roomId}:`,
       err,
     );
   });

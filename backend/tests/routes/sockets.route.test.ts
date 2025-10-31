@@ -22,7 +22,7 @@ import { config } from "../../src/config/config";
 import { redisService } from "../../src/services/RedisService";
 import {
   emailQueue,
-  gameInactivityQueue,
+  gameAutoRevealQueue,
   gameTimeoutQueue,
   statusCleanupQueue,
 } from "../../src/jobs/queues";
@@ -293,7 +293,7 @@ afterAll(async () => {
     emailQueue.close(),
     statusCleanupQueue.close(),
     gameTimeoutQueue.close(),
-    gameInactivityQueue.close(),
+    gameAutoRevealQueue.close(),
   ]);
   await redisService.close();
   const { fastify: globalFastify } = await import("../../src/fastify");

@@ -12,7 +12,7 @@ export interface GameTimeoutJobData {
   roomId: number;
 }
 
-export interface GameInactivityJobData {
+export interface GameAutoRevealJobData {
   roomId: number;
   lastActivityTimestamp?: number;
 }
@@ -38,8 +38,8 @@ export const gameTimeoutQueue = new Queue<GameTimeoutJobData>("game-timeout", {
   },
 });
 
-export const gameInactivityQueue = new Queue<GameInactivityJobData>(
-  "game-inactivity",
+export const gameAutoRevealQueue = new Queue<GameAutoRevealJobData>(
+  "game-auto-reveal",
   {
     connection: config.redis.default,
     defaultJobOptions: {

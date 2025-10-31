@@ -76,39 +76,40 @@ program
   });
 
 program
-  .command("add-inactivity-check")
-  .description("Add an inactivity check job for a room")
+  .command("add-auto-reveal-tick")
+  .alias("add-inactivity-check")
+  .description("Schedule an auto-reveal tick for a room")
   .requiredOption("-r, --roomId <number>", "Room ID to check")
   .option(
     "-d, --delay <number>",
-    "Delay in milliseconds before the check (default: 10000)",
+    "Delay in milliseconds before the auto-reveal tick (default: 10000)",
     "10000",
   )
   .action(async (options) => {
     try {
       const { roomId, delay } = options;
       const now = Date.now();
-      const { gameInactivityQueue } = await import("../jobs/queues");
+      const { gameAutoRevealQueue } = await import("../jobs/queues");
 
       console.log(
-        `Adding inactivity check for room ${roomId} with delay ${delay}ms`,
+        `Adding auto-reveal tick for room ${roomId} with delay ${delay}ms`,
       );
 
-      const job = await gameInactivityQueue.add(
-        "game-inactivity",
+      const job = await gameAutoRevealQueue.add(
+        "game-auto-reveal",
         {
           roomId: parseInt(roomId),
           lastActivityTimestamp: now,
         },
         {
-          jobId: `game-inactivity-${roomId}-${uuidv4()}`,
+          jobId: `game-auto-reveal-${roomId}-${uuidv4()}`,
           delay: parseInt(delay),
           removeOnComplete: { count: 1 },
           removeOnFail: { count: 1 },
         },
       );
 
-      console.log("Successfully added inactivity check:", {
+      console.log("Successfully added auto-reveal tick:", {
         jobId: job.id,
         roomId: roomId,
         scheduledFor: new Date(now + parseInt(delay)).toISOString(),
@@ -117,26 +118,27 @@ program
 
       process.exit(0);
     } catch (error) {
-      console.error("Error adding inactivity check:", error);
+      console.error("Error scheduling auto-reveal tick:", error);
       process.exit(1);
     }
   });
 
 program
-  .command("kill-inactivity-jobs")
-  .description("Kill game inactivity jobs")
+  .command("kill-auto-reveal-jobs")
+  .alias("kill-inactivity-jobs")
+  .description("Remove scheduled auto-reveal jobs")
   .option(
     "-r, --roomId <number>",
-    "Room ID to kill jobs for (if not provided, kills all game inactivity jobs)",
+    "Room ID to clear jobs for (default clears all auto-reveal jobs)",
   )
   .action(async (options) => {
     try {
       const { roomId } = options;
-      const { gameInactivityQueue } = await import("../jobs/queues");
+      const { gameAutoRevealQueue } = await import("../jobs/queues");
 
       if (roomId) {
-        console.log(`Removing inactivity jobs for room ${roomId}`);
-        const jobs = await gameInactivityQueue.getJobs([
+        console.log(`Removing auto-reveal jobs for room ${roomId}`);
+        const jobs = await gameAutoRevealQueue.getJobs([
           "active",
           "waiting",
           "delayed",
@@ -150,12 +152,10 @@ program
           console.log(`Removed job ${job.id} for room ${roomId}`);
         }
 
-        console.log(
-          `Successfully removed ${roomJobs.length} jobs for room ${roomId}`,
-        );
+        console.log(`Removed ${roomJobs.length} auto-reveal jobs for room ${roomId}`);
       } else {
-        console.log("Removing all game inactivity jobs");
-        const jobs = await gameInactivityQueue.getJobs([
+        console.log("Removing all auto-reveal jobs");
+        const jobs = await gameAutoRevealQueue.getJobs([
           "active",
           "waiting",
           "delayed",
@@ -166,12 +166,12 @@ program
           console.log(`Removed job ${job.id} for room ${job.data.roomId}`);
         }
 
-        console.log(`Successfully removed ${jobs.length} jobs`);
+        console.log(`Successfully removed ${jobs.length} auto-reveal jobs`);
       }
 
       process.exit(0);
     } catch (error) {
-      console.error("Error killing inactivity jobs:", error);
+      console.error("Error removing auto-reveal jobs:", error);
       process.exit(1);
     }
   });
@@ -227,7 +227,7 @@ program
   )
   .option(
     "-t, --timer",
-    "Start the game inactivity timer",
+    "Start the auto-reveal system immediately",
     false,
   )
   .option(
@@ -359,23 +359,23 @@ program
       // Save the room
       const savedRoom = await dataSource.getRepository(Room).save(room);
 
-      // Start inactivity timer if requested
+      // Start auto-reveal system if requested
       if (startTimer) {
         const { config } = await import("../config/config");
-        const { gameInactivityQueue } = await import("../jobs/queues");
-        await gameInactivityQueue.add(
-          "game-inactivity",
+        const { gameAutoRevealQueue } = await import("../jobs/queues");
+        await gameAutoRevealQueue.add(
+          "game-auto-reveal",
           {
             roomId: savedRoom.id,
             lastActivityTimestamp: room.last_activity_at.getTime(),
           },
           {
-            jobId: `game-inactivity-${savedRoom.id}-${uuidv4()}`,
-            delay: config.game.timeout.inactivity.initial,
+            jobId: `game-auto-reveal-${savedRoom.id}-${uuidv4()}`,
+            delay: config.game.timeout.autoReveal.initial,
           },
         );
         console.log(
-          `Started inactivity timer with ${config.game.timeout.inactivity.initial}ms delay`,
+          `Started auto-reveal cycle with ${config.game.timeout.autoReveal.initial}ms delay`,
         );
       }
 
@@ -395,7 +395,7 @@ program
       console.log(`  Pre-filled: ${fillPercentage}%`);
       console.log(`  Status: ${savedRoom.status}`);
       console.log(
-        `  Inactivity Timer: ${startTimer ? "Started" : "Not started"}`,
+        `  Auto-Reveal System: ${startTimer ? "Started" : "Not started"}`,
       );
 
       await dataSource.destroy();
