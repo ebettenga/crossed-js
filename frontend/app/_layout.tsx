@@ -25,6 +25,7 @@ function AppContent() {
   const { data: user, isLoading } = useUser();
   const [isReady, setIsReady] = useState(false);
   const [hasCheckedHowTo, setHasCheckedHowTo] = useState(false);
+  const [shouldShowHowTo, setShouldShowHowTo] = useState(false);
   const { loadColorScheme } = useColorMode();
 
   useEffect(() => {
@@ -45,13 +46,20 @@ function AppContent() {
     const inAuthGroup = segments[0] === '(auth)';
 
     if (user && inAuthGroup) {
-      // Redirect to home if user is signed in and in auth group
-      router.replace('/(root)/(tabs)');
+      if (!hasCheckedHowTo) {
+        return;
+      }
+
+      if (shouldShowHowTo) {
+        router.replace('/(root)/how-to-play?source=login');
+      } else {
+        router.replace('/(root)/(tabs)');
+      }
     } else if (!user && !inAuthGroup) {
       // Redirect to sign in if user is not signed in and not in auth group
       router.replace('/(auth)/signin');
     }
-  }, [user, segments, isReady]);
+  }, [user, segments, isReady, hasCheckedHowTo, shouldShowHowTo]);
 
   useEffect(() => {
     if (isReady) {
@@ -69,10 +77,19 @@ function AppContent() {
     const checkHowTo = async () => {
       try {
         const seen = await secureStorage.get(`how_to_play_seen_${user.id}`);
-        if (isMounted && !seen) {
-          setHasCheckedHowTo(true);
-          router.replace('/(root)/how-to-play?source=login');
+        if (!isMounted) {
           return;
+        }
+
+        const shouldShow = !seen;
+        setShouldShowHowTo(shouldShow);
+
+        if (shouldShow) {
+          router.replace('/(root)/how-to-play?source=login');
+        }
+      } catch (error) {
+        if (isMounted) {
+          setShouldShowHowTo(false);
         }
       } finally {
         if (isMounted) {
@@ -87,6 +104,13 @@ function AppContent() {
       isMounted = false;
     };
   }, [isReady, user, hasCheckedHowTo, router]);
+
+  useEffect(() => {
+    if (!user) {
+      setHasCheckedHowTo(false);
+      setShouldShowHowTo(false);
+    }
+  }, [user]);
 
   if (!isReady) {
     return null;
