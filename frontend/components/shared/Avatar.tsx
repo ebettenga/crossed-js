@@ -66,6 +66,6 @@ const styles = StyleSheet.create({
     initials: {
         color: '#FFFFFF',
         fontWeight: '500',
-        fontFamily: 'Times New Roman',
+        fontFamily: 'Rubik-Regular',
     },
 });

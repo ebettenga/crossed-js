@@ -32,15 +32,15 @@ export const DifficultyDialog = ({ isVisible, onClose, onSelect }: DifficultyDia
     >
       <View className="flex-1 justify-center items-center bg-black/50">
         <View className="m-5 bg-white dark:bg-[#1A2227] rounded-[20px] p-8 items-center shadow-lg min-w-[300px]">
-          <Text className="text-2xl font-semibold mb-4 text-[#1D2124] dark:text-[#DDE1E5] font-['Times New Roman']">
+          <Text className="text-2xl font-semibold mb-4 text-[#1D2124] dark:text-[#DDE1E5] font-rubik">
             Select Difficulty
           </Text>
-          <Text className="text-base mb-5 text-center text-[#4B4B4B] dark:text-[#DDE1E5]/70 font-['Times New Roman']">
+          <Text className="text-base mb-5 text-center text-[#4B4B4B] dark:text-[#DDE1E5]/70 font-rubik">
             Choose a difficulty to start your game.
           </Text>
 
           <View className="w-full mb-5">
-            <Text className="text-base mb-2.5 text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times New Roman']">
+            <Text className="text-base mb-2.5 text-[#2B2B2B] dark:text-[#DDE1E5] font-rubik">
               Select Difficulty:
             </Text>
             <View className="flex-row justify-between gap-2.5">
@@ -54,7 +54,7 @@ export const DifficultyDialog = ({ isVisible, onClose, onSelect }: DifficultyDia
                   onPress={() => setSelectedDifficulty(value)}
                 >
                   <Text
-                    className={`text-center text-sm font-['Times New Roman'] ${selectedDifficulty === value
+                    className={`text-center text-sm font-rubik ${selectedDifficulty === value
                         ? 'text-white'
                         : 'text-[#666666] dark:text-[#DDE1E5]/70'
                       }`}
@@ -72,7 +72,7 @@ export const DifficultyDialog = ({ isVisible, onClose, onSelect }: DifficultyDia
               onPress={handleStart}
             >
               <Swords size={20} color="#FFFFFF" />
-              <Text className="text-base text-white font-['Times New Roman']">Start</Text>
+              <Text className="text-base text-white font-rubik">Start</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -80,7 +80,7 @@ export const DifficultyDialog = ({ isVisible, onClose, onSelect }: DifficultyDia
               onPress={onClose}
             >
               <X size={20} color="#666666" />
-              <Text className="text-base text-[#666666] dark:text-[#DDE1E5]/70 font-['Times New Roman']">Cancel</Text>
+              <Text className="text-base text-[#666666] dark:text-[#DDE1E5]/70 font-rubik">Cancel</Text>
             </TouchableOpacity>
           </View>
         </View>

@@ -22,12 +22,12 @@ interface StatCardProps {
 const StatCard: React.FC<StatCardProps> = ({ title, value, icon, suffix }) => (
     <View className="flex-1 min-w-[45%] bg-neutral-50 dark:bg-neutral-800 p-4 rounded-xl border border-neutral-200 dark:border-neutral-700">
         <View className="flex-row justify-between items-center mb-2">
-            <Text className="text-sm text-[#666666] dark:text-neutral-400 font-['Times_New_Roman']">
+            <Text className="text-sm text-[#666666] dark:text-neutral-400 font-rubik">
                 {title}
             </Text>
             {icon}
         </View>
-        <Text className="text-2xl font-semibold text-[#1D2124] dark:text-[#DDE1E5] font-['Times_New_Roman']">
+        <Text className="text-2xl font-semibold text-[#1D2124] dark:text-[#DDE1E5] font-rubik">
             {value}{suffix}
         </Text>
     </View>
@@ -64,15 +64,15 @@ const GameRow: React.FC<GameRowProps> = ({ game, userId }) => {
         <View className="bg-neutral-50 dark:bg-neutral-800 p-4 rounded-xl border border-neutral-200 dark:border-neutral-700">
             <View className="gap-2">
                 <View className="flex-row justify-between items-center">
-                    <Text className="text-base font-semibold text-[#1D2124] dark:text-[#DDE1E5] font-['Times_New_Roman']">
+                    <Text className="text-base font-semibold text-[#1D2124] dark:text-[#DDE1E5] font-rubik">
                         {isTimeTrial ? 'Time Trial' : (isWinner ? 'Victory' : 'Defeat')}
                     </Text>
-                    <Text className="text-sm text-[#666666] dark:text-neutral-400 font-['Times_New_Roman']">
+                    <Text className="text-sm text-[#666666] dark:text-neutral-400 font-rubik">
                         {completedAt ? formatDistanceToNow(completedAt, { addSuffix: true }) : 'Unknown time'}
                     </Text>
                 </View>
                 <View className="flex-row items-center gap-2">
-                    <Text className="text-xl font-semibold text-[#1D2124] dark:text-[#DDE1E5] font-['Times_New_Roman']">
+                    <Text className="text-xl font-semibold text-[#1D2124] dark:text-[#DDE1E5] font-rubik">
                         {userScore} pts
                     </Text>
                     {game.stats.isWinner ? (
@@ -83,11 +83,11 @@ const GameRow: React.FC<GameRowProps> = ({ game, userId }) => {
                 </View>
 
                 <View className="flex-row justify-between items-center">
-                    <Text className="text-sm text-[#666666] dark:text-neutral-400 font-['Times_New_Roman']">
+                    <Text className="text-sm text-[#666666] dark:text-neutral-400 font-rubik">
                         {game.stats.correctGuesses} correct • {game.stats.incorrectGuesses} incorrect
                     </Text>
                     {isEloVisible && (
-                        <Text className="text-sm text-[#666666] dark:text-neutral-400 font-['Times_New_Roman']">
+                        <Text className="text-sm text-[#666666] dark:text-neutral-400 font-rubik">
                             {game.stats.eloAtGame} ELO
                         </Text>
                     )}
@@ -192,7 +192,7 @@ export default function Stats() {
 
                 {isEloVisible && (
                     <View className="mb-6">
-                        <Text className="text-lg font-semibold text-[#1D2124] dark:text-[#DDE1E5] mb-3 font-['Times_New_Roman']">
+                        <Text className="text-lg font-semibold text-[#1D2124] dark:text-[#DDE1E5] mb-3 font-rubik">
                             ELO History
                         </Text>
                         <EloChart startDate={oneMonthAgo} />
@@ -200,20 +200,20 @@ export default function Stats() {
                 )}
 
                 <View className="mb-6">
-                    <Text className="text-lg font-semibold text-[#1D2124] dark:text-[#DDE1E5] mb-3 font-['Times_New_Roman']">
+                    <Text className="text-lg font-semibold text-[#1D2124] dark:text-[#DDE1E5] mb-3 font-rubik">
                         Guess Accuracy History
                     </Text>
                     <AccuracyChart startDate={oneMonthAgo} />
                 </View>
 
                 <View className="mb-6">
-                    <Text className="text-lg font-semibold text-[#1D2124] dark:text-[#DDE1E5] mb-3 font-['Times_New_Roman']">
+                    <Text className="text-lg font-semibold text-[#1D2124] dark:text-[#DDE1E5] mb-3 font-rubik">
                         Recent Games
                     </Text>
                     {gamesLoading ? (
                         <ActivityIndicator size="large" color="#8B0000" />
                     ) : recentGames?.length === 0 ? (
-                        <Text className="text-center text-[#666666] dark:text-neutral-400 font-['Times_New_Roman'] text-base py-6">
+                        <Text className="text-center text-[#666666] dark:text-neutral-400 font-rubik text-base py-6">
                             No games played yet
                         </Text>
                     ) : (

@@ -66,10 +66,10 @@ export const IncomingChallengeModal = () => {
                             <View className="w-12 h-12 rounded-full bg-[#8B0000] items-center justify-center mb-3">
                                 <Swords size={28} color="#FFFFFF" />
                             </View>
-                            <Text className="text-2xl text-[#1D2124] dark:text-[#DDE1E5] font-['Times New Roman']">
+                            <Text className="text-2xl text-[#1D2124] dark:text-[#DDE1E5] font-rubik">
                                 Rematch Request
                             </Text>
-                            <Text className="text-sm text-center text-[#4B4B4B] dark:text-[#DDE1E5]/70 font-['Times New Roman'] mt-2">
+                            <Text className="text-sm text-center text-[#4B4B4B] dark:text-[#DDE1E5]/70 font-rubik mt-2">
                                 {challengerName} wants a {difficulty} rematch. Ready to play again?
                             </Text>
                         </View>
@@ -86,7 +86,7 @@ export const IncomingChallengeModal = () => {
                                 ) : (
                                     <>
                                         <X size={18} color="#EF4444" />
-                                        <Text className="text-[#EF4444] font-['Times New Roman'] text-sm">
+                                        <Text className="text-[#EF4444] font-rubik text-sm">
                                             Decline
                                         </Text>
                                     </>
@@ -103,7 +103,7 @@ export const IncomingChallengeModal = () => {
                                 ) : (
                                     <>
                                         <Swords size={18} color="#34D399" />
-                                        <Text className="text-[#34D399] font-['Times New Roman'] text-sm">
+                                        <Text className="text-[#34D399] font-rubik text-sm">
                                             Accept
                                         </Text>
                                     </>

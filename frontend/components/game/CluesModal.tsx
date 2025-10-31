@@ -47,7 +47,7 @@ export const CluesModal: React.FC<CluesModalProps> = ({
                         activeOpacity={0.7}
                         className="py-4 px-4 border-b border-neutral-200 dark:border-neutral-700"
                     >
-                        <Text className="text-base font-semibold text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman']">
+                        <Text className="text-base font-semibold text-[#2B2B2B] dark:text-[#DDE1E5] font-rubik">
                             {isAcross ? clue.acrossQuestion : clue.downQuestion}
                         </Text>
                     </TouchableOpacity>
@@ -73,7 +73,7 @@ export const CluesModal: React.FC<CluesModalProps> = ({
             <View className="flex-1 bg-black/50">
                 <View className="flex-1 mt-20 bg-white dark:bg-[#1A2227] rounded-t-3xl">
                     <View className="flex-row justify-between items-center p-4 border-b border-neutral-200 dark:border-neutral-700">
-                        <Text className="text-2xl font-semibold text-[#2B2B2B] dark:text-[#DDE1E5] font-['Times_New_Roman']">
+                        <Text className="text-2xl font-semibold text-[#2B2B2B] dark:text-[#DDE1E5] font-rubik">
                             Clues
                         </Text>
                         <TouchableOpacity onPress={onClose} className="p-2">
@@ -89,7 +89,7 @@ export const CluesModal: React.FC<CluesModalProps> = ({
                                 onPress={() => setIsAcrossMode(true)}
                                 className="flex-1 justify-center items-center"
                             >
-                                <Text className={`font-semibold ${isAcrossMode ? 'text-white' : 'text-[#2B2B2B] dark:text-[#DDE1E5]'} font-['Times_New_Roman']`}>
+                                <Text className={`font-semibold ${isAcrossMode ? 'text-white' : 'text-[#2B2B2B] dark:text-[#DDE1E5]'} font-rubik`}>
                                     Across
                                 </Text>
                             </TouchableOpacity>
@@ -97,7 +97,7 @@ export const CluesModal: React.FC<CluesModalProps> = ({
                                 onPress={() => setIsAcrossMode(false)}
                                 className="flex-1 justify-center items-center"
                             >
-                                <Text className={`font-semibold ${!isAcrossMode ? 'text-white' : 'text-[#2B2B2B] dark:text-[#DDE1E5]'} font-['Times_New_Roman']`}>
+                                <Text className={`font-semibold ${!isAcrossMode ? 'text-white' : 'text-[#2B2B2B] dark:text-[#DDE1E5]'} font-rubik`}>
                                     Down
                                 </Text>
                             </TouchableOpacity>
