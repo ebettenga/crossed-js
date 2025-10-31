@@ -190,6 +190,7 @@ export class Room {
         author: this.crossword.author,
         created_by: this.crossword.created_by,
         creator_link: this.crossword.creator_link,
+        pack: this.crossword.pack,
       },
       found_letters: foundLetters ? foundLetters : this.found_letters,
       board: this.createBoard(),

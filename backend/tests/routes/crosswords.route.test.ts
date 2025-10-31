@@ -9,6 +9,7 @@ import { Room } from "../../src/entities/Room";
 import crosswordsRoutes from "../../src/routes/private/crosswords";
 import { ensureApprovedSnapshot } from "../utils/approval";
 import { createPostgresTestManager } from "../utils/postgres";
+import { UserCrosswordPack } from "../../src/entities/UserCrosswordPack";
 
 process.on("unhandledRejection", (reason) => {
   console.error(
@@ -19,7 +20,14 @@ process.on("unhandledRejection", (reason) => {
 
 const postgres = createPostgresTestManager({
   label: "Crosswords route tests",
-  entities: [Crossword, CrosswordRating, User, GameStats, Room],
+  entities: [
+    Crossword,
+    CrosswordRating,
+    User,
+    GameStats,
+    Room,
+    UserCrosswordPack,
+  ],
   env: {
     database: [
       "CROSSWORDS_ROUTE_TEST_DB",
@@ -73,6 +81,7 @@ const TABLES_TO_TRUNCATE = [
   "crossword_rating",
   "crossword",
   "room",
+  "user_crossword_pack",
   "user",
 ];
 
@@ -160,6 +169,7 @@ const createCrossword = async (overrides: Partial<Crossword> = {}) => {
     jnote: "Test jnote",
     notepad: "Test notepad",
     title: "Sample Crossword",
+    pack: "general",
     ...overrides,
   });
   return repository.save(crossword);

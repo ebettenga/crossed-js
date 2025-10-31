@@ -33,11 +33,17 @@ import {
 program
   .command("load-crosswords")
   .description("Load crosswords into the database")
-  .action(async (dir) => {
+  .option(
+    "-p, --pack <string>",
+    "Pack identifier to assign to the loaded crosswords",
+    "general",
+  )
+  .action(async (options) => {
     try {
       const dataSource = await AppDataSource.initialize();
-      await new CrosswordService(dataSource).loadCrosswords();
-      console.log("Crosswords loaded successfully");
+      const pack = options.pack ?? "general";
+      await new CrosswordService(dataSource).loadCrosswords(pack);
+      console.log(`Crosswords loaded successfully into pack "${pack}"`);
     } catch (error) {
       console.error("Error loading crosswords:", error);
     }
@@ -52,6 +58,11 @@ program
     "Base date to assign to the first crossword (YYYY-MM-DD)",
     "2024-01-01",
   )
+  .option(
+    "-p, --pack <string>",
+    "Pack identifier to assign to the loaded crosswords",
+    "general",
+  )
   .action(async (options) => {
     let dataSource: DataSource | null = null;
     try {
@@ -59,10 +70,11 @@ program
       const result = await loadIpuzCrosswords(dataSource, {
         directory: options.dir,
         baseDate: options.baseDate,
+        pack: options.pack,
       });
 
       console.log(
-        `Loaded ${result.inserted} crosswords (${result.skipped} skipped) from ${result.directory}`,
+        `Loaded ${result.inserted} crosswords (${result.skipped} skipped) from ${result.directory} into pack "${options.pack ?? "general"}"`,
       );
       await dataSource.destroy();
       process.exit(0);

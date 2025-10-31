@@ -113,6 +113,10 @@ export class RoomService {
 
     room.players.push(player);
     room.markModified();
+    if (room.scores[player.id] === undefined) {
+      room.scores[player.id] = 0;
+      room.markModified();
+    }
 
     // Ensure newly joined player's active sockets receive future room events
     fastify.io
@@ -121,8 +125,10 @@ export class RoomService {
 
     await this.ensureGameStatsEntry(room, player);
 
-    const cachedGameInfo = await this.redisService.getGame(room.id.toString());
-    if (cachedGameInfo) {
+    const crosswordReset = await this.syncCrosswordForPlayers(room);
+
+    let cachedGameInfo = await this.redisService.getGame(room.id.toString());
+    if (cachedGameInfo && !crosswordReset) {
       if (!cachedGameInfo.userGuessCounts[player.id]) {
         cachedGameInfo.userGuessCounts[player.id] = {
           correct: 0,
@@ -135,6 +141,12 @@ export class RoomService {
       if (!cachedGameInfo.correctGuessDetails[player.id]) {
         cachedGameInfo.correctGuessDetails[player.id] = [];
       }
+      if (cachedGameInfo.scores[player.id] === undefined) {
+        cachedGameInfo.scores[player.id] = 0;
+      }
+      await this.redisService.cacheGame(room.id.toString(), cachedGameInfo);
+    } else if (!cachedGameInfo) {
+      cachedGameInfo = room.createRoomCache();
       await this.redisService.cacheGame(room.id.toString(), cachedGameInfo);
     }
 
@@ -178,15 +190,25 @@ export class RoomService {
     difficulty: string,
     type: "1v1" | "2v2" | "free4all" | "time_trial" = "1v1",
   ): Promise<Room> {
-    const crossword = await this.crosswordService.getCrosswordByDifficulty(
-      difficulty,
-    );
-
     const player = await this.ormConnection
       .getRepository(User)
       .findOneBy({ id: userId });
 
     if (!player) throw new Error("User not found");
+
+    const allowedPacks = await this.crosswordService.getSharedCrosswordPacks([
+      player.id,
+    ]);
+    const crossword = await this.crosswordService.getCrosswordByDifficulty(
+      difficulty,
+      { packs: allowedPacks },
+    );
+
+    if (!crossword) {
+      throw new NotFoundError(
+        "No crossword available for the requested difficulty",
+      );
+    }
 
     const room = new Room();
     room.players = [player];
@@ -196,9 +218,7 @@ export class RoomService {
     room.scores = { [player.id]: 0 };
     room.join = JoinMethod.RANDOM;
 
-    room.found_letters = await this.crosswordService.createFoundLettersTemplate(
-      crossword.id,
-    );
+    room.found_letters = this.maskCrosswordGrid(crossword.grid);
 
     // For time trials, start the game immediately
     if (type === "time_trial") {
@@ -595,6 +615,55 @@ export class RoomService {
     return room;
   }
 
+  private maskCrosswordGrid(grid: string[] | null | undefined): string[] {
+    if (!Array.isArray(grid)) {
+      return [];
+    }
+    return grid.map((value) => value.replace(/[A-Za-z]/g, "*"));
+  }
+
+  private async syncCrosswordForPlayers(room: Room): Promise<boolean> {
+    const playerIds = room.players.map((player) => player.id);
+    const allowedPacks = await this.crosswordService.getSharedCrosswordPacks(
+      playerIds,
+    );
+    const packSet = new Set(allowedPacks);
+    const hasExisting =
+      room.crossword && packSet.has(room.crossword.pack || "general");
+
+    if (hasExisting) {
+      for (const id of playerIds) {
+        if (room.scores[id] === undefined) {
+          room.scores[id] = 0;
+        }
+      }
+      return false;
+    }
+
+    const replacement = await this.crosswordService.getCrosswordByDifficulty(
+      room.difficulty,
+      { packs: allowedPacks },
+    );
+
+    if (!replacement) {
+      throw new NotFoundError(
+        "No crossword available for the current players and difficulty",
+      );
+    }
+
+    room.crossword = replacement;
+    room.found_letters = this.maskCrosswordGrid(replacement.grid);
+    room.scores = playerIds.reduce<Record<number, number>>((acc, id) => {
+      acc[id] = 0;
+      return acc;
+    }, {});
+    room.markModified();
+
+    const cache = room.createRoomCache();
+    await this.redisService.cacheGame(room.id.toString(), cache);
+    return true;
+  }
+
   async getRecentGamesWithStats(
     userId: number,
     limit: number = 10,
@@ -676,9 +745,20 @@ export class RoomService {
       throw new NotFoundError("User not found");
     }
 
+    const allowedPacks = await this.crosswordService.getSharedCrosswordPacks([
+      challenger.id,
+      challenged.id,
+    ]);
     const crossword = await this.crosswordService.getCrosswordByDifficulty(
       difficulty,
+      { packs: allowedPacks },
     );
+
+    if (!crossword) {
+      throw new NotFoundError(
+        "No crossword available for the requested difficulty",
+      );
+    }
 
     const room = new Room();
     room.players = [challenger, challenged];
@@ -689,9 +769,7 @@ export class RoomService {
     room.scores = { [challenger.id]: 0, [challenged.id]: 0 };
     room.join = JoinMethod.CHALLENGE;
 
-    room.found_letters = await this.crosswordService.createFoundLettersTemplate(
-      crossword.id,
-    );
+    room.found_letters = this.maskCrosswordGrid(crossword.grid);
 
     const savedRoom = await this.ormConnection.getRepository(Room).save(room);
 

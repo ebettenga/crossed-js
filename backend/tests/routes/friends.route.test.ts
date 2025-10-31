@@ -9,6 +9,7 @@ import { Crossword } from "../../src/entities/Crossword";
 import friendsRoutes from "../../src/routes/private/friends";
 import { createPostgresTestManager } from "../utils/postgres";
 import { ensureApprovedSnapshot } from "../utils/approval";
+import { UserCrosswordPack } from "../../src/entities/UserCrosswordPack";
 
 var emitToUsersMock: jest.Mock;
 var createSocketEventServiceMock: jest.Mock;
@@ -31,7 +32,7 @@ jest.setTimeout(60000);
 
 const postgres = createPostgresTestManager({
   label: "Friends route tests",
-  entities: [Friend, GameStats, Room, User, Crossword],
+  entities: [Friend, GameStats, Room, User, Crossword, UserCrosswordPack],
   env: {
     database: [
       "FRIEND_ROUTES_TEST_DB",
@@ -85,6 +86,7 @@ const TABLES_TO_TRUNCATE = [
   "friend",
   "room",
   "crossword",
+  "user_crossword_pack",
   "user",
 ];
 

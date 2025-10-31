@@ -18,6 +18,7 @@ import { User } from "../../src/entities/User";
 import { Room } from "../../src/entities/Room";
 import { Crossword } from "../../src/entities/Crossword";
 import { GameStats } from "../../src/entities/GameStats";
+import { UserCrosswordPack } from "../../src/entities/UserCrosswordPack";
 import { config } from "../../src/config/config";
 import { redisService } from "../../src/services/RedisService";
 import {
@@ -41,7 +42,7 @@ jest.setTimeout(60000);
 
 const postgres = createPostgresTestManager({
   label: "Sockets route tests",
-  entities: [User, Room, Crossword, GameStats],
+  entities: [User, Room, Crossword, GameStats, UserCrosswordPack],
   env: {
     database: [
       "SOCKETS_ROUTE_TEST_DB",
@@ -98,6 +99,7 @@ const TABLES_TO_TRUNCATE = [
   "room_players",
   "room",
   "crossword",
+  "user_crossword_pack",
   "user",
 ];
 
@@ -158,6 +160,7 @@ const createCrossword = async (overrides: Partial<Crossword> = {}) => {
     jnote: "Test note",
     notepad: "Test notepad",
     title: "Socket Test Crossword",
+    pack: "general",
     ...overrides,
   });
   return repository.save(crossword);

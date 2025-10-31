@@ -86,6 +86,7 @@ const createCrossword = async (
     jnote: "Test jnote",
     notepad: "Test notepad",
     title: "Test Crossword",
+    pack: "general",
     ...overrides,
   });
   return repository.save(crossword);

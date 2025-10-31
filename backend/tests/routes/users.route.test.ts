@@ -9,10 +9,11 @@ import { GameStats } from "../../src/entities/GameStats";
 import { Room } from "../../src/entities/Room";
 import { Crossword } from "../../src/entities/Crossword";
 import bcrypt from "bcrypt";
+import { UserCrosswordPack } from "../../src/entities/UserCrosswordPack";
 
 const postgres = createPostgresTestManager({
   label: "Users route tests",
-  entities: [User, GameStats, Room, Crossword],
+  entities: [User, GameStats, Room, Crossword, UserCrosswordPack],
   env: {
     database: ["USER_ROUTES_TEST_DB", "ROOM_SERVICE_TEST_DB"],
     schema: ["USER_ROUTES_TEST_SCHEMA", "ROOM_SERVICE_TEST_SCHEMA"],
@@ -44,6 +45,7 @@ const TABLES_TO_TRUNCATE = [
   "room_players",
   "room",
   "crossword",
+  "user_crossword_pack",
   "user",
 ];
 

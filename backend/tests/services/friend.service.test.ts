@@ -7,12 +7,13 @@ import { Room } from "../../src/entities/Room";
 import { Crossword } from "../../src/entities/Crossword";
 import { NotFoundError } from "../../src/errors/api";
 import { createPostgresTestManager } from "../utils/postgres";
+import { UserCrosswordPack } from "../../src/entities/UserCrosswordPack";
 
 jest.setTimeout(60000);
 
 const postgres = createPostgresTestManager({
   label: "FriendService tests",
-  entities: [User, Friend, GameStats, Room, Crossword],
+  entities: [User, Friend, GameStats, Room, Crossword, UserCrosswordPack],
   env: {
     database: [
       "FRIEND_SERVICE_TEST_DB",
@@ -62,6 +63,7 @@ const TABLES_TO_TRUNCATE = [
   "friend",
   "room",
   "crossword",
+  "user_crossword_pack",
   "user",
 ];
 

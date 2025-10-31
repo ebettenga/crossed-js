@@ -7,8 +7,6 @@
 2. ensure "auto-reveal" naming is reflected everywhere (frontend, copy, docs)
 
 
-
-
 AI Generated Ideas:
 
 ## 1v1, 2v2, free-for-all specific

@@ -10,6 +10,7 @@ import { GameStats } from "../../src/entities/GameStats";
 import { Room } from "../../src/entities/Room";
 import { Crossword } from "../../src/entities/Crossword";
 import { Friend } from "../../src/entities/Friend";
+import { UserCrosswordPack } from "../../src/entities/UserCrosswordPack";
 import authRoutes from "../../src/routes/public/auth";
 import { createPostgresTestManager } from "../utils/postgres";
 import jwt from "jsonwebtoken";
@@ -27,7 +28,7 @@ jest.mock("../../src/services/EmailService", () => ({
 
 const postgres = createPostgresTestManager({
   label: "Auth route tests",
-  entities: [User, GameStats, Room, Crossword, Friend],
+  entities: [User, GameStats, Room, Crossword, Friend, UserCrosswordPack],
   env: {
     database: ["AUTH_ROUTES_TEST_DB", "ROOM_SERVICE_TEST_DB", "POSTGRES_DB"],
     schema: ["AUTH_ROUTES_TEST_SCHEMA", "ROOM_SERVICE_TEST_SCHEMA"],
@@ -60,6 +61,7 @@ const TABLES_TO_TRUNCATE = [
   "friend",
   "room",
   "crossword",
+  "user_crossword_pack",
   "user",
 ];
 

@@ -329,12 +329,6 @@ TODO: figure out why there's a error happening with this hook not getting loaded
 
     const menuOptions: MenuOption[] = [
         {
-            label: 'Home',
-            onPress: () => {
-                router.push('/(root)/(tabs)');
-            },
-        },
-        {
             label: 'Support / Report',
             onPress: () => {
                 setShowSupportModal(true);

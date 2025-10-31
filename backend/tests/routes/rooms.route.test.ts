@@ -31,6 +31,7 @@ import { User } from "../../src/entities/User";
 import { Crossword } from "../../src/entities/Crossword";
 import { GameStats } from "../../src/entities/GameStats";
 import { CrosswordRating } from "../../src/entities/CrosswordRating";
+import { UserCrosswordPack } from "../../src/entities/UserCrosswordPack";
 import { fastify as singletonFastify } from "../../src/fastify";
 import { config } from "../../src/config/config";
 import { redisService } from "../../src/services/RedisService";
@@ -99,7 +100,7 @@ const redisManager = createRedisTestManager({
 
 const postgres = createPostgresTestManager({
   label: "Rooms route tests",
-  entities: [Room, User, Crossword, GameStats, CrosswordRating],
+  entities: [Room, User, Crossword, GameStats, CrosswordRating, UserCrosswordPack],
   env: {
     database: [
       "ROOM_ROUTES_TEST_DB",
@@ -147,6 +148,7 @@ const TABLES_TO_TRUNCATE = [
   "crossword_rating",
   "room",
   "crossword",
+  "user_crossword_pack",
   "user",
 ];
 
@@ -253,6 +255,7 @@ const createCrossword = async (overrides: Partial<Crossword> = {}) => {
     notepad: "Test notepad",
     date: new Date("2024-01-01T00:00:00.000Z"),
     dow: "Monday",
+    pack: "general",
     ...overrides,
   });
   return repository.save(crossword);
