@@ -1,11 +1,11 @@
 /**
- * Concurrency test: user guess and inactivity worker reveal the SAME letter "at the same time".
- * We simulate the user input by mutating the cachedGameInfo during the "game_inactive" emit
+ * Concurrency test: user guess and the auto-reveal worker expose the SAME letter simultaneously.
+ * We simulate the user input by mutating the cachedGameInfo during the legacy "game_inactive" emit
  * to set the exact same letter the worker just revealed.
  *
  * Validates idempotency:
  * - The final state equals a single correct reveal without duplication or conflict.
- * - The game continues scheduling the next inactivity check.
+ * - The game continues scheduling the next auto-reveal tick.
  */
 
 import type { DataSource } from "typeorm";
@@ -119,11 +119,11 @@ jest.mock("../../src/services/RedisService", () => {
   return { RedisService };
 });
 
-// Mock queues module: intercept scheduling via gameInactivityQueue.add
+// Mock queues module: intercept scheduling via gameAutoRevealQueue.add
 const scheduledJobs: Array<{ data: any; opts: any }> = [];
 jest.mock("../../src/jobs/queues", () => {
   return {
-    gameInactivityQueue: {
+    gameAutoRevealQueue: {
       add: jest.fn(async (_name: string, data: any, opts: any) => {
         scheduledJobs.push({ data, opts });
         return { id: "scheduled-job" };
@@ -145,8 +145,8 @@ jest.mock("../../src/services/RoomService", () => {
 });
 
 // Import worker factory after mocks/env are in place
-const { createGameInactivityWorker } = require(
-  "../../src/jobs/workers/game-inactivity.worker",
+const { createGameAutoRevealWorker } = require(
+  "../../src/jobs/workers/game-auto-reveal.worker",
 );
 
 // Utilities
@@ -256,7 +256,7 @@ function resetCaptors() {
   jest.clearAllMocks();
 }
 
-describe("Game inactivity worker same-letter concurrency", () => {
+describe("Game auto-reveal worker same-letter concurrency", () => {
   beforeEach(() => {
     resetCaptors();
     jest.useFakeTimers({ now: Date.now() });
@@ -285,7 +285,7 @@ describe("Game inactivity worker same-letter concurrency", () => {
     redisStore.set(cacheKey, cache);
 
     const fastify: any = {};
-    const worker = createGameInactivityWorker(
+    const worker = createGameAutoRevealWorker(
       fakeDataSource as unknown as DataSource,
       fastify,
     );

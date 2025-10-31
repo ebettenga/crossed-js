@@ -24,7 +24,7 @@ yarn commands start-game -p1 <player1_id> -p2 <player2_id> [options]
 
 - `-d, --difficulty <string>` - Difficulty level: `easy`, `medium`, or `hard` (default: `easy`)
 - `-f, --fill <number>` - Percentage of squares to pre-fill (0-100) (default: `0`)
-- `-t, --timer` - Start the game inactivity timer (default: `false`)
+- `-t, --timer` - Start the auto-reveal pressure system (default: `false`)
 
 ### Examples
 
@@ -48,12 +48,12 @@ yarn commands start-game -p1 <player1_id> -p2 <player2_id> [options]
    yarn start-game -p1 1 -p2 2 -d hard -f 25
    ```
 
-5. **Start a game with the inactivity timer enabled:**
+5. **Start a game with the auto-reveal system enabled:**
    ```bash
    yarn start-game -p1 1 -p2 2 -t
    ```
 
-6. **Start a game with pre-fill and timer:**
+6. **Start a game with pre-fill and the auto-reveal system:**
    ```bash
    yarn start-game -p1 1 -p2 2 -d medium -f 30 -t
    ```
@@ -101,6 +101,6 @@ Pre-filled 45 out of 90 squares (50%)
 - Pre-filled squares are randomly selected from all available unfilled squares
 - Black squares (marked with `.` in the grid) are never filled
 - The pre-fill feature is useful for testing, debugging, or creating practice games
-- **Inactivity Timer**: When enabled with `-t`, the game will automatically end if no moves are made within the configured timeout period (default: 5 seconds initially, with dynamic adjustment based on puzzle completion)
-- The inactivity timer is useful for production games to prevent abandoned games from staying active indefinitely
+- **Auto-Reveal System**: When enabled with `-t`, Crossed will begin revealing letters on a dynamic cadence when players stay idle, ramping up pressure as the board fills in (initial delay defaults to 5 seconds).
+- The auto-reveal system is useful for production games to ensure momentum and prevent games from stalling indefinitely.
 - Without the timer flag, games will remain active until manually completed or forfeited

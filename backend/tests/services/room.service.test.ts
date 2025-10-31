@@ -8,7 +8,7 @@ import { GameStats } from "../../src/entities/GameStats";
 import { fastify } from "../../src/fastify";
 import {
   emailQueue,
-  gameInactivityQueue,
+  gameAutoRevealQueue,
   gameTimeoutQueue,
   statusCleanupQueue,
 } from "../../src/jobs/queues";
@@ -59,10 +59,10 @@ let userCounter = 1;
 
 const flushQueues = async () => {
   await gameTimeoutQueue.waitUntilReady();
-  await gameInactivityQueue.waitUntilReady();
+  await gameAutoRevealQueue.waitUntilReady();
 
   await Promise.all(
-    [gameTimeoutQueue, gameInactivityQueue].map(async (queue) => {
+    [gameTimeoutQueue, gameAutoRevealQueue].map(async (queue) => {
       try {
         await queue.obliterate({ force: true });
       } catch (error: any) {
@@ -185,7 +185,7 @@ afterAll(async () => {
 
   await Promise.allSettled([
     gameTimeoutQueue.close(),
-    gameInactivityQueue.close(),
+    gameAutoRevealQueue.close(),
     statusCleanupQueue.close(),
     emailQueue.close(),
   ]);
@@ -226,9 +226,11 @@ describe("RoomService integration", () => {
     expect(inSpy).toHaveBeenCalledWith(`user_${host.id}`);
     expect(socketsJoinSpy).toHaveBeenCalledWith(room.id.toString());
 
-    const timeoutJob = await gameTimeoutQueue.getJob("game-timeout");
+    const timeoutJobId = `room-timeout-${room.id}`;
+    const timeoutJob = await gameTimeoutQueue.getJob(timeoutJobId);
     expect(timeoutJob).not.toBeNull();
     expect(timeoutJob?.data).toEqual({ roomId: room.id });
+    expect(timeoutJob?.opts?.delay).toBe(config.game.timeout.pending);
   });
 
   it("adds a player to an existing room, starts the game, and syncs redis cache", async () => {
@@ -297,8 +299,8 @@ describe("RoomService integration", () => {
     });
     expect(parsed.correctGuessDetails[joiningRecord.id]).toEqual([]);
 
-    const inactivityJobs = await gameInactivityQueue.getDelayed();
-    const hasJob = inactivityJobs.some(
+    const autoRevealJobs = await gameAutoRevealQueue.getDelayed();
+    const hasJob = autoRevealJobs.some(
       (job) => job.data.roomId === pendingRoom.id,
     );
     expect(hasJob).toBe(true);
