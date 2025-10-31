@@ -161,6 +161,38 @@ describe("FriendService", () => {
         service.addFriend(sender.id, receiver.username),
       ).rejects.toThrow("Friendship already exists");
     });
+
+    it("prevents duplicate friendships when pending in either direction", async () => {
+      const alice = await createUser({ username: "alice_pending" });
+      const bob = await createUser({ username: "bob_pending" });
+
+      await service.addFriend(alice.id, bob.username);
+
+      await expect(
+        service.addFriend(bob.id, alice.username),
+      ).rejects.toThrow("Friendship already exists");
+    });
+
+    it("prevents new friend requests when users are already friends", async () => {
+      const alice = await createUser({ username: "alice_friend" });
+      const bob = await createUser({ username: "bob_friend" });
+
+      await createFriendship({
+        sender: alice,
+        receiver: bob,
+        senderId: alice.id,
+        receiverId: bob.id,
+        status: FriendshipStatus.ACCEPTED,
+      });
+
+      await expect(
+        service.addFriend(alice.id, bob.username),
+      ).rejects.toThrow("Friendship already exists");
+
+      await expect(
+        service.addFriend(bob.id, alice.username),
+      ).rejects.toThrow("Friendship already exists");
+    });
   });
 
   describe("getFriends", () => {

@@ -1,7 +1,7 @@
-import { DataSource, ILike } from "typeorm";
+import { DataSource, ILike, In } from "typeorm";
 import { Friend, FriendshipStatus } from "../entities/Friend";
 import { User } from "../entities/User";
-import { NotFoundError } from "../errors/api";
+import { BadRequestError, NotFoundError } from "../errors/api";
 
 export class FriendService {
   private ormConnection: DataSource;
@@ -22,20 +22,34 @@ export class FriendService {
 
     // Prevent self-friending
     if (receiver.id === senderId) {
-      throw new Error("You cannot send a friend request to yourself");
+      throw new BadRequestError("You cannot send a friend request to yourself");
     }
 
     // Check if friendship already exists
-    const existingFriendship = await this.ormConnection
-      .getRepository(Friend)
-      .findOne({
-        where: [
-          { senderId, receiverId: receiver.id },
-        ],
-      });
+    const friendshipRepository = this.ormConnection.getRepository(Friend);
+    const existingFriendship = await friendshipRepository.findOne({
+      where: [
+        {
+          senderId,
+          receiverId: receiver.id,
+          status: In([
+            FriendshipStatus.PENDING,
+            FriendshipStatus.ACCEPTED,
+          ]),
+        },
+        {
+          senderId: receiver.id,
+          receiverId: senderId,
+          status: In([
+            FriendshipStatus.PENDING,
+            FriendshipStatus.ACCEPTED,
+          ]),
+        },
+      ],
+    });
 
     if (existingFriendship) {
-      throw new Error("Friendship already exists");
+      throw new BadRequestError("Friendship already exists");
     }
 
     // Create new friendship
@@ -44,7 +58,7 @@ export class FriendService {
     friendship.receiverId = receiver.id;
     friendship.status = FriendshipStatus.PENDING;
 
-    return this.ormConnection.getRepository(Friend).save(friendship);
+    return friendshipRepository.save(friendship);
   }
 
   async getFriends(userId: number): Promise<Friend[]> {

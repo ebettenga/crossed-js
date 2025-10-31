@@ -36,7 +36,7 @@ const SLIDES: Slide[] = [
     key: '1v1',
     title: '1 v 1 Duels',
     description:
-      'Challenge a single opponent in a head-to-head crossword duel. Take turns solving clues and outsmart your rival.',
+      'Challenge a single opponent in a head-to-head crossword duel. Race to solve clues and outpace your rival.\n\nPlayers gain points by entering correct letters and lose points when they guess incorrectly.',
     number: 1,
     homeButtonLabel: '1 v 1',
     secondaryText: 'Classic duel action',
@@ -46,7 +46,7 @@ const SLIDES: Slide[] = [
     key: 'time_trial',
     title: 'Time Trials',
     description:
-      'Race against the clock in this single player mode to solve as many clues as possible. Every second counts and every guess matters.',
+      'Race against the clock in this single player mode to solve as many clues as possible.\n\n Every second counts and every guess matters.',
     number: undefined,
     homeButtonLabel: 'Time Trial',
     secondaryText: 'Beat the timer',
@@ -56,7 +56,7 @@ const SLIDES: Slide[] = [
     key: 'free_for_all',
     title: 'Free For All',
     description:
-      'Jump into chaotic multiplayer puzzles with friends or rivals. Everyone works the same board—fastest solves win.',
+      'Jump into chaotic multiplayer puzzles with friends or rivals.\n\n Everyone works the same board while competing to fill out the most squares in this high energy game mode.',
     number: undefined,
     homeButtonLabel: 'Free for All',
     secondaryText: 'Group play frenzy',
