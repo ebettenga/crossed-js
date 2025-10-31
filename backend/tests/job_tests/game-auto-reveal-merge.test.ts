@@ -1,12 +1,13 @@
 /**
- * Concurrency test: user input occurs immediately after the worker reveals a letter,
- * but before the transaction commits. We simulate this by mutating the cachedGameInfo
- * within the mocked SocketEventService.emitToRoom when the worker emits "game_inactive".
+ * Concurrency test: user input occurs immediately after the auto-reveal worker exposes
+ * a letter, but before the transaction commits. We simulate this by mutating the
+ * cachedGameInfo within the mocked SocketEventService.emitToRoom when the worker emits
+ * the legacy "game_inactive" event.
  *
  * This validates:
  * - The game is not paused.
  * - The final persisted/cached state reflects both the worker's reveal and the user's input.
- * - Next inactivity job is scheduled normally.
+ * - Next auto-reveal job is scheduled normally.
  */
 
 import type { DataSource } from "typeorm";
@@ -73,7 +74,7 @@ jest.mock("../../src/services/SocketEventService", () => {
     async (roomId: number, eventName: string, data: any) => {
       emittedEvents.push({ roomId, eventName, data });
 
-      // Simulate a user input happening immediately after inactivity reveal
+      // Simulate a user input happening immediately after an auto-reveal tick
       // but before transaction commit. We mutate the same cachedGameInfo reference.
       if (eventName === "game_inactive") {
         const cache = redisStore.get(roomId.toString());
@@ -262,7 +263,7 @@ function resetCaptors() {
   jest.clearAllMocks();
 }
 
-describe("Game inactivity worker merge with concurrent user input", () => {
+describe("Game auto-reveal worker merge with concurrent user input", () => {
   const realRandom = Math.random;
 
   beforeEach(() => {

@@ -145,8 +145,8 @@ export class RoomService {
       // Remove timeout job since the game is starting
       await gameTimeoutQueue.remove(`room-timeout-${room.id}`);
 
-      // Start inactivity check
-      fastify.log.info(`Adding inactivity job for room: ${room.id}`);
+      // Kick off auto-reveal pressure system
+      fastify.log.info(`Adding auto-reveal job for room: ${room.id}`);
       await gameAutoRevealQueue.add(
         "game-auto-reveal",
         {
@@ -231,9 +231,9 @@ export class RoomService {
       );
       fastify.log.info(`Added timeout job for room: ${savedRoom.id}`);
     } else {
-      // For time trials, start inactivity check immediately
+      // For time trials, start auto-reveal cycle immediately
       fastify.log.info(
-        `Adding inactivity job for time trial room: ${savedRoom.id}`,
+        `Adding auto-reveal job for time trial room: ${savedRoom.id}`,
       );
       await gameAutoRevealQueue.add(
         "game-auto-reveal",

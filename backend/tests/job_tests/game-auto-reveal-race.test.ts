@@ -1,5 +1,5 @@
 /**
- * Race-condition tests for game inactivity worker vs user input
+ * Race-condition tests for the game auto-reveal worker vs user input
  * - Mocks BullMQ Worker to avoid Redis
  * - Mocks queues.ts to intercept scheduling
  * - Mocks RedisService and SocketEventService
@@ -244,7 +244,7 @@ function resetCaptors() {
   jest.clearAllMocks();
 }
 
-describe("Game inactivity worker concurrency", () => {
+describe("Game auto-reveal worker concurrency", () => {
   beforeEach(() => {
     resetCaptors();
     jest.useFakeTimers({ now: Date.now() });
@@ -298,7 +298,7 @@ describe("Game inactivity worker concurrency", () => {
     await (worker as any).process(job);
 
     // Assertions:
-    // - Gate should suppress inactivity reveal (no game_inactive event)
+    // - Gate should suppress auto-reveal (no game_inactive event)
     const socketMock = require("../../src/services/SocketEventService");
     expect(socketMock.emitToRoom).not.toHaveBeenCalledWith(
       room.id,
