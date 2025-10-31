@@ -8,6 +8,7 @@ import { ipuzToCrossword } from "../utils/ipuzToCrossword";
 export type LoadIpuzCrosswordsOptions = {
   directory?: string;
   baseDate?: string;
+  pack?: string;
 };
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
@@ -84,6 +85,7 @@ export const loadIpuzCrosswords = async (
 
   let inserted = 0;
   let skipped = 0;
+  const pack = options.pack ?? "general";
 
   for (const [index, file] of files.entries()) {
     const offset = parseOffsetFromFilename(file, index);
@@ -99,6 +101,7 @@ export const loadIpuzCrosswords = async (
       date: currentDate,
       dow,
     });
+    crosswordData.pack = pack;
 
     if (!crosswordData.title || crosswordData.title.length === 0) {
       crosswordData.title = path.parse(file).name;

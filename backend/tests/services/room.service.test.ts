@@ -5,6 +5,7 @@ import { JoinMethod, Room } from "../../src/entities/Room";
 import { User } from "../../src/entities/User";
 import { Crossword } from "../../src/entities/Crossword";
 import { GameStats } from "../../src/entities/GameStats";
+import { UserCrosswordPack } from "../../src/entities/UserCrosswordPack";
 import { fastify } from "../../src/fastify";
 import {
   emailQueue,
@@ -22,7 +23,7 @@ jest.setTimeout(60000);
 
 const postgres = createPostgresTestManager({
   label: "RoomService tests",
-  entities: [Room, User, Crossword, GameStats],
+  entities: [Room, User, Crossword, GameStats, UserCrosswordPack],
   env: {
     database: ["ROOM_SERVICE_TEST_DB", "POSTGRES_DB"],
     schema: ["ROOM_SERVICE_TEST_SCHEMA"],
@@ -84,6 +85,7 @@ const clearDatabase = async () => {
     "game_stats",
     "room_players",
     "room",
+    "user_crossword_pack",
     "user",
     "crossword",
   ]);
@@ -104,6 +106,12 @@ const createUser = async (overrides: Partial<User> = {}) => {
   return repository.save(user);
 };
 
+const grantPack = async (user: User, pack: string) => {
+  const repository = dataSource.getRepository(UserCrosswordPack);
+  const entry = repository.create({ userId: user.id, pack });
+  return repository.save(entry);
+};
+
 const createCrossword = async (overrides: Partial<Crossword> = {}) => {
   const repository = dataSource.getRepository(Crossword);
   const crossword = repository.create({
@@ -121,6 +129,7 @@ const createCrossword = async (overrides: Partial<Crossword> = {}) => {
     jnote: "Integration note",
     notepad: "Integration notepad",
     title: `Integration Crossword ${Date.now()}`,
+    pack: "general",
     ...overrides,
   });
   return repository.save(crossword);
@@ -304,6 +313,64 @@ describe("RoomService integration", () => {
       (job) => job.data.roomId === pendingRoom.id,
     );
     expect(hasJob).toBe(true);
+  });
+
+  it("replaces a restricted crossword if a joining player lacks pack access", async () => {
+    const packedUser = await createUser();
+    const generalUser = await createUser();
+    await grantPack(packedUser, "nyt");
+    const nytCrossword = await createCrossword({
+      dow: "Monday",
+      title: "NYT Pack Crossword",
+      pack: "nyt",
+    });
+    const generalCrossword = await createCrossword({
+      dow: "Tuesday",
+      title: "General Crossword",
+      pack: "general",
+    });
+
+    const service = createRoomService();
+    const crosswordService = (service as any).crosswordService;
+    const getCrosswordSpy = jest
+      .spyOn(crosswordService, "getCrosswordByDifficulty")
+      .mockImplementation(async (_difficulty: string, options: any) => {
+        const packs: string[] = options?.packs ?? [];
+        if (packs.includes("nyt") && packs.includes("general")) {
+          return nytCrossword;
+        }
+        if (packs.length === 1 && packs[0] === "general") {
+          return generalCrossword;
+        }
+        if (packs.includes("nyt")) {
+          return nytCrossword;
+        }
+        return generalCrossword;
+      });
+
+    try {
+      const room = await service.createRoom(packedUser.id, "easy", "1v1");
+      expect(room.crossword.pack).toBe("nyt");
+
+      const reloadedRoom = await dataSource
+        .getRepository(Room)
+        .findOneByOrFail({ id: room.id });
+
+      await service.joinExistingRoom(reloadedRoom, generalUser.id);
+
+      const updatedRoom = await dataSource
+        .getRepository(Room)
+        .findOneByOrFail({ id: room.id });
+
+      expect(updatedRoom.crossword.pack).toBe("general");
+      expect(updatedRoom.players.map((p) => p.id).sort()).toEqual(
+        [packedUser.id, generalUser.id].sort(),
+      );
+      expect(updatedRoom.scores[packedUser.id]).toBe(0);
+      expect(updatedRoom.scores[generalUser.id]).toBe(0);
+    } finally {
+      getCrosswordSpy.mockRestore();
+    }
   });
 
   it("rejects cancellation attempts by non-participants", async () => {
@@ -1122,6 +1189,28 @@ describe("RoomService integration", () => {
       );
       expect(room.join).toBe(JoinMethod.CHALLENGE);
       expect(room.status).toBe("pending");
+    });
+
+    it("selects a crossword from a shared pack when both players have access", async () => {
+      const challenger = await createUser();
+      const challenged = await createUser();
+      await grantPack(challenger, "nyt");
+      await grantPack(challenged, "nyt");
+      await createCrossword({
+        dow: "Monday",
+        date: new Date("2024-01-01T00:00:00.000Z"),
+        title: "NYT Monday",
+        pack: "nyt",
+      });
+
+      const service = createRoomService();
+      const room = await service.createChallengeRoom(
+        challenger.id,
+        challenged.id,
+        "easy",
+      );
+
+      expect(room.crossword.pack).toBe("nyt");
     });
 
     it("throws error when challenger not found", async () => {

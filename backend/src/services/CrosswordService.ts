@@ -1,11 +1,11 @@
-import { DataSource } from "typeorm";
+import { DataSource, In } from "typeorm";
 import { Crossword } from "../entities/Crossword";
-import { Room } from "../entities/Room";
 import { NotFoundError } from "../errors/api";
 import * as fs from "fs";
 import * as path from "path";
 import { findDir } from "../scripts/findConfigDir";
 import { config } from "../config/config";
+import { UserCrosswordPack } from "../entities/UserCrosswordPack";
 
 export class CrosswordService {
   private ormConnection: DataSource;
@@ -45,7 +45,7 @@ export class CrosswordService {
     return { items, total, page, limit };
   }
 
-  async loadCrosswords() {
+  async loadCrosswords(pack: string = "general") {
     const repository = await this.ormConnection.getRepository(Crossword);
 
     const crosswordsDir = findDir("../../", "crosswords");
@@ -77,7 +77,7 @@ export class CrosswordService {
             data["shadecircles"] = false;
           }
 
-          const crossword = { ...data };
+          const crossword = { ...data, pack };
           crosswords.push(crossword);
         }
       }
@@ -104,8 +104,16 @@ export class CrosswordService {
     return crossword.grid.map((value) => value.replace(/[A-Za-z]/g, "*"));
   }
 
-  async getCrosswordByDifficulty(difficulty: string): Promise<Crossword> {
+  async getCrosswordByDifficulty(
+    difficulty: string,
+    options: { packs?: string[] } = {},
+  ): Promise<Crossword | null> {
     const days = this.getDaysByDifficulty(difficulty);
+
+    const packs = options.packs && options.packs.length > 0
+      ? Array.from(new Set(options.packs))
+      : ["general"];
+
     const crossword = await this.ormConnection
       .getRepository(Crossword)
       .createQueryBuilder("crossword")
@@ -113,10 +121,66 @@ export class CrosswordService {
       .andWhere("crossword.date >= :firstDate", {
         firstDate: new Date(config.game.crossword.firstCrosswordDate),
       })
+      .andWhere("crossword.pack IN (:...packs)", { packs })
       .orderBy("RANDOM()")
       .getOne();
 
     return crossword;
+  }
+
+  async getSharedCrosswordPacks(userIds: number[]): Promise<string[]> {
+    const basePacks = new Set<string>(["general"]);
+
+    if (userIds.length === 0) {
+      return Array.from(basePacks);
+    }
+
+    const repository = this.ormConnection.getRepository(UserCrosswordPack);
+    const entries = await repository.find({
+      where: { userId: In(userIds) },
+    });
+
+    if (userIds.length === 1) {
+      for (const entry of entries) {
+        basePacks.add(entry.pack);
+      }
+      return Array.from(basePacks);
+    }
+
+    const packsByUser = new Map<number, Set<string>>();
+    for (const entry of entries) {
+      if (!packsByUser.has(entry.userId)) {
+        packsByUser.set(entry.userId, new Set());
+      }
+      packsByUser.get(entry.userId)!.add(entry.pack);
+    }
+
+    let shared: Set<string> | null = null;
+    for (const userId of userIds) {
+      const userPacks = packsByUser.get(userId);
+      if (!userPacks) {
+        shared = null;
+        break;
+      }
+      if (!shared) {
+        shared = new Set(userPacks);
+      } else {
+        shared = new Set(
+          [...shared].filter((pack) => userPacks.has(pack)),
+        );
+      }
+      if (shared.size === 0) {
+        break;
+      }
+    }
+
+    if (shared) {
+      for (const pack of shared) {
+        basePacks.add(pack);
+      }
+    }
+
+    return Array.from(basePacks);
   }
 
   private getDaysByDifficulty(difficulty: string): string[] {

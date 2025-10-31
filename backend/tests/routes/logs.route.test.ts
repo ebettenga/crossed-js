@@ -9,12 +9,13 @@ import { Log } from "../../src/entities/Log";
 import { Room } from "../../src/entities/Room";
 import { User } from "../../src/entities/User";
 import logsRoutes from "../../src/routes/private/logs";
+import { UserCrosswordPack } from "../../src/entities/UserCrosswordPack";
 
 jest.setTimeout(60000);
 
 const postgres = createPostgresTestManager({
   label: "Logs route tests",
-  entities: [Crossword, GameStats, Log, Room, User],
+  entities: [Crossword, GameStats, Log, Room, User, UserCrosswordPack],
   env: {
     database: [
       "LOGS_ROUTE_TEST_DB",

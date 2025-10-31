@@ -9,6 +9,7 @@ import {
 } from "typeorm";
 import type { Room } from "./Room";
 import type { GameStats } from "./GameStats";
+import type { UserCrosswordPack } from "./UserCrosswordPack";
 
 @Entity()
 export class User {
@@ -69,6 +70,10 @@ export class User {
   // @ts-ignore
   @ManyToMany("Room", (room) => room.players)
   rooms!: Room[];
+
+  // @ts-ignore
+  @OneToMany("UserCrosswordPack", (pack) => pack.user)
+  crosswordPacks?: UserCrosswordPack[];
 
   // Virtual properties for statistics
   gamesWon!: number;

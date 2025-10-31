@@ -10,12 +10,21 @@ import { Friend } from "../../src/entities/Friend";
 import supportRoutes from "../../src/routes/private/support";
 import { createPostgresTestManager } from "../utils/postgres";
 import { ensureApprovedSnapshot } from "../utils/approval";
+import { UserCrosswordPack } from "../../src/entities/UserCrosswordPack";
 
 jest.setTimeout(60000);
 
 const postgres = createPostgresTestManager({
   label: "Support route tests",
-  entities: [Support, User, GameStats, Room, Crossword, Friend],
+  entities: [
+    Support,
+    User,
+    GameStats,
+    Room,
+    Crossword,
+    Friend,
+    UserCrosswordPack,
+  ],
   env: {
     database: [
       "SUPPORT_ROUTES_TEST_DB",
@@ -59,6 +68,7 @@ const postgres = createPostgresTestManager({
 
 const TABLES_TO_TRUNCATE = [
   "support",
+  "user_crossword_pack",
   "user",
 ];
 

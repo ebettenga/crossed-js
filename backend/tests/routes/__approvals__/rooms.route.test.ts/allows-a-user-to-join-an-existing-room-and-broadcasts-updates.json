@@ -4,7 +4,6 @@
   "type": "1v1",
   "difficulty": "easy",
   "player_count": 2,
-  "created_at": "2025-10-19T10:23:23.943Z",
   "completed_at": null,
   "players": [
     {
@@ -21,7 +20,8 @@
     }
   ],
   "scores": {
-    "1": 0
+    "1": 0,
+    "2": 0
   },
   "crossword": {
     "id": 1,

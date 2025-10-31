@@ -60,4 +60,7 @@ export class Crossword {
 
   @Column('text', { nullable: true })
   title: string;
+
+  @Column('text', { default: 'general' })
+  pack: string;
 }
