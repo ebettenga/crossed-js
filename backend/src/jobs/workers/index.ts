@@ -2,7 +2,7 @@ import { DataSource } from 'typeorm';
 import { createEmailWorker } from './email.worker';
 import { createStatusCleanupWorker } from './status-cleanup.worker';
 import { createGameTimeoutWorker } from './game-timeout.worker';
-import { createGameInactivityWorker } from './game-inactivity.worker';
+import { createGameAutoRevealWorker } from './game-auto-reveal.worker';
 import { FastifyInstance } from 'fastify';
 
 let workers: any[] = [];
@@ -11,9 +11,9 @@ export const initializeWorkers = (dataSource: DataSource, fastify: FastifyInstan
   const emailWorker = createEmailWorker();
   const statusCleanupWorker = createStatusCleanupWorker(dataSource);
   const gameTimeoutWorker = createGameTimeoutWorker(dataSource, fastify);
-  const gameInactivityWorker = createGameInactivityWorker(dataSource, fastify);
+  const gameAutoRevealWorker = createGameAutoRevealWorker(dataSource, fastify);
 
-  workers = [emailWorker, statusCleanupWorker, gameTimeoutWorker, gameInactivityWorker];
+  workers = [emailWorker, statusCleanupWorker, gameTimeoutWorker, gameAutoRevealWorker];
   return workers;
 };
 

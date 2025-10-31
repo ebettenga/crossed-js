@@ -7,7 +7,7 @@ import { config } from "../config/config";
 import { fastify } from "../fastify";
 import { GameStats } from "../entities/GameStats";
 import { BadRequestError, ForbiddenError, NotFoundError } from "../errors/api";
-import { gameInactivityQueue, gameTimeoutQueue } from "../jobs/queues";
+import { gameAutoRevealQueue, gameTimeoutQueue } from "../jobs/queues";
 import { v4 as uuidv4 } from "uuid";
 import { EntityManager } from "typeorm";
 import { CachedGameInfo, RedisService } from "./RedisService";
@@ -145,17 +145,17 @@ export class RoomService {
       // Remove timeout job since the game is starting
       await gameTimeoutQueue.remove(`room-timeout-${room.id}`);
 
-      // Start inactivity check
-      fastify.log.info(`Adding inactivity job for room: ${room.id}`);
-      await gameInactivityQueue.add(
-        "game-inactivity",
+      // Kick off auto-reveal pressure system
+      fastify.log.info(`Adding auto-reveal job for room: ${room.id}`);
+      await gameAutoRevealQueue.add(
+        "game-auto-reveal",
         {
           roomId: room.id,
           lastActivityTimestamp: new Date().getTime(),
         },
         {
-          jobId: `game-inactivity-${room.id}-${uuidv4()}`,
-          delay: config.game.timeout.inactivity.initial,
+          jobId: `game-auto-reveal-${room.id}-${uuidv4()}`,
+          delay: config.game.timeout.autoReveal.initial,
         },
       );
 
@@ -231,19 +231,19 @@ export class RoomService {
       );
       fastify.log.info(`Added timeout job for room: ${savedRoom.id}`);
     } else {
-      // For time trials, start inactivity check immediately
+      // For time trials, start auto-reveal cycle immediately
       fastify.log.info(
-        `Adding inactivity job for time trial room: ${savedRoom.id}`,
+        `Adding auto-reveal job for time trial room: ${savedRoom.id}`,
       );
-      await gameInactivityQueue.add(
-        "game-inactivity",
+      await gameAutoRevealQueue.add(
+        "game-auto-reveal",
         {
           roomId: savedRoom.id,
           lastActivityTimestamp: room.last_activity_at.getTime(),
         },
         {
-          jobId: `game-inactivity-${savedRoom.id}-${uuidv4()}`,
-          delay: config.game.timeout.inactivity.initial,
+          jobId: `game-auto-reveal-${savedRoom.id}-${uuidv4()}`,
+          delay: config.game.timeout.autoReveal.initial,
         },
       );
     }

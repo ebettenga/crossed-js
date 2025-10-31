@@ -119,11 +119,11 @@ jest.mock("../../src/services/RedisService", () => {
   return { RedisService };
 });
 
-// Mock queues module: intercept scheduling via gameInactivityQueue.add
+// Mock queues module: intercept scheduling via gameAutoRevealQueue.add
 const scheduledJobs: Array<{ data: any; opts: any }> = [];
 jest.mock("../../src/jobs/queues", () => {
   return {
-    gameInactivityQueue: {
+    gameAutoRevealQueue: {
       add: jest.fn(async (_name: string, data: any, opts: any) => {
         scheduledJobs.push({ data, opts });
         return { id: "scheduled-job" };
@@ -145,8 +145,8 @@ jest.mock("../../src/services/RoomService", () => {
 });
 
 // Import worker factory after mocks/env are in place
-const { createGameInactivityWorker } = require(
-  "../../src/jobs/workers/game-inactivity.worker",
+const { createGameAutoRevealWorker } = require(
+  "../../src/jobs/workers/game-auto-reveal.worker",
 );
 
 // Utilities
@@ -285,7 +285,7 @@ describe("Game inactivity worker same-letter concurrency", () => {
     redisStore.set(cacheKey, cache);
 
     const fastify: any = {};
-    const worker = createGameInactivityWorker(
+    const worker = createGameAutoRevealWorker(
       fakeDataSource as unknown as DataSource,
       fastify,
     );

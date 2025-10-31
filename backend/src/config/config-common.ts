@@ -37,10 +37,10 @@ export const commonConfig = {
     },
     timeout: {
       pending: 60000, // 1 minutes in milliseconds
-      inactivity: {
-        initial: 5000, // 2 seconds initial timeout
-        minimum: 5000, // 2 seconds minimum timeout
-        // The rate at which the timeout decreases (percentage)
+      autoReveal: {
+        initial: 5000, // Initial delay before the auto-reveal system kicks in
+        minimum: 5000, // Floor for how fast auto-reveal can tick
+        // The rate at which the delay decreases (percentage)
         // e.g., 0.2 means timeout reduces by 20% for each 10% of puzzle completed
         accelerationRate: 0.2,
         // Percentage of puzzle completion between timeout adjustments
