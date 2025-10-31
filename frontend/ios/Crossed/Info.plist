@@ -28,7 +28,7 @@
         <key>CFBundleURLSchemes</key>
         <array>
           <string>crossed</string>
-          <string>com.anonymous.crossed</string>
+          <string>com.bettengasolutions.crossed</string>
         </array>
       </dict>
       <dict>

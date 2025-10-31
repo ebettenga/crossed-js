@@ -19,6 +19,7 @@ interface CrosswordBoardProps {
     revealedLetterIndex?: number;
     scoreChanges: { [key: string]: number };
     lastGuessCell?: { x: number; y: number; playerId: string } | null;
+    maxBoardSize?: number;
 }
 
 export const CrosswordBoard: React.FC<CrosswordBoardProps> = ({
@@ -31,6 +32,7 @@ export const CrosswordBoard: React.FC<CrosswordBoardProps> = ({
     revealedLetterIndex,
     scoreChanges,
     lastGuessCell,
+    maxBoardSize,
 }) => {
     const { data: currentUser } = useUser();
     const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
@@ -51,7 +53,10 @@ export const CrosswordBoard: React.FC<CrosswordBoardProps> = ({
         }
 
         const availableWidth = containerSize.width - BORDER_WIDTH * 2;
-        const availableHeight = containerSize.height - BORDER_WIDTH * 2;
+        const effectiveHeight = typeof maxBoardSize === 'number'
+            ? Math.min(containerSize.height, maxBoardSize)
+            : containerSize.height;
+        const availableHeight = effectiveHeight - BORDER_WIDTH * 2;
         const cellSize = Math.floor(Math.min(
             availableWidth / GRID_SIZE,
             availableHeight / GRID_SIZE
@@ -63,7 +68,7 @@ export const CrosswordBoard: React.FC<CrosswordBoardProps> = ({
 
         const boardSize = cellSize * GRID_SIZE + BORDER_WIDTH * 2;
         return { cellSize, boardSize };
-    }, [containerSize.height, containerSize.width]);
+    }, [containerSize.height, containerSize.width, maxBoardSize]);
 
     const handleCellPress = (square: Square) => {
         if (selectedCell?.id === square.id) {
@@ -126,6 +131,10 @@ export const CrosswordBoard: React.FC<CrosswordBoardProps> = ({
         <View
             onLayout={handleLayout}
             className={cn("w-full flex-1 justify-center items-center pt-2")}
+            style={{
+                minHeight: 0,
+                ...(typeof maxBoardSize === 'number' ? { maxHeight: maxBoardSize } : {}),
+            }}
         >
             {metrics && (
                 <View
