@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { PageHeader } from '~/components/Header';
 import { Switch } from '~/components/ui/switch';
-import { Moon, Sun, ChevronLeft, Volume2, VolumeX, Eye, EyeOff } from 'lucide-react-native';
+import { Moon, Sun, ChevronLeft, ChevronRight, Volume2, VolumeX, Eye, EyeOff, HelpCircle } from 'lucide-react-native';
 import { useColorMode } from '~/hooks/useColorMode';
 import { useSoundPreference } from '~/hooks/useSoundPreference';
 import { useEloVisibility } from '~/hooks/useEloVisibility';
@@ -77,6 +77,28 @@ export default function Settings() {
                                 </Text>
                             </View>
                             <Switch checked={isEloVisible} onCheckedChange={toggleEloVisibility} />
+                        </TouchableOpacity>
+                    </View>
+                </View>
+
+                <View className="mt-10">
+                    <Text className="text-lg font-semibold text-[#1D2124] dark:text-[#DDE1E5] font-['Times New Roman']">
+                        Learn & Support
+                    </Text>
+
+                    <View className="mt-4 bg-white dark:bg-[#1A2227] rounded-lg p-4 gap-4">
+                        <TouchableOpacity
+                            className="flex-row items-center justify-between"
+                            onPress={() => router.push('/(root)/how-to-play')}
+                            activeOpacity={0.7}
+                        >
+                            <View className="flex-row items-center gap-3">
+                                <HelpCircle size={24} color={isDark ? '#DDE1E5' : '#1D2124'} />
+                                <Text className="text-base text-[#1D2124] dark:text-[#DDE1E5] font-['Times New Roman']">
+                                    How to Play
+                                </Text>
+                            </View>
+                            <ChevronRight size={20} color={isDark ? '#DDE1E5' : '#1D2124'} />
                         </TouchableOpacity>
                     </View>
                 </View>

@@ -1,16 +1,13 @@
 # TODO List
 
 
-## Bugs
-
-1. tabs bar doesn't sit at bottom of screen properly (google drive image)
-2. when user has multiple games, it goes into a infinite loading screen
-3. on the finished page in light mode, can't see icons and some text
-
 ## Features
 
-1. tests
-2. tests ci
+1. check rooms on a timer and navigate to room automatically
+2. add credits page on settings
+3. don't allow friend to readd friend
+4. make sure crossword board always completely shows up on screen. even small screens
+
 
 
 
