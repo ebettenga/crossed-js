@@ -43,21 +43,27 @@ export const DifficultyDialog = ({ isVisible, onClose, onSelect }: DifficultyDia
             <Text className="text-base mb-2.5 text-[#2B2B2B] dark:text-[#DDE1E5] font-rubik">
               Select Difficulty:
             </Text>
-            <View className="flex-row justify-between gap-2.5">
-              {difficulties.map(({ label, value }) => (
+            <View className="flex-row w-full" style={{ width: '100%' }}>
+              {difficulties.map(({ label, value }, index) => (
                 <TouchableOpacity
                   key={value}
                   className={`flex-1 p-2.5 rounded-lg border ${selectedDifficulty === value
-                      ? 'bg-[#8B0000] border-[#8B0000]'
-                      : 'border-[#E5E5E5] dark:border-[#2A3136]'
+                    ? 'bg-[#8B0000] border-[#8B0000]'
+                    : 'border-[#E5E5E5] dark:border-[#2A3136]'
                     }`}
+                  style={{
+                    marginRight: index !== difficulties.length - 1 ? 10 : 0,
+                    flexBasis: 0,
+                    minWidth: 0,
+                  }}
                   onPress={() => setSelectedDifficulty(value)}
                 >
                   <Text
                     className={`text-center text-sm font-rubik ${selectedDifficulty === value
-                        ? 'text-white'
-                        : 'text-[#666666] dark:text-[#DDE1E5]/70'
+                      ? 'text-white'
+                      : 'text-[#666666] dark:text-[#DDE1E5]/70'
                       }`}
+                    style={{ flexShrink: 0 }}
                   >
                     {label}
                   </Text>
@@ -66,22 +72,28 @@ export const DifficultyDialog = ({ isVisible, onClose, onSelect }: DifficultyDia
             </View>
           </View>
 
-          <View className="flex-row gap-2.5">
-            <TouchableOpacity
-              className="flex-row items-center bg-[#8B0000] p-2.5 px-5 gap-2"
-              onPress={handleStart}
-            >
-              <Swords size={20} color="#FFFFFF" />
-              <Text className="text-base text-white font-rubik">Start</Text>
-            </TouchableOpacity>
+          <View className="flex-row w-full" style={{ width: '100%' }}>
+            <View style={{ flex: 1, marginRight: 10 }}>
+              <TouchableOpacity
+                className="flex-row items-center justify-center bg-[#8B0000] p-2.5 px-5 gap-2"
+                style={{ width: '100%' }}
+                onPress={handleStart}
+              >
+                <Swords size={20} color="#FFFFFF" />
+                <Text className="text-base text-white font-rubik">Start</Text>
+              </TouchableOpacity>
+            </View>
 
-            <TouchableOpacity
-              className="flex-row items-center bg-[#F8F8F5] dark:bg-[#1A2227] p-2.5 px-5 border border-[#E5E5E5] dark:border-[#2A3136] gap-2"
-              onPress={onClose}
-            >
-              <X size={20} color="#666666" />
-              <Text className="text-base text-[#666666] dark:text-[#DDE1E5]/70 font-rubik">Cancel</Text>
-            </TouchableOpacity>
+            <View style={{ flex: 1 }}>
+              <TouchableOpacity
+                className="flex-row items-center justify-center bg-[#F8F8F5] dark:bg-[#1A2227] p-2.5 px-5 border border-[#E5E5E5] dark:border-[#2A3136] gap-2"
+                style={{ width: '100%' }}
+                onPress={onClose}
+              >
+                <X size={20} color="#666666" />
+                <Text className="text-base text-[#666666] dark:text-[#DDE1E5]/70 font-rubik">Cancel</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </View>

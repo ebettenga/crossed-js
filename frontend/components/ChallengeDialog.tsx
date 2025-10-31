@@ -65,14 +65,19 @@ export const ChallengeDialog = ({ isVisible, onClose, friendId, friendName }: Ch
             <Text className="text-base mb-2.5 text-[#2B2B2B] dark:text-[#DDE1E5] font-rubik">
               Select Difficulty:
             </Text>
-            <View className="flex-row justify-between gap-2.5">
-              {difficulties.map(({ label, value }) => (
+            <View className="flex-row w-full" style={{ width: '100%' }}>
+              {difficulties.map(({ label, value }, index) => (
                 <TouchableOpacity
                   key={value}
                   className={`flex-1 p-2.5 rounded-lg border ${selectedDifficulty === value
                     ? 'bg-[#8B0000] border-[#8B0000]'
                     : 'border-[#E5E5E5] dark:border-[#2A3136]'
                     }`}
+                  style={{
+                    marginRight: index !== difficulties.length - 1 ? 10 : 0,
+                    flexBasis: 0,
+                    minWidth: 0,
+                  }}
                   onPress={async () => {
                     setSelectedDifficulty(value);
                   }}
@@ -82,6 +87,7 @@ export const ChallengeDialog = ({ isVisible, onClose, friendId, friendName }: Ch
                       ? 'text-white'
                       : 'text-[#666666] dark:text-[#DDE1E5]/70'
                       }`}
+                    style={{ flexShrink: 0 }}
                   >
                     {label}
                   </Text>
