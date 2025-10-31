@@ -1,4 +1,5 @@
-import { DataSource, In } from "typeorm";
+import { DataSource, In, Repository } from "typeorm";
+import AdmZip from "adm-zip";
 import { Crossword } from "../entities/Crossword";
 import { NotFoundError } from "../errors/api";
 import * as fs from "fs";
@@ -6,6 +7,8 @@ import * as path from "path";
 import { findDir } from "../scripts/findConfigDir";
 import { config } from "../config/config";
 import { UserCrosswordPack } from "../entities/UserCrosswordPack";
+
+const DEFAULT_BATCH_SIZE = 200;
 
 export class CrosswordService {
   private ormConnection: DataSource;
@@ -53,12 +56,20 @@ export class CrosswordService {
       ? await this.loadCrosswordsFromRemote(source, pack)
       : await this.loadCrosswordsFromLocal(source, pack);
 
-    for (const crossword of crosswords) {
-      const crosswordEntity = repository.create(crossword);
-      await repository.save(crosswordEntity);
-    }
+    const {
+      crosswordsToInsert,
+      skippedExisting,
+    } = await this.filterExistingCrosswords(repository, crosswords, pack);
 
-    console.log("Crosswords loaded successfully");
+    await this.saveCrosswordsInBatches(
+      repository,
+      crosswordsToInsert,
+      DEFAULT_BATCH_SIZE,
+    );
+
+    console.log(
+      `Crosswords loaded successfully: inserted ${crosswordsToInsert.length}, skipped ${skippedExisting} existing entries`,
+    );
   }
 
   async createFoundLettersTemplate(crosswordId: number): Promise<string[]> {
@@ -223,84 +234,62 @@ export class CrosswordService {
     }
 
     const fetchFn = this.ensureFetch();
-    const results: any[] = [];
-    await this.collectGithubCrosswords(
+    return await this.collectGithubCrosswordsFromArchive(
       githubInfo,
-      githubInfo.path,
       pack,
-      results,
       fetchFn,
     );
-    return results;
   }
 
-  private async collectGithubCrosswords(
+  private async collectGithubCrosswordsFromArchive(
     info: {
       owner: string;
       repo: string;
       ref: string;
       path: string;
     },
-    currentPath: string,
     pack: string,
-    accumulator: any[],
     fetchFn: (input: any, init?: any) => Promise<any>,
-  ): Promise<void> {
-    const encodedPath = currentPath
-      .split("/")
-      .filter(Boolean)
-      .map(encodeURIComponent)
-      .join("/");
+  ): Promise<any[]> {
+    const archiveBuffer = await this.downloadGithubArchive(info, fetchFn);
+    const zip = new AdmZip(archiveBuffer);
+    const entries = zip.getEntries();
 
-    const url = new URL(
-      `https://api.github.com/repos/${info.owner}/${info.repo}/contents/${encodedPath}?ref=${info.ref}`,
-    );
-
-    const headers: Record<string, string> = {
-      "User-Agent": "crossed-crossword-loader",
-      Accept: "application/vnd.github+json",
-    };
-    if (process.env.GITHUB_TOKEN) {
-      headers.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
+    if (entries.length === 0) {
+      return [];
     }
 
-    const response = await fetchFn(url.toString(), { headers });
-    if (!response.ok) {
-      throw new Error(
-        `Failed to load crosswords from GitHub (${response.status} ${response.statusText})`,
-      );
-    }
-
-    const entries: Array<
-      { type: string; path: string; name: string; download_url?: string }
-    > = await response.json();
+    const rootDir = this.getArchiveRoot(entries);
+    const normalizedTarget = this.normalizeArchiveTarget(rootDir, info.path);
+    const collected: any[] = [];
 
     for (const entry of entries) {
-      if (entry.type === "dir") {
-        await this.collectGithubCrosswords(
-          info,
-          entry.path,
-          pack,
-          accumulator,
-          fetchFn,
-        );
+      if (entry.isDirectory) {
         continue;
       }
-      if (
-        entry.type === "file" && entry.name.endsWith(".json") &&
-        entry.download_url
-      ) {
-        const fileResp = await fetchFn(entry.download_url, { headers });
-        if (!fileResp.ok) {
-          continue;
-        }
-        const data = await fileResp.json();
-        const transformed = this.transformCrosswordPayload(data, pack);
+      const entryPath = entry.entryName.replace(/\\/g, "/");
+      if (!entryPath.startsWith(normalizedTarget)) {
+        continue;
+      }
+      if (!entryPath.endsWith(".json")) {
+        continue;
+      }
+
+      const fileContent = entry.getData().toString("utf-8");
+      try {
+        const parsed = JSON.parse(fileContent);
+        const transformed = this.transformCrosswordPayload(parsed, pack);
         if (transformed) {
-          accumulator.push(transformed);
+          collected.push(transformed);
         }
+      } catch (error) {
+        console.warn(
+          `Failed to parse crossword file ${entryPath}: ${String(error)}`,
+        );
       }
     }
+
+    return collected;
   }
 
   private ensureFetch(): (input: any, init?: any) => Promise<any> {
@@ -327,6 +316,63 @@ export class CrosswordService {
     data["shadecircles"] = !!data["shadecircles"];
 
     return { ...data, pack };
+  }
+
+  private async downloadGithubArchive(
+    info: {
+      owner: string;
+      repo: string;
+      ref: string;
+    },
+    fetchFn: (input: any, init?: any) => Promise<any>,
+  ): Promise<Buffer> {
+    const archiveUrl = new URL(
+      `https://codeload.github.com/${info.owner}/${info.repo}/zip/${info.ref}`,
+    );
+
+    const headers: Record<string, string> = {
+      "User-Agent": "crossed-crossword-loader",
+      Accept: "application/zip",
+    };
+    if (process.env.GITHUB_TOKEN) {
+      headers.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
+    }
+
+    const response = await fetchFn(archiveUrl.toString(), { headers });
+    if (!response.ok) {
+      throw new Error(
+        `Failed to download crossword archive from GitHub (${response.status} ${response.statusText})`,
+      );
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+    return Buffer.from(arrayBuffer);
+  }
+
+  private getArchiveRoot(entries: AdmZip.IZipEntry[]): string {
+    for (const entry of entries) {
+      const name = entry.entryName.replace(/\\/g, "/");
+      if (!name.includes("/")) {
+        continue;
+      }
+      const [root] = name.split("/");
+      if (root) {
+        return root;
+      }
+    }
+    return "";
+  }
+
+  private normalizeArchiveTarget(
+    rootDir: string,
+    relativePath: string,
+  ): string {
+    const trimmedRoot = rootDir ? `${rootDir.replace(/\\/g, "/")}/` : "";
+    const cleanedRelative = relativePath
+      ? relativePath.replace(/\\/g, "/").replace(/^\//, "")
+      : "";
+
+    return `${trimmedRoot}${cleanedRelative ? `${cleanedRelative}/` : ""}`;
   }
 
   private parseGithubTreeUrl(urlString: string):
@@ -387,6 +433,79 @@ export class CrosswordService {
       );
     } catch (e) {
       throw new NotFoundError("Invalid coordinates");
+    }
+  }
+
+  private async filterExistingCrosswords(
+    repository: Repository<Crossword>,
+    crosswords: any[],
+    pack: string,
+  ): Promise<{ crosswordsToInsert: any[]; skippedExisting: number }> {
+    const existing = await repository.find({
+      where: { pack },
+      select: ["id", "pack", "date", "title"],
+    });
+
+    const existingKeys = new Set(
+      existing
+        .map((item) => this.buildCrosswordUniqueKey(item))
+        .filter((key): key is string => Boolean(key)),
+    );
+
+    const seenKeys = new Set(existingKeys);
+    const crosswordsToInsert: any[] = [];
+    let skippedExisting = 0;
+
+    for (const crossword of crosswords) {
+      const key = this.buildCrosswordUniqueKey(crossword, pack);
+      if (key && seenKeys.has(key)) {
+        skippedExisting++;
+        continue;
+      }
+
+      if (key) {
+        seenKeys.add(key);
+      }
+      crosswordsToInsert.push(crossword);
+    }
+
+    return { crosswordsToInsert, skippedExisting };
+  }
+
+  private buildCrosswordUniqueKey(
+    crossword: Partial<Crossword> & { pack?: string },
+    fallbackPack?: string,
+  ): string | null {
+    const pack = (crossword.pack ?? fallbackPack ?? "general").toLowerCase();
+
+    if (crossword.date) {
+      const dateValue = crossword.date instanceof Date
+        ? crossword.date.toISOString().slice(0, 10)
+        : `${crossword.date}`.slice(0, 10);
+      return `${pack}::date::${dateValue}`;
+    }
+
+    if (crossword.title) {
+      return `${pack}::title::${crossword.title.trim().toLowerCase()}`;
+    }
+
+    return null;
+  }
+
+  private async saveCrosswordsInBatches(
+    repository: Repository<Crossword>,
+    crosswords: any[],
+    batchSize: number,
+  ): Promise<void> {
+    if (crosswords.length === 0) {
+      return;
+    }
+
+    const effectiveBatchSize = Math.max(1, batchSize);
+    for (let i = 0; i < crosswords.length; i += effectiveBatchSize) {
+      const batch = crosswords.slice(i, i + effectiveBatchSize);
+      const entities = repository.create(batch);
+      await repository.save(entities);
     }
   }
 }

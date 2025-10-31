@@ -219,6 +219,14 @@ describe("CrosswordService integration", () => {
       }),
     );
     fs.writeFileSync(
+      path.join(tempDir, "duplicate.json"),
+      JSON.stringify({
+        ...basePuzzle,
+        title: "Duplicate Puzzle",
+        grid: Array(16).fill("D"),
+      }),
+    );
+    fs.writeFileSync(
       path.join(tempDir, "old.json"),
       JSON.stringify({
         ...basePuzzle,
@@ -235,14 +243,19 @@ describe("CrosswordService integration", () => {
       const repository = dataSource.getRepository(Crossword);
       const loaded = await repository.find();
       expect(loaded).toHaveLength(2);
-      expect(loaded.map((c) => c.title).sort()).toEqual([
-        "Filesystem Puzzle",
-        "Filesystem Puzzle Two",
-      ]);
+      const loadedTitles = loaded.map((c) => c.title).sort();
+      expect(new Set(loaded.map((c) => c.date?.toISOString().slice(0, 10)))).toEqual(
+        new Set(["2025-01-01", "2025-01-02"]),
+      );
+      expect(loadedTitles).not.toContain("Old Puzzle");
       expect(loaded.every((c) => c.col_size === 4 && c.row_size === 4)).toBe(
         true,
       );
       expect(loaded.every((c) => c.shadecircles === true)).toBe(true);
+
+      await service.loadCrosswords();
+      const afterSecondLoad = await repository.find();
+      expect(afterSecondLoad).toHaveLength(2);
     } finally {
       findDirMock.mockReset();
       fs.rmSync(tempDir, { recursive: true, force: true });
