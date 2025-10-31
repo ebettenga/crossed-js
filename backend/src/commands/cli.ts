@@ -39,11 +39,15 @@ program
     "Pack identifier to assign to the loaded crosswords",
     "general",
   )
+  .option(
+    "-s, --source <string>",
+    "Override the crossword source (directory path or GitHub tree URL)",
+  )
   .action(async (options) => {
     try {
       const dataSource = await AppDataSource.initialize();
       const pack = options.pack ?? "general";
-      await new CrosswordService(dataSource).loadCrosswords(pack);
+      await new CrosswordService(dataSource).loadCrosswords(pack, options.source);
       console.log(`Crosswords loaded successfully into pack "${pack}"`);
     } catch (error) {
       console.error("Error loading crosswords:", error);
