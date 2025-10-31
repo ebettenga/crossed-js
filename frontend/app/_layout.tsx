@@ -11,8 +11,8 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useUser } from "~/hooks/users";
 import Toast from "react-native-toast-message";
 import { useColorMode } from "~/hooks/useColorMode";
-import { SafeAreaView } from "react-native";
 import { IncomingChallengeModal } from '~/components/IncomingChallengeModal';
+import { secureStorage } from '~/hooks/storageApi';
 
 // Prevent the splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
@@ -24,6 +24,7 @@ function AppContent() {
   const router = useRouter();
   const { data: user, isLoading } = useUser();
   const [isReady, setIsReady] = useState(false);
+  const [hasCheckedHowTo, setHasCheckedHowTo] = useState(false);
   const { loadColorScheme } = useColorMode();
 
   useEffect(() => {
@@ -57,6 +58,35 @@ function AppContent() {
       SplashScreen.hideAsync();
     }
   }, [isReady]);
+
+  useEffect(() => {
+    if (!isReady || !user || hasCheckedHowTo) {
+      return;
+    }
+
+    let isMounted = true;
+
+    const checkHowTo = async () => {
+      try {
+        const seen = await secureStorage.get(`how_to_play_seen_${user.id}`);
+        if (isMounted && !seen) {
+          setHasCheckedHowTo(true);
+          router.replace('/(root)/how-to-play?source=login');
+          return;
+        }
+      } finally {
+        if (isMounted) {
+          setHasCheckedHowTo(true);
+        }
+      }
+    };
+
+    checkHowTo();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isReady, user, hasCheckedHowTo, router]);
 
   if (!isReady) {
     return null;
