@@ -78,3 +78,46 @@ jobs:
       - name: Run tests
         run: yarn test --forceExit
         working-directory: backend
+
+  migrate:
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Cache node modules
+        id: cache-nodemodules
+        uses: actions/cache@v4
+        env:
+          cache-name: cache-node-modules
+        with:
+          path: backend/node_modules
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ env.cache-name }}-
+            ${{ runner.os }}-build-
+            ${{ runner.os }}-
+
+      - name: Install dependencies
+        if: steps.cache-nodemodules.outputs.cache-hit != 'true'
+        run: yarn
+        working-directory: backend
+
+      - name: Run migrations
+        run: yarn migration:run
+        working-directory: backend
+        env:
+          NODE_ENV: production
+          PGHOST: ${{ secrets.RAILWAY_PGHOST }}
+          PGPORT: ${{ secrets.RAILWAY_PGPORT }}
+          PGUSER: ${{ secrets.RAILWAY_PGUSER }}
+          PGPASSWORD: ${{ secrets.RAILWAY_PGPASSWORD }}
+          POSTGRES_DB: ${{ secrets.RAILWAY_POSTGRES_DB }}
