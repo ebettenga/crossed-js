@@ -226,9 +226,11 @@ describe("RoomService integration", () => {
     expect(inSpy).toHaveBeenCalledWith(`user_${host.id}`);
     expect(socketsJoinSpy).toHaveBeenCalledWith(room.id.toString());
 
-    const timeoutJob = await gameTimeoutQueue.getJob("game-timeout");
+    const timeoutJobId = `room-timeout-${room.id}`;
+    const timeoutJob = await gameTimeoutQueue.getJob(timeoutJobId);
     expect(timeoutJob).not.toBeNull();
     expect(timeoutJob?.data).toEqual({ roomId: room.id });
+    expect(timeoutJob?.opts?.delay).toBe(config.game.timeout.pending);
   });
 
   it("adds a player to an existing room, starts the game, and syncs redis cache", async () => {

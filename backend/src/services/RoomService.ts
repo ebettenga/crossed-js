@@ -219,12 +219,14 @@ export class RoomService {
     // Only add timeout job for non-time trial games
     if (type !== "time_trial") {
       fastify.log.info(`Adding timeout job for room: ${savedRoom.id}`);
+      const timeoutJobId = `room-timeout-${savedRoom.id}`;
+      await gameTimeoutQueue.remove(timeoutJobId);
       await gameTimeoutQueue.add(
         "game-timeout",
         { roomId: savedRoom.id },
         {
           delay: config.game.timeout.pending,
-          jobId: `game-timeout`,
+          jobId: timeoutJobId,
         },
       );
       fastify.log.info(`Added timeout job for room: ${savedRoom.id}`);

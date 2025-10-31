@@ -36,7 +36,7 @@ export const commonConfig = {
       firstCrosswordDate: "2000-01-01",
     },
     timeout: {
-      pending: 120000, // 2 minutes in milliseconds
+      pending: 60000, // 1 minutes in milliseconds
       inactivity: {
         initial: 5000, // 2 seconds initial timeout
         minimum: 5000, // 2 seconds minimum timeout

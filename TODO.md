@@ -3,12 +3,8 @@
 
 ## Features
 
-1. check rooms on a timer and navigate to room automatically
-2. add credits page on settings
-  - cadien for music
-  - testers ( make list by id and pass them through api request)
-  - me! (zero)
-4. make sure crossword board always completely shows up on screen. even small screens
+1. make sure crossword board always completely shows up on screen. even small screens
+2. rename game-inactivity-timer to a better name
 
 
 

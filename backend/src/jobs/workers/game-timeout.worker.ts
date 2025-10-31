@@ -3,12 +3,13 @@ import { config } from "../../config/config";
 import { DataSource } from "typeorm";
 import { Room } from "../../entities/Room";
 import { NotFoundError } from "../../errors/api";
-import { Server } from "socket.io";
-import { redisService } from "../../services/RedisService";
 import { createSocketEventService } from "../../services/SocketEventService";
 import { FastifyInstance } from "fastify";
 
-export const createGameTimeoutWorker = (dataSource: DataSource, fastify: FastifyInstance) => {
+export const createGameTimeoutWorker = (
+  dataSource: DataSource,
+  fastify: FastifyInstance,
+) => {
   const socketEventService = createSocketEventService(fastify);
 
   // Ensure the dataSource is initialized
@@ -39,19 +40,25 @@ export const createGameTimeoutWorker = (dataSource: DataSource, fastify: Fastify
         await roomRepository.save(room);
 
         // Notify all players in the room using the SocketEventService
-        await socketEventService.emitToRoom(room.id, "room_cancelled", {
-          message: 'Game was cancelled due to inactivity',
+        const timeoutPayload = {
+          message: "We couldn't find another player in time.",
           roomId: room.id,
-          reason: 'timeout'
-        });
+          reason: "pending_timeout",
+        };
+
+        await socketEventService.emitToRoom(
+          room.id,
+          "room_cancelled",
+          timeoutPayload,
+        );
 
         // Also notify each player individually to ensure they receive the message
-        const playerIds = room.players.map(p => p.id);
-        await socketEventService.emitToUsers(playerIds, "room_cancelled", {
-          message: 'Game was cancelled due to inactivity',
-          roomId: room.id,
-          reason: 'timeout'
-        });
+        const playerIds = room.players.map((p) => p.id);
+        await socketEventService.emitToUsers(
+          playerIds,
+          "room_cancelled",
+          timeoutPayload,
+        );
       }
     },
     {
