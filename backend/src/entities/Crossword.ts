@@ -5,6 +5,24 @@ export type Clues = {
   down: string[];
 };
 
+const dateTransformer = {
+  to: (value: Date | string | null) => {
+    if (!value) {
+      return value;
+    }
+    if (value instanceof Date) {
+      return value.toISOString().slice(0, 10);
+    }
+    return `${value}`.slice(0, 10);
+  },
+  from: (value: string | null) => {
+    if (!value) {
+      return value;
+    }
+    return new Date(value);
+  },
+};
+
 @Entity()
 export class Crossword {
   @PrimaryGeneratedColumn()
@@ -31,8 +49,8 @@ export class Crossword {
   @Column('simple-array', { nullable: true })
   circles: number[];
 
-  @Column('date', { nullable: true })
-  date: Date;
+  @Column('date', { nullable: true, transformer: dateTransformer })
+  date: Date | null;
 
   @Column('text', { nullable: true })
   dow: string;
