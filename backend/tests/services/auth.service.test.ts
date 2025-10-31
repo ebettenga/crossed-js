@@ -8,6 +8,7 @@ import { GameStats } from "../../src/entities/GameStats";
 import { Room } from "../../src/entities/Room";
 import { Crossword } from "../../src/entities/Crossword";
 import { Friend } from "../../src/entities/Friend";
+import { UserCrosswordPack } from "../../src/entities/UserCrosswordPack";
 import { AuthService } from "../../src/services/AuthService";
 import { createPostgresTestManager } from "../utils/postgres";
 import {
@@ -510,4 +511,3 @@ describe("AuthService", () => {
     });
   });
 });
-import { UserCrosswordPack } from "../../src/entities/UserCrosswordPack";

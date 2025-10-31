@@ -10,6 +10,7 @@ import { GameStats } from "../../src/entities/GameStats";
 import { Room } from "../../src/entities/Room";
 import { Crossword } from "../../src/entities/Crossword";
 import { Friend } from "../../src/entities/Friend";
+import { UserCrosswordPack } from "../../src/entities/UserCrosswordPack";
 import authRoutes from "../../src/routes/public/auth";
 import { createPostgresTestManager } from "../utils/postgres";
 import jwt from "jsonwebtoken";
@@ -589,4 +590,3 @@ describe("auth routes", () => {
     });
   });
 });
-import { UserCrosswordPack } from "../../src/entities/UserCrosswordPack";
