@@ -52,28 +52,9 @@ export class CrosswordService {
     const repository = await this.ormConnection.getRepository(Crossword);
     const source = sourceOverride ?? config.game.crossword.source ?? null;
 
-    const shouldForceRemote = Boolean(
-      sourceOverride && source && this.isUrl(source),
-    );
-
-    let crosswords: any[];
-
-    if (!shouldForceRemote) {
-      // Prefer local crossword directories when available (e.g., tests, offline runs).
-      const resolvedLocal = this.resolveLocalDirectory(
-        source && !this.isUrl(source) ? source : null,
-      );
-
-      if (resolvedLocal) {
-        crosswords = await this.loadCrosswordsFromLocal(resolvedLocal, pack);
-      } else if (source && this.isUrl(source)) {
-        crosswords = await this.loadCrosswordsFromRemote(source, pack);
-      } else {
-        crosswords = await this.loadCrosswordsFromLocal(source, pack);
-      }
-    } else {
-      crosswords = await this.loadCrosswordsFromRemote(source, pack);
-    }
+    const crosswords = source && this.isUrl(source)
+      ? await this.loadCrosswordsFromRemote(source, pack)
+      : await this.loadCrosswordsFromLocal(source, pack);
 
     const {
       crosswordsToInsert,
@@ -325,10 +306,6 @@ export class CrosswordService {
 
     if (crosswordDate && crosswordDate < firstDate) {
       return null;
-    }
-
-    if (crosswordDate) {
-      data["date"] = crosswordDate;
     }
 
     if (data["size"]) {

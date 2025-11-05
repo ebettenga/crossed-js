@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
-import { View, Text, TouchableOpacity, Linking, KeyboardAvoidingView, Platform, useWindowDimensions, LayoutChangeEvent } from 'react-native';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
+import { View, Text, TouchableOpacity, Linking, KeyboardAvoidingView, Platform } from 'react-native';
 import { CrosswordBoard } from '../components/game/CrosswordBoard';
 import { Keyboard } from '../components/game/Keyboard';
 import { PlayerInfo } from '../components/game/PlayerInfo';
@@ -29,7 +29,6 @@ const CLUE_DISPLAY_HEIGHT = 70;
 
 export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
     const insets = useSafeAreaInsets();
-    const { height: windowHeight } = useWindowDimensions();
     const { room, guess, refresh, forfeit, showGameSummary, onGameSummaryClose, revealedLetterIndex } = useRoom(roomId);
     const { data: currentUser } = useUser();
     const router = useRouter();
@@ -39,8 +38,6 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
     const [scoreChanges, setScoreChanges] = useState<{ [key: string]: number }>({});
     const [lastGuessCell, setLastGuessCell] = useState<{ x: number; y: number; playerId: string } | null>(null);
     const prevScores = useRef<{ [key: string]: number }>({});
-    const [topSectionHeight, setTopSectionHeight] = useState(0);
-    const [bottomSectionHeight, setBottomSectionHeight] = useState(0);
 
 
     useEffect(() => {
@@ -376,21 +373,6 @@ TODO: figure out why there's a error happening with this hook not getting loaded
         selectedCell && (isAcrossMode ? selectedCell.acrossQuestion : selectedCell?.downQuestion)
     );
 
-    const handleTopLayout = useCallback((event: LayoutChangeEvent) => {
-        const measured = Math.round(event.nativeEvent.layout.height);
-        setTopSectionHeight((prev) => (Math.abs(prev - measured) > 1 ? measured : prev));
-    }, []);
-
-    const handleBottomLayout = useCallback((event: LayoutChangeEvent) => {
-        const measured = Math.round(event.nativeEvent.layout.height);
-        setBottomSectionHeight((prev) => (Math.abs(prev - measured) > 1 ? measured : prev));
-    }, []);
-
-    const availableBoardHeight = Math.max(
-        0,
-        windowHeight - insets.top - insets.bottom - topSectionHeight - bottomSectionHeight
-    );
-
     return (
         <KeyboardAvoidingView
             style={{
@@ -403,55 +385,44 @@ TODO: figure out why there's a error happening with this hook not getting loaded
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
             <View className="flex-1">
-                <View onLayout={handleTopLayout}>
-                    <View className="flex-row justify-between items-center px-4 mt-3">
-                        <View className="flex-row items-center gap-2">
-                            {currentUser && (
-                                <Avatar user={currentUser} imageUrl={currentUser.photo} size={32} />
-                            )}
-                        </View>
-                        <View className="flex-row items-center gap-2">
-                            {room.crossword.created_by && (
-                                <View className="mt-1">
-                                    <Text className="text-xs text-[#666666] dark:text-[#9CA3AF]">
-                                        Created by{' '}
-                                    </Text>
-                                    <Text className="text-sm text-[#666666] dark:text-[#9CA3AF]">
-                                        {room.crossword.creator_link ? (
-                                            <TouchableOpacity
-                                                onPress={() => Linking.openURL(room.crossword.creator_link!)}
-                                            >
-                                                <Text className="text-[#8B0000] dark:text-[#FF6B6B] underline">
-                                                    {room.crossword.author}
-                                                </Text>
-                                            </TouchableOpacity>
-                                        ) : (
-                                            <Text className="text-[#1D2124] dark:text-[#DDE1E5]">
+                <View className="flex-row justify-between items-center px-4 mt-3">
+                    <View className="flex-row items-center gap-2">
+                        {currentUser && (
+                            <Avatar user={currentUser} imageUrl={currentUser.photo} size={32} />
+                        )}
+                    </View>
+                    <View className="flex-row items-center gap-2">
+                        {room.crossword.created_by && (
+                            <View className="mt-1">
+                                <Text className="text-xs text-[#666666] dark:text-[#9CA3AF]">
+                                    Created by{' '}
+                                </Text>
+                                <Text className="text-sm text-[#666666] dark:text-[#9CA3AF]">
+                                    {room.crossword.creator_link ? (
+                                        <TouchableOpacity
+                                            onPress={() => Linking.openURL(room.crossword.creator_link!)}
+                                        >
+                                            <Text className="text-[#8B0000] dark:text-[#FF6B6B] underline">
                                                 {room.crossword.author}
                                             </Text>
-                                        )}
-                                    </Text>
-                                </View>
-                            )}
-                            <ConnectionStatus compact />
-                        </View>
+                                        </TouchableOpacity>
+                                    ) : (
+                                        <Text className="text-[#1D2124] dark:text-[#DDE1E5]">
+                                            {room.crossword.author}
+                                        </Text>
+                                    )}
+                                </Text>
+                            </View>
+                        )}
+                        <ConnectionStatus compact />
                     </View>
-                    <PlayerInfo
-                        players={room.players}
-                        scores={room.scores}
-                    />
                 </View>
-                <View
-                    className="flex-1 px-2"
-                    style={{ minHeight: 0 }}
-                >
-                    <View
-                        className="flex-1 items-center justify-center"
-                        style={{
-                            minHeight: 0,
-                            ...(availableBoardHeight > 0 ? { maxHeight: availableBoardHeight } : {}),
-                        }}
-                    >
+                <PlayerInfo
+                    players={room.players}
+                    scores={room.scores}
+                />
+                <View className="flex-1 px-2">
+                    <View className="flex-1 items-center justify-center">
                         <CrosswordBoard
                             board={room?.board}
                             onCellPress={handleCellPress}
@@ -462,13 +433,11 @@ TODO: figure out why there's a error happening with this hook not getting loaded
                             revealedLetterIndex={revealedLetterIndex}
                             scoreChanges={scoreChanges}
                             lastGuessCell={lastGuessCell}
-                            maxBoardSize={availableBoardHeight > 0 ? availableBoardHeight : undefined}
                         />
                     </View>
                 </View>
                 <View
                     className="w-full bg-[#F5F5EB] dark:bg-[#0F1417]"
-                    onLayout={handleBottomLayout}
                 >
                     <View
                         style={{ height: CLUE_DISPLAY_HEIGHT }}
