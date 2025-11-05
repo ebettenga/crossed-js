@@ -128,9 +128,6 @@ export const CrosswordBoard: React.FC<CrosswordBoardProps> = ({
         <View
             onLayout={handleLayout}
             className={cn("w-full items-center pt-2")}
-            style={{
-                ...(typeof maxBoardSize === 'number' ? { maxHeight: maxBoardSize } : {}),
-            }}
         >
             {metrics && (
                 <View
