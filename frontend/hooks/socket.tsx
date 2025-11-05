@@ -261,13 +261,13 @@ export const useSocket = () => {
     }, reconnectionDelay.current);
   }, [socket]);
 
-  const emitSafely = (event: string, data: any) => {
+  const emitSafely = useCallback((event: string, data: any) => {
     if (socket && isConnected) {
       socket.emit(event, data);
     } else {
       messageQueue.current.push({ event, data });
     }
-  };
+  }, [socket, isConnected]);
 
   useEffect(() => {
     if (!socket) return;
@@ -670,9 +670,9 @@ export const useRoom = (roomId?: number) => {
     queueGuess(roomId, coordinates, letter);
   };
 
-  const refresh = (roomId: number) => {
+  const refresh = useCallback((roomId: number) => {
     emit("loadRoom", JSON.stringify({ roomId }));
-  };
+  }, [emit]);
 
   const cancel = useMutation({
     mutationFn: async (roomId: number) => {
@@ -683,9 +683,9 @@ export const useRoom = (roomId?: number) => {
     }
   });
 
-  const forfeit = (roomId: number) => {
+  const forfeit = useCallback((roomId: number) => {
     emit("forfeit", JSON.stringify({ roomId }));
-  };
+  }, [emit]);
 
   return {
     room,
