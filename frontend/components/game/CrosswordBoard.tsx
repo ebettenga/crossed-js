@@ -48,19 +48,16 @@ export const CrosswordBoard: React.FC<CrosswordBoardProps> = ({
     }, []);
 
     const metrics = useMemo(() => {
-        if (containerSize.width <= 0 || containerSize.height <= 0) {
+        if (containerSize.width <= 0) {
             return null;
         }
 
         const availableWidth = containerSize.width - BORDER_WIDTH * 2;
-        const effectiveHeight = typeof maxBoardSize === 'number'
-            ? Math.min(containerSize.height, maxBoardSize)
-            : containerSize.height;
-        const availableHeight = effectiveHeight - BORDER_WIDTH * 2;
-        const cellSize = Math.floor(Math.min(
-            availableWidth / GRID_SIZE,
-            availableHeight / GRID_SIZE
-        ));
+        const heightLimit = typeof maxBoardSize === 'number'
+            ? Math.max(maxBoardSize - BORDER_WIDTH * 2, 0)
+            : availableWidth;
+        const limitingDimension = Math.min(availableWidth, heightLimit);
+        const cellSize = Math.floor(limitingDimension / GRID_SIZE);
 
         if (cellSize <= 0) {
             return null;
@@ -68,7 +65,7 @@ export const CrosswordBoard: React.FC<CrosswordBoardProps> = ({
 
         const boardSize = cellSize * GRID_SIZE + BORDER_WIDTH * 2;
         return { cellSize, boardSize };
-    }, [containerSize.height, containerSize.width, maxBoardSize]);
+    }, [containerSize.width, maxBoardSize]);
 
     const handleCellPress = (square: Square) => {
         if (selectedCell?.id === square.id) {
@@ -130,11 +127,7 @@ export const CrosswordBoard: React.FC<CrosswordBoardProps> = ({
     return (
         <View
             onLayout={handleLayout}
-            className={cn("w-full flex-1 justify-center items-center pt-2")}
-            style={{
-                minHeight: 0,
-                ...(typeof maxBoardSize === 'number' ? { maxHeight: maxBoardSize } : {}),
-            }}
+            className={cn("w-full items-center pt-2")}
         >
             {metrics && (
                 <View
