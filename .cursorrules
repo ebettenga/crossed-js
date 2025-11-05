@@ -51,7 +51,6 @@ const packageCompatibilityNotes = [
 
 // Additional Instructions
 const additionalInstructions = [
-  "Use PowerShell for terminal commands.",
   "Before installing a new package, check if it's already installed:",
   "  Get-ChildItem -Recurse -Filter package-name",
   "If installed, upgrade using:",
@@ -59,7 +58,6 @@ const additionalInstructions = [
   "or",
   "  npm install <package-name>",
   "if not supported by Expo.",
-  "Use PowerShell commands to manage the project, e.g., moving and renaming files:",
   "  Move-Item -Path .\\old\\path\\file.txt -Destination .\\new\\path\\newname.txt",
   "If unsure about the current structure or details, use PowerShell to list out necessary information:",
   "  Get-ChildItem -Recurse",

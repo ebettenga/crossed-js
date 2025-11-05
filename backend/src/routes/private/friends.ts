@@ -1,6 +1,7 @@
 import { FastifyInstance } from "fastify";
 import { FriendService } from "../../services/FriendService";
 import { createSocketEventService } from "../../services/SocketEventService";
+import { NotificationService } from "../../services/NotificationService";
 
 export default function (
   fastify: FastifyInstance,
@@ -9,6 +10,10 @@ export default function (
 ): void {
   const friendService = new FriendService(fastify.orm);
   const socketEventService = createSocketEventService(fastify);
+  const notificationService = new NotificationService(
+    fastify.orm,
+    fastify.log,
+  );
 
   // Get all friends
   fastify.get("/friends", async (request, reply) => {
@@ -40,6 +45,10 @@ export default function (
         action: "added",
       },
     );
+    await notificationService.notifyFriendRequest({
+      senderId: friendship.senderId,
+      receiverId: friendship.receiverId,
+    });
     reply.send(friendship);
   });
 

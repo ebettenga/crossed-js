@@ -1,6 +1,11 @@
 import { RedisOptions } from "ioredis";
 
 const redisURL = process.env.REDIS_URL ? new URL(process.env.REDIS_URL) : null;
+const notificationTokenKeys = process.env.EXPO_NOTIFICATIONS_TOKEN_KEYS
+  ? process.env.EXPO_NOTIFICATIONS_TOKEN_KEYS.split(",")
+    .map((key) => key.trim())
+    .filter(Boolean)
+  : ["expoPushToken"];
 
 export const commonConfig = {
   api: {
@@ -77,4 +82,21 @@ export const commonConfig = {
     from: process.env.SMTP_FROM || "noreply@crossed.com",
   },
   mode: process.env.SERVER_MODE || "api", // 'api' or 'worker',
+  notifications: {
+    expo: {
+      enabled: process.env.EXPO_NOTIFICATIONS_ENABLED === "true",
+      accessToken: process.env.EXPO_ACCESS_TOKEN,
+      useFcmV1: process.env.EXPO_USE_FCM_V1 !== "false",
+      tokenAttributes: notificationTokenKeys,
+    },
+    defaults: {
+      sound: process.env.EXPO_NOTIFICATIONS_SOUND || "default",
+    },
+    templates: {
+      friendRequest: {
+        title: "New Friend Request",
+        body: "{{sender}} sent you a friend request",
+      },
+    },
+  },
 };
