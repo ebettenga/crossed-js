@@ -10,10 +10,10 @@ export default function NotFoundScreen() {
   return (
     <SafeAreaView className="flex-1 bg-[#F6FAFE] dark:bg-[#0F1417]">
       <View className="flex-1 p-5 justify-center items-center">
-        <Text className="text-[32px] font-bold text-[#1D2124] dark:text-[#DDE1E5] mb-2 font-['Times_New_Roman']">
+        <Text className="text-[32px] font-bold text-[#1D2124] dark:text-[#DDE1E5] mb-2 font-rubik">
           Oops!
         </Text>
-        <Text className="text-lg text-[#666666] dark:text-[#DDE1E5]/70 mb-8 font-['Times_New_Roman']">
+        <Text className="text-lg text-[#666666] dark:text-[#DDE1E5]/70 mb-8 font-rubik">
           This page doesn't exist.
         </Text>
 

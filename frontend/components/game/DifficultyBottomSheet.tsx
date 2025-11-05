@@ -60,20 +60,20 @@ export const DifficultyBottomSheet: React.FC<DifficultyBottomSheetProps> = ({
                 <Text style={styles.title}>Select Difficulty</Text>
                 <Swords size={24} color="#9B2C2C" style={styles.titleIcon} />
             </View>
-          <Pressable 
-            style={[styles.difficultyButton, styles.easyButton]} 
+          <Pressable
+            style={[styles.difficultyButton, styles.easyButton]}
             onPress={() => onSelect('easy')}
           >
             <Text style={styles.buttonText}>Easy</Text>
           </Pressable>
-          <Pressable 
-            style={[styles.difficultyButton, styles.mediumButton]} 
+          <Pressable
+            style={[styles.difficultyButton, styles.mediumButton]}
             onPress={() => onSelect('medium')}
           >
             <Text style={styles.buttonText}>Medium</Text>
           </Pressable>
-          <Pressable 
-            style={[styles.difficultyButton, styles.hardButton]} 
+          <Pressable
+            style={[styles.difficultyButton, styles.hardButton]}
             onPress={() => onSelect('hard')}
           >
             <Text style={styles.buttonText}>Hard</Text>
@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#2B2B2B',
     marginBottom: 20,
-    fontFamily: 'Times New Roman',
+    fontFamily: 'Rubik-Regular',
   },
   buttonContainer: {
     width: '100%',
@@ -174,4 +174,4 @@ const styles = StyleSheet.create({
     borderBottomWidth: 3,
     opacity: 1,
   },
-}); 
+});

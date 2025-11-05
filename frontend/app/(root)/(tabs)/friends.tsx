@@ -71,7 +71,7 @@ const FriendRow: React.FC<FriendRowProps> = ({
                         />
                     ) : (
                         <View className="w-10 h-10 rounded-full bg-[#8B0000] items-center justify-center">
-                            <Text className="text-white text-lg font-bold font-['Times_New_Roman']">
+                            <Text className="text-white text-lg font-rubik-bold">
                                 {otherUser.username.charAt(0).toUpperCase()}
                             </Text>
                         </View>
@@ -82,26 +82,26 @@ const FriendRow: React.FC<FriendRowProps> = ({
                     />
                 </View>
                 <View className="flex-1">
-                    <Text className="text-base text-[#1D2124] dark:text-[#DDE1E5] font-['Times_New_Roman']">
+                    <Text className="text-base text-[#1D2124] dark:text-[#DDE1E5] font-rubik">
                         {otherUser.username}
                     </Text>
                     {isPending && isReceiver && (
-                        <Text className="text-xs text-[#666666] dark:text-neutral-400 font-['Times_New_Roman']">
+                        <Text className="text-xs text-[#666666] dark:text-neutral-400 font-rubik">
                             sent you a friend request
                         </Text>
                     )}
                     {isPending && !isReceiver && (
-                        <Text className="text-xs text-[#666666] dark:text-neutral-400 font-['Times_New_Roman']">
+                        <Text className="text-xs text-[#666666] dark:text-neutral-400 font-rubik">
                             pending acceptance
                         </Text>
                     )}
                     {isChallenge && (
-                        <Text className="text-xs text-[#666666] dark:text-neutral-400 font-['Times_New_Roman']">
+                        <Text className="text-xs text-[#666666] dark:text-neutral-400 font-rubik">
                             wants to play a game!
                         </Text>
                     )}
                     {!isPending && hasActiveChallenge && (
-                        <Text className="text-xs text-[#8B0000] dark:text-red-400 font-['Times_New_Roman']">
+                        <Text className="text-xs text-[#8B0000] dark:text-red-400 font-rubik">
                             challenge pending
                         </Text>
                     )}
@@ -150,14 +150,14 @@ const FriendRow: React.FC<FriendRowProps> = ({
                         onPress={() => onAccept?.(roomId)}
                     >
                         <Swords size={16} color="#34D399" />
-                        <Text className="text-xs font-['Times_New_Roman']">Accept</Text>
+                        <Text className="text-xs font-rubik">Accept</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                         className="flex-row items-center p-2 gap-1 rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900"
                         onPress={() => onReject?.(roomId)}
                     >
                         <X size={16} color="#EF4444" />
-                        <Text className="text-xs font-['Times_New_Roman']">Decline</Text>
+                        <Text className="text-xs font-rubik">Decline</Text>
                     </TouchableOpacity>
                 </View>
             )}
@@ -169,7 +169,7 @@ const FriendRow: React.FC<FriendRowProps> = ({
                         onPress={() => onRemove(friend.id)}
                     >
                         <X size={16} color="#EF4444" />
-                        <Text className="ml-1 text-xs text-red-500 dark:text-red-400 font-['Times_New_Roman']">
+                        <Text className="ml-1 text-xs text-red-500 dark:text-red-400 font-rubik">
                             Cancel
                         </Text>
                     </TouchableOpacity>
@@ -400,7 +400,7 @@ export default function Friends() {
                     onPress={() => setActiveTab('friends')}
                 >
                     <Text className={cn(
-                        "text-base font-['Times_New_Roman']",
+                        "text-base font-rubik",
                         activeTab === 'friends'
                             ? "text-[#8B0000]"
                             : "text-[#666666] dark:text-neutral-400"
@@ -419,7 +419,7 @@ export default function Friends() {
                 >
                     <View className="relative">
                         <Text className={cn(
-                            "text-base font-['Times_New_Roman']",
+                            "text-base font-rubik",
                             activeTab === 'challenges'
                                 ? "text-[#8B0000]"
                                 : "text-[#666666] dark:text-neutral-400"
@@ -428,7 +428,7 @@ export default function Friends() {
                         </Text>
                         {challengeCount > 0 && (
                             <View className="absolute -top-2 -right-5 min-w-[20px] h-5 px-1 rounded-full bg-[#8B0000] items-center justify-center">
-                                <Text className="text-white text-xs font-['Times_New_Roman']">
+                                <Text className="text-white text-xs font-rubik">
                                     {displayChallengeCount}
                                 </Text>
                             </View>
@@ -441,7 +441,7 @@ export default function Friends() {
                 <View className="flex-1 px-4">
                     <View className="relative flex-row gap-2 mb-4">
                         <TextInput
-                            className="flex-1 h-[46px] border border-neutral-200 dark:border-neutral-700 rounded-lg px-3 bg-neutral-50 dark:bg-neutral-800 text-[#1D2124] dark:text-[#DDE1E5] font-['Times_New_Roman']"
+                            className="flex-1 h-[46px] border border-neutral-200 dark:border-neutral-700 rounded-lg px-3 bg-neutral-50 dark:bg-neutral-800 text-[#1D2124] dark:text-[#DDE1E5] font-rubik"
                             placeholder="Enter username"
                             placeholderTextColor="#666666"
                             value={username}
@@ -458,7 +458,7 @@ export default function Friends() {
                             ) : (
                                 <>
                                     <UserPlus size={16} color="#FFFFFF" />
-                                    <Text className="text-white text-sm font-['Times_New_Roman']">Add</Text>
+                                    <Text className="text-white text-sm font-rubik">Add</Text>
                                 </>
                             )}
                         </TouchableOpacity>
@@ -480,7 +480,7 @@ export default function Friends() {
                                                     />
                                                 ) : (
                                                     <View className="w-8 h-8 rounded-full bg-[#8B0000] items-center justify-center">
-                                                        <Text className="text-white text-sm font-bold font-['Times_New_Roman']">
+                                                        <Text className="text-white text-sm font-rubik-bold">
                                                             {item.username.charAt(0).toUpperCase()}
                                                         </Text>
                                                     </View>
@@ -490,7 +490,7 @@ export default function Friends() {
                                                         }`}
                                                 />
                                             </View>
-                                            <Text className="ml-3 text-[#1D2124] dark:text-[#DDE1E5] font-['Times_New_Roman']">
+                                            <Text className="ml-3 text-[#1D2124] dark:text-[#DDE1E5] font-rubik">
                                                 {item.username}
                                             </Text>
                                         </TouchableOpacity>
@@ -504,7 +504,7 @@ export default function Friends() {
                     {isLoading ? (
                         <ActivityIndicator className="mt-5" size="large" color="#8B0000" />
                     ) : error ? (
-                        <Text className="text-red-500 dark:text-red-400 text-center mt-5 font-['Times_New_Roman']">
+                        <Text className="text-red-500 dark:text-red-400 text-center mt-5 font-rubik">
                             Failed to load friends
                         </Text>
                     ) : (

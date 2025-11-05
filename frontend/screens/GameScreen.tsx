@@ -84,6 +84,23 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
         prevScores.current = room.scores;
     }, [room?.scores]);
 
+    useEffect(() => {
+        const board = room?.board;
+        if (!board || selectedCell) {
+            return;
+        }
+
+        for (let x = 0; x < board.length; x++) {
+            for (let y = 0; y < board[x].length; y++) {
+                const cell = board[x][y];
+                if (cell.squareType !== SquareType.BLACK && cell.squareType !== SquareType.SOLVED) {
+                    setSelectedCell(cell);
+                    return;
+                }
+            }
+        }
+    }, [room?.board, selectedCell]);
+
     /*
 This useEffect is to move the cursor for the player if the letter gets filled in by someone else / the job
 
@@ -136,7 +153,7 @@ TODO: figure out why there's a error happening with this hook not getting loaded
         const seenAcrossClues = new Set<string>();
         const seenDownClues = new Set<string>();
 
-        room?.board.forEach((row, x) => {
+        room?.board?.forEach((row, x) => {
             row.forEach((square, y) => {
                 if (square.gridnumber) {
                     if (square.acrossQuestion && !seenAcrossClues.has(square.acrossQuestion)) {
@@ -186,10 +203,6 @@ TODO: figure out why there's a error happening with this hook not getting loaded
         return cellsMap;
     }, [room?.board]);
 
-
-    if (!room || room.id !== roomId) {
-        return <LoadingGame />;
-    }
 
     const handleCellPress = (coordinates: Square) => {
         setSelectedCell(coordinates);
@@ -338,25 +351,12 @@ TODO: figure out why there's a error happening with this hook not getting loaded
             },
         },
     ];
-    if (room.status !== 'finished') {
+    if (room?.status !== 'finished') {
         menuOptions.push({
             label: 'Forfeit Game',
             onPress: handleForfeit,
             style: { color: '#8B0000' }
         },);
-    }
-
-    if (room?.board && !selectedCell) {
-        // Find the first valid cell in the board
-        for (let x = 0; x < room.board.length; x++) {
-            for (let y = 0; y < room.board[x].length; y++) {
-                const cell = room.board[x][y];
-                if (cell.squareType !== SquareType.BLACK && cell.squareType !== SquareType.SOLVED) {
-                    setSelectedCell(cell);
-                    return;
-                }
-            }
-        }
     }
 
     const handleClueNavigation = (direction: 'next' | 'previous') => {
@@ -390,6 +390,10 @@ TODO: figure out why there's a error happening with this hook not getting loaded
         0,
         windowHeight - insets.top - insets.bottom - topSectionHeight - bottomSectionHeight
     );
+
+    if (!room || room.id !== roomId) {
+        return <LoadingGame />;
+    }
 
     return (
         <KeyboardAvoidingView

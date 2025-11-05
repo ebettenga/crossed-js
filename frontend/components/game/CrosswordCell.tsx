@@ -59,7 +59,7 @@ const ScoreChange: React.FC<{ value: number; cellSize: number }> = ({ value, cel
 
     return (
         <Animated.Text
-            className={`absolute text-lg font-bold font-['Times_New_Roman'] ${value > 0 ? 'text-green-500' : 'text-red-600'}`}
+            className={`absolute text-lg font-rubik-bold ${value > 0 ? 'text-green-500' : 'text-red-600'}`}
             style={[
                 animatedStyle,
                 {
@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
     },
     letter: {
         fontWeight: '600',
-        fontFamily: 'Times New Roman',
+        fontFamily: 'Rubik-Regular',
     },
     gridNumber: {
         position: 'absolute',

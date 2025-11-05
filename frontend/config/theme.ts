@@ -30,6 +30,6 @@ export const theme = {
     },
   },
   fontFamily: {
-    serif: "Times New Roman",
+    serif: "Rubik-Regular",
   },
 } as const;

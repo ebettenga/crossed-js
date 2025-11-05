@@ -33,7 +33,7 @@ export const ProfileButton: React.FC<ProfileButtonProps> = ({
             <View className="flex-row items-center gap-3">
                 {number !== undefined && (
                     <Text className={cn(
-                        "absolute -top-2 -left-2 text-xs font-['Times_New_Roman']",
+                        "absolute -top-2 -left-2 text-xs font-rubik",
                         danger ? "text-[#8B0000] dark:text-red-400" : "text-[#666666] dark:text-neutral-400"
                     )}>
                         {number}
@@ -47,7 +47,7 @@ export const ProfileButton: React.FC<ProfileButtonProps> = ({
                     })}
                 </View>
                 <Text className={cn(
-                    "text-base font-['Times_New_Roman']",
+                    "text-base font-rubik",
                     danger ? "text-[#8B0000] dark:text-red-400" : "text-[#1D2124] dark:text-[#DDE1E5]"
                 )}>
                     {label}

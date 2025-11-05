@@ -61,7 +61,7 @@ export const GameBanner: React.FC<GameBannerProps> = ({
                 </View>
                 <View className="gap-0.5">
                     <Text className={`
-                        text-base font-semibold font-['Times New Roman']
+                        text-base font-rubik-semibold
                         ${isPending
                             ? 'text-[#666666] dark:text-[#DDE1E5]/70'
                             : 'text-[#8B0000]'
@@ -69,7 +69,7 @@ export const GameBanner: React.FC<GameBannerProps> = ({
                     `}>
                         {isPending ? `Waiting for Players • ${formattedGameType}` : formattedGameType}
                     </Text>
-                    <Text className="text-sm text-[#666666] dark:text-[#DDE1E5]/70 font-['Times New Roman']">
+                    <Text className="text-sm text-[#666666] dark:text-[#DDE1E5]/70 font-rubik">
                         Started {(() => {
                             const serverTime = new Date(createdAt);
                             const timezoneOffset = serverTime.getTimezoneOffset() * 60000; // Convert minutes to milliseconds
@@ -92,7 +92,7 @@ export const GameBanner: React.FC<GameBannerProps> = ({
                     style={{ opacity: cancel.isPending ? 0.6 : 1 }}
                 >
                     <X size={16} color="#EF4444" />
-                    <Text className="text-xs text-[#EF4444] font-['Times New Roman']">Cancel</Text>
+                    <Text className="text-xs text-[#EF4444] font-rubik">Cancel</Text>
                 </TouchableOpacity>
             ) : !isPending ? (
                 <ChevronRight size={20} color="#666666" />
