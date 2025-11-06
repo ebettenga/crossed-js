@@ -153,6 +153,22 @@ export function patch<T>(
   return request<T>(endpoint, "PATCH", body, options);
 }
 
-export function del<T>(endpoint: string, options?: RequestOptions): Promise<T> {
-  return request<T>(endpoint, "DELETE", undefined, options);
+export function del<T>(
+  endpoint: string,
+  bodyOrOptions?: any,
+  maybeOptions?: RequestOptions,
+): Promise<T> {
+  const isOptionsObject =
+    bodyOrOptions &&
+    !Array.isArray(bodyOrOptions) &&
+    typeof bodyOrOptions === "object" &&
+    (Object.prototype.hasOwnProperty.call(bodyOrOptions, "auth") ||
+      Object.prototype.hasOwnProperty.call(bodyOrOptions, "params") ||
+      Object.prototype.hasOwnProperty.call(bodyOrOptions, "headers"));
+
+  if (isOptionsObject && maybeOptions === undefined) {
+    return request<T>(endpoint, "DELETE", undefined, bodyOrOptions);
+  }
+
+  return request<T>(endpoint, "DELETE", bodyOrOptions, maybeOptions);
 }

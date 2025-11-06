@@ -1,4 +1,5 @@
 import { Slot, SplashScreen, useRouter, useSegments } from "expo-router";
+import * as Notifications from "expo-notifications";
 
 import "./globals.css";
 import React, { cloneElement, useEffect, useState } from "react";
@@ -15,6 +16,16 @@ import Toast from "react-native-toast-message";
 import { useColorMode } from "~/hooks/useColorMode";
 import { IncomingChallengeModal } from '~/components/IncomingChallengeModal';
 import { secureStorage } from '~/hooks/storageApi';
+import usePushNotifications from "~/hooks/usePushNotifications";
+import { post } from "~/hooks/api";
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
+});
 
 // Prevent the splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
@@ -124,6 +135,12 @@ function AppContent() {
   const [hasCheckedHowTo, setHasCheckedHowTo] = useState(false);
   const [shouldShowHowTo, setShouldShowHowTo] = useState(false);
   const { loadColorScheme } = useColorMode();
+  const {
+    token: expoPushToken,
+    lastSyncedToken,
+    refreshToken: refreshPushToken,
+    markTokenSynced,
+  } = usePushNotifications();
   const [fontsLoaded, fontError] = useFonts({
     "Rubik-Light": require("../assets/fonts/Rubik-Light.ttf"),
     "Rubik-Regular": require("../assets/fonts/Rubik-Regular.ttf"),
@@ -228,6 +245,52 @@ function AppContent() {
       setShouldShowHowTo(false);
     }
   }, [user]);
+
+  useEffect(() => {
+    if (!isReady || !user) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const syncPushToken = async () => {
+      try {
+        let tokenToSync = expoPushToken;
+        if (!tokenToSync) {
+          tokenToSync = await refreshPushToken();
+        }
+
+        if (!tokenToSync || cancelled) {
+          return;
+        }
+
+        if (tokenToSync === lastSyncedToken) {
+          return;
+        }
+
+        await post("/users/push-tokens", { token: tokenToSync });
+
+        if (!cancelled) {
+          await markTokenSynced(tokenToSync);
+        }
+      } catch (error) {
+        console.warn("Failed to sync Expo push token", error);
+      }
+    };
+
+    syncPushToken();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    isReady,
+    user?.id,
+    expoPushToken,
+    lastSyncedToken,
+    refreshPushToken,
+    markTokenSynced,
+  ]);
 
   if (!isReady) {
     return null;

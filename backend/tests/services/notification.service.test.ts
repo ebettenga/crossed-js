@@ -169,6 +169,37 @@ describe("NotificationService", () => {
     expect(tickets?.[0].status).toBe("ok");
   });
 
+  it("accepts JSON-encoded token arrays when sending notifications", async () => {
+    const expoMock = new ExpoClientMock();
+    const service = new NotificationService(
+      dataSource,
+      createLogger(),
+      expoMock as unknown as Expo,
+      {
+        expo: { enabled: true },
+      },
+    );
+
+    const sender = await createUser({ username: "RequestSender" });
+    const receiverToken = "ExponentPushToken[1234567890abcdefgh]";
+    const receiver = await createUser({
+      username: "RequestReceiver",
+      attributes: [
+        { key: "expoPushToken", value: JSON.stringify([receiverToken]) },
+      ],
+    });
+
+    const tickets = await service.notifyFriendRequest({
+      senderId: sender.id,
+      receiverId: receiver.id,
+    });
+
+    expect(expoMock.sent).toHaveLength(1);
+    expect(expoMock.sent[0][0].to).toBe(receiverToken);
+    expect(tickets).toBeDefined();
+    expect(tickets?.[0].status).toBe("ok");
+  });
+
   it("does not send notifications when receiver has no valid tokens", async () => {
     const expoMock = new ExpoClientMock();
     const service = new NotificationService(

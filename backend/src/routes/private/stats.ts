@@ -68,7 +68,7 @@ export default function (
 
       reply.send(transformedStats);
     } catch (error) {
-      fastify.log.error(error);
+      fastify.log.error({ err: error });
       reply.code(500).send({ error: "Failed to fetch user stats" });
     }
   });

@@ -79,7 +79,7 @@ async function startServer() {
     try {
       await fastify.listen({ port: config.api.port, host: config.api.host });
     } catch (err) {
-      fastify.log.error(err);
+    fastify.log.error({ err }, "Failed to start Fastify server");
       process.exit(1);
     }
   }

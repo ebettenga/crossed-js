@@ -12,7 +12,10 @@
             "cwd": "${workspaceFolder}/backend",
             "name": "Run backend",
             "request": "launch",
-            "type": "node-terminal"
-        },
+            "type": "node-terminal",
+            "env": {
+                "NODE_OPTIONS": "--enable-source-maps"
+            }
+        }
     ]
 }

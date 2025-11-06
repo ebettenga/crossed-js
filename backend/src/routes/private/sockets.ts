@@ -292,7 +292,9 @@ export default function (
 
       socket.on("challenge", async (data: string) => {
         try {
-          const { challengedId, difficulty, context } = JSON.parse(data) as Challenge;
+          const { challengedId, difficulty, context } = JSON.parse(
+            data,
+          ) as Challenge;
           const room = await roomService.createChallengeRoom(
             user.id,
             challengedId,
