@@ -16,7 +16,7 @@ export const commonConfig = {
   game: {
     crossword: {
       gridSize: 15,
-      borderWidth: 1,
+      borderWidth: 0.5,
       cornerRadius: 4,
     },
   },

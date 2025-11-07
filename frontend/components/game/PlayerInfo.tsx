@@ -112,9 +112,9 @@ export const PlayerInfo: React.FC<PlayerInfoProps> = ({ players, scores }) => {
                                 {player.username}
                             </Text>
                         </View>
-                        <View className="flex-row items-center relative">
+                        <View className="flex-row items-center flex-row relative">
                             <Text
-                                className={`text-lg font-rubik-semibold ${player.id === currentUser?.id
+                                className={`text-lg items-center font-rubik-semibold ${player.id === currentUser?.id
                                     ? 'text-white'
                                     : 'text-[#1D2124] dark:text-[#DDE1E5]'
                                     }`}

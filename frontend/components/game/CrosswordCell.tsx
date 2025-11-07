@@ -127,8 +127,8 @@ export const CrosswordCell: React.FC<CrosswordCellProps> = ({
                         height: cellSize,
                         borderTopWidth: BORDER_WIDTH,
                         borderLeftWidth: BORDER_WIDTH,
-                        borderRightWidth: coordinates.y === GRID_SIZE - 1 ? BORDER_WIDTH : 0,
-                        borderBottomWidth: coordinates.x === GRID_SIZE - 1 ? BORDER_WIDTH : 0,
+                        borderRightWidth: coordinates.y === GRID_SIZE - 1 ? BORDER_WIDTH : 0.5,
+                        borderBottomWidth: coordinates.x === GRID_SIZE - 1 ? BORDER_WIDTH : 0.5,
                         backgroundColor: getBackgroundColor(),
                         borderTopLeftRadius: isTopLeft ? CORNER_RADIUS : 0,
                         borderTopRightRadius: isTopRight ? CORNER_RADIUS : 0,
@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
         borderWidth: BORDER_WIDTH,
     },
     letter: {
-        fontWeight: '600',
+        fontWeight: '400',
         fontFamily: 'Rubik-Regular',
     },
     gridNumber: {
