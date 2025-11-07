@@ -97,6 +97,10 @@ export const commonConfig = {
         title: "New Friend Request",
         body: "{{sender}} sent you a friend request",
       },
+      challengeReceived: {
+        title: "New Challenge",
+        body: "{{challenger}} challenged you to a {{difficulty}} match",
+      },
     },
   },
 };

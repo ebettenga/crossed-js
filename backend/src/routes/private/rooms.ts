@@ -2,6 +2,7 @@ import { FastifyInstance } from "fastify";
 import { RoomService } from "../../services/RoomService";
 import { JoinRoom } from "./sockets";
 import { createSocketEventService } from "../../services/SocketEventService";
+import { NotificationService } from "../../services/NotificationService";
 
 type Coordinates = {
   x: number;
@@ -26,6 +27,10 @@ export default function (
 ): void {
   const roomService = new RoomService(fastify.orm);
   const socketEventService = createSocketEventService(fastify);
+  const notificationService = new NotificationService(
+    fastify.orm,
+    fastify.log,
+  );
 
   fastify.get("/rooms/:roomId", async (request, reply) => {
     const params = request.params as { roomId: string };
@@ -150,6 +155,13 @@ export default function (
       roomId: room.id,
       status: room.status,
       action: "created",
+    });
+    await notificationService.notifyChallengeReceived({
+      challengerId: request.user.id,
+      challengedId,
+      roomId: room.id,
+      difficulty,
+      context,
     });
     reply.send(room.toJSON());
   });
