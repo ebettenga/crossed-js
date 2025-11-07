@@ -427,8 +427,23 @@ export default function Friends() {
                             Challenges
                         </Text>
                         {challengeCount > 0 && (
-                            <View className="absolute -top-2 -right-5 min-w-[20px] h-5 px-1 rounded-full bg-[#8B0000] items-center justify-center">
-                                <Text className="text-white text-xs font-rubik">
+                            <View
+                                style={{
+                                    position: 'absolute',
+                                    top: -6,
+                                    right: -20,
+                                    minWidth: 18,
+                                    height: 18,
+                                    borderRadius: 9,
+                                    backgroundColor: '#8B0000',
+                                    borderWidth: 1,
+                                    borderColor: '#FFFFFF',
+                                    paddingHorizontal: 4,
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                }}
+                            >
+                                <Text className="text-white text-[10px] font-rubik-medium">
                                     {displayChallengeCount}
                                 </Text>
                             </View>

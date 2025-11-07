@@ -233,4 +233,90 @@ describe("NotificationService", () => {
     expect(expoMock.sent).toHaveLength(0);
     expect(tickets).toBeUndefined();
   });
+
+  it("sends a challenge notification with navigation metadata when challenged user has tokens", async () => {
+    const expoMock = new ExpoClientMock();
+    const service = new NotificationService(
+      dataSource,
+      createLogger(),
+      expoMock as unknown as Expo,
+      {
+        expo: { enabled: true },
+      },
+    );
+
+    const challenger = await createUser({ username: "ChallengerUser" });
+    const challengedToken = "ExponentPushToken[challengetoken123456]";
+    const challenged = await createUser({
+      username: "ChallengedUser",
+      attributes: [
+        { key: "expoPushToken", value: challengedToken },
+      ],
+    });
+
+    const payload = {
+      challengerId: challenger.id,
+      challengedId: challenged.id,
+      roomId: 123,
+      difficulty: "medium",
+      context: "Friendly match",
+    };
+
+    const tickets = await service.notifyChallengeReceived(payload);
+
+    expect(expoMock.sent).toHaveLength(1);
+    expect(expoMock.sent[0]).toHaveLength(1);
+    const message = expoMock.sent[0][0];
+    expect(message.to).toBe(challengedToken);
+    expect(message.title).toBe("New Challenge");
+    expect(message.body).toContain("ChallengerUser");
+    expect(message.body).toContain("Medium");
+    const messageData = message.data as Record<string, unknown>;
+    expect(messageData).toMatchObject({
+      type: "challenge",
+      roomId: payload.roomId,
+      challengerId: challenger.id,
+      challengedId: challenged.id,
+      difficulty: payload.difficulty,
+      context: payload.context,
+      url: "/(root)/(tabs)/friends?tab=challenges",
+      navigate: {
+        pathname: "/(root)/(tabs)/friends",
+        params: { tab: "challenges" },
+      },
+    });
+    expect(tickets).toBeDefined();
+    expect(tickets).toHaveLength(1);
+    expect(tickets?.[0].status).toBe("ok");
+  });
+
+  it("does not send a challenge notification when challenged user lacks valid tokens", async () => {
+    const expoMock = new ExpoClientMock();
+    const service = new NotificationService(
+      dataSource,
+      createLogger(),
+      expoMock as unknown as Expo,
+      {
+        expo: { enabled: true },
+      },
+    );
+
+    const challenger = await createUser({ username: "NoTokenChallenger" });
+    const challenged = await createUser({
+      username: "NoTokenChallenged",
+      attributes: [
+        { key: "expoPushToken", value: "invalid-token" },
+      ],
+    });
+
+    const tickets = await service.notifyChallengeReceived({
+      challengerId: challenger.id,
+      challengedId: challenged.id,
+      roomId: 456,
+      difficulty: "hard",
+    });
+
+    expect(expoMock.sent).toHaveLength(0);
+    expect(tickets).toBeUndefined();
+  });
 });
