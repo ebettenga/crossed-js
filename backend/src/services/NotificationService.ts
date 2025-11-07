@@ -304,6 +304,7 @@ export class NotificationService {
       sound: this.settings.defaults?.sound ?? "default",
       title,
       body,
+      categoryId: "challenge_invite",
       data: {
         type: "challenge",
         roomId,
