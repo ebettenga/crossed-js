@@ -386,7 +386,7 @@ export default function Friends() {
     const displayChallengeCount = challengeCount > 99 ? '99+' : String(challengeCount);
 
     return (
-        <View className="flex-1 bg-[#F6FAFE] dark:bg-[#0F1417]" style={{ paddingTop: insets.top }}>
+        <View className="flex-1 bg-[#F6FAFE] dark:bg-[#0F1417]" style={{ paddingBottom: insets.bottom }}>
             <PageHeader />
 
             <View className="flex-row px-4 mb-4">

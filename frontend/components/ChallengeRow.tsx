@@ -37,7 +37,7 @@ export const ChallengeRow = ({
                         {username}
                     </Text>
                     <Text className="text-xs text-[#666666] dark:text-[#DDE1E5]/70 font-rubik">
-                        {challenger ? `You've challenged ${username} to a ${room.difficulty} game!` : `${username} wants to play a ${room.difficulty} game!`}
+                        {challenger ? `You've challenged ${username} to a ${room.difficulty} game!` : `${username} wants to play an ${room.difficulty} game!`}
                     </Text>
                 </View>
             </View>

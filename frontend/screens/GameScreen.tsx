@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { View, Text, TouchableOpacity, Linking, KeyboardAvoidingView, Platform, useWindowDimensions, LayoutChangeEvent } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { CrosswordBoard } from '../components/game/CrosswordBoard';
 import { Keyboard } from '../components/game/Keyboard';
 import { PlayerInfo } from '../components/game/PlayerInfo';
@@ -30,7 +31,7 @@ const CLUE_DISPLAY_HEIGHT = 70;
 export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
     const insets = useSafeAreaInsets();
     const { height: windowHeight } = useWindowDimensions();
-    const { room, guess, refresh, forfeit, showGameSummary, onGameSummaryClose, revealedLetterIndex } = useRoom(roomId);
+    const { room, guess, refresh, forfeit, showGameSummary, onGameSummaryClose, revealedLetterIndex, isConnected } = useRoom(roomId);
     const { data: currentUser } = useUser();
     const router = useRouter();
     const [selectedCell, setSelectedCell] = useState<Square | null>(null);
@@ -39,13 +40,29 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
     const [scoreChanges, setScoreChanges] = useState<{ [key: string]: number }>({});
     const [lastGuessCell, setLastGuessCell] = useState<{ x: number; y: number; playerId: string } | null>(null);
     const prevScores = useRef<{ [key: string]: number }>({});
+    const refreshCooldownRef = useRef<NodeJS.Timeout | null>(null);
+    const refreshPendingRef = useRef(false);
+    const fallbackTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const hasFallbackTriggeredRef = useRef(false);
     const [topSectionHeight, setTopSectionHeight] = useState(0);
     const [bottomSectionHeight, setBottomSectionHeight] = useState(0);
 
 
     useEffect(() => {
+        if (!roomId) {
+            return;
+        }
         refresh(roomId);
-    }, []);
+    }, [roomId, refresh]);
+
+    useFocusEffect(
+        useCallback(() => {
+            if (!roomId) {
+                return;
+            }
+            refresh(roomId);
+        }, [roomId, refresh])
+    );
 
     useEffect(() => {
         if (!room) return;
@@ -100,6 +117,83 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
             }
         }
     }, [room?.board, selectedCell]);
+
+    useEffect(() => {
+        if (!roomId || !isConnected) {
+            return;
+        }
+
+        if (room && room.id === roomId) {
+            return;
+        }
+
+        if (refreshPendingRef.current) {
+            return;
+        }
+
+        refreshPendingRef.current = true;
+        refresh(roomId);
+
+        if (refreshCooldownRef.current) {
+            clearTimeout(refreshCooldownRef.current);
+        }
+
+        refreshCooldownRef.current = setTimeout(() => {
+            refreshPendingRef.current = false;
+            refreshCooldownRef.current = null;
+        }, 2000);
+    }, [room, roomId, isConnected, refresh]);
+
+    useEffect(() => {
+        if (fallbackTimeoutRef.current) {
+            clearTimeout(fallbackTimeoutRef.current);
+            fallbackTimeoutRef.current = null;
+        }
+
+        if (!roomId) {
+            return;
+        }
+
+        if (room && room.id === roomId) {
+            hasFallbackTriggeredRef.current = false;
+            return;
+        }
+
+        if (hasFallbackTriggeredRef.current) {
+            return;
+        }
+
+        fallbackTimeoutRef.current = setTimeout(() => {
+            hasFallbackTriggeredRef.current = true;
+            showToast(
+                'error',
+                'We had trouble loading your game.',
+                'Sending you home to try again.'
+            );
+            router.replace('/(root)/(tabs)');
+        }, 10000);
+
+        return () => {
+            if (fallbackTimeoutRef.current) {
+                clearTimeout(fallbackTimeoutRef.current);
+                fallbackTimeoutRef.current = null;
+            }
+        };
+    }, [room, roomId, router]);
+
+    useEffect(() => {
+        return () => {
+            if (refreshCooldownRef.current) {
+                clearTimeout(refreshCooldownRef.current);
+            }
+            if (fallbackTimeoutRef.current) {
+                clearTimeout(fallbackTimeoutRef.current);
+            }
+            refreshPendingRef.current = false;
+            hasFallbackTriggeredRef.current = false;
+        };
+    }, []);
+
 
     /*
 This useEffect is to move the cursor for the player if the letter gets filled in by someone else / the job
@@ -399,7 +493,6 @@ TODO: figure out why there's a error happening with this hook not getting loaded
         <KeyboardAvoidingView
             style={{
                 flex: 1,
-                paddingTop: insets.top,
                 paddingLeft: insets.left,
                 paddingRight: insets.right,
             }}
@@ -408,7 +501,7 @@ TODO: figure out why there's a error happening with this hook not getting loaded
         >
             <View className="flex-1">
                 <View onLayout={handleTopLayout}>
-                    <View className="flex-row justify-between items-center px-4 mt-3">
+                    <View className="flex-row justify-between items-center px-4 pt-2 pb-1">
                         <View className="flex-row items-center gap-2">
                             {currentUser && (
                                 <Avatar user={currentUser} imageUrl={currentUser.photo} size={32} />
@@ -450,7 +543,7 @@ TODO: figure out why there's a error happening with this hook not getting loaded
                     style={{ minHeight: 0 }}
                 >
                     <View
-                        className="flex-1 items-center justify-center"
+                        className="flex-1 items-center justify-start"
                         style={{
                             minHeight: 0,
                             ...(availableBoardHeight > 0 ? { maxHeight: availableBoardHeight } : {}),

@@ -87,7 +87,7 @@ export const PlayerInfo: React.FC<PlayerInfoProps> = ({ players, scores }) => {
     });
 
     return (
-        <View className="px-3 pt-3">
+        <View className="px-3 pt-2">
             <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
