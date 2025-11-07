@@ -5,8 +5,8 @@ import * as Device from "expo-device";
 import Constants from "expo-constants";
 import { secureStorage } from "./storageApi";
 
-const CURRENT_TOKEN_STORAGE_KEY = "notifications:expoPushToken";
-const LAST_SYNCED_TOKEN_STORAGE_KEY = "notifications:lastSyncedExpoPushToken";
+const CURRENT_TOKEN_STORAGE_KEY = "notifications_expoPushToken";
+const LAST_SYNCED_TOKEN_STORAGE_KEY = "notifications_lastSyncedExpoPushToken";
 
 type PermissionStatus = Notifications.PermissionStatus | null;
 
