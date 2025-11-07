@@ -811,6 +811,11 @@ export class RoomService {
   async rejectChallenge(roomId: number): Promise<Room> {
     const room = await this.getRoomById(roomId);
     if (!room) throw new NotFoundError("Room not found");
+    if (room.status === "playing" || room.status === "finished") {
+      throw new BadRequestError(
+        "Cannot reject a challenge that has already started or finished",
+      );
+    }
 
     room.status = "cancelled";
     room.markModified();
