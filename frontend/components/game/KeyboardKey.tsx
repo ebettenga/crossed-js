@@ -45,10 +45,13 @@ export const KeyboardKey: React.FC<KeyboardKeyProps> = ({
         )}
         style={animatedStyle}
       >
-        <Animated.Text className={cn(
-          "text-lg font-semibold text-[#333333] dark:text-[#DDE1E5] font-rubik",
-          disabled && "text-neutral-400 dark:text-neutral-500"
-        )}>
+        <Animated.Text
+          className={cn(
+            "text-lg font-semibold text-[#333333] dark:text-[#DDE1E5] font-rubik",
+            disabled && "text-neutral-400 dark:text-neutral-500"
+          )}
+          style={{ transform: [{ translateY: 1.5 }] }}
+        >
           {letter}
         </Animated.Text>
       </Animated.View>

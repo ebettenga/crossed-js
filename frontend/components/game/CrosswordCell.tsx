@@ -20,6 +20,7 @@ const PAPER_COLOR = "#F6FAFE"
 const SELECTED_COLOR = config.theme.colors.primary.DEFAULT
 const BORDER_COLOR = "#000000"
 const REVEALED_COLOR = "#FFE4E1" // Misty Rose - a light red/pink color that will make text visible
+const LETTER_VERTICAL_OFFSET_RATIO = 0.05;
 
 interface CrosswordCellProps {
     letter: string;
@@ -155,6 +156,7 @@ export const CrosswordCell: React.FC<CrosswordCellProps> = ({
                         {
                             color: getTextColor(),
                             fontSize: cellSize * 0.5,
+                            marginTop: cellSize * LETTER_VERTICAL_OFFSET_RATIO,
                         }
                     ]}>
                         {letter}
