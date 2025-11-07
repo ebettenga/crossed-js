@@ -20,9 +20,7 @@
     "build:android:dev:local": "eas build --platform android --profile development --local",
     "preview:android": "eas build --platform android --profile preview",
     "preview:ios": "eas build --platform ios --profile preview",
-    "submit:android": "eas submit -p android",
-    "ensure:google-services": "node ./scripts/ensure-google-services.js",
-    "eas-build-pre-install": "yarn ensure:google-services"
+    "submit:android": "eas submit -p android"
   },
   "jest": {
     "preset": "jest-expo"
