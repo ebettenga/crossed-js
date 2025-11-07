@@ -628,7 +628,7 @@ export const useRoom = (roomId?: number) => {
     }
 
     socket?.on("room", handleRoom);
-    socket?.on("game_started", handleGameStarted);
+    socket?.once("game_started", handleGameStarted);
     socket?.on("game_inactive", handleGameInactive);
     socket?.on("game_forfeited", handleGameForfeited);
     socket?.on("rating_change", handleRatingChange);

@@ -93,9 +93,9 @@ export const PlayerInfo: React.FC<PlayerInfoProps> = ({ players, scores }) => {
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={{ gap: 8, paddingRight: 2 }}
             >
-                {sortedPlayers.map((player) => (
+                {sortedPlayers.map((player, index) => (
                     <View
-                        key={player.id}
+                        key={`${player.id}-${index}`}
                         style={{ width: CARD_WIDTH }}
                         className={`p-3 rounded-lg flex-row items-center justify-between ${player.id === currentUser?.id
                             ? 'bg-[#8B0000]'

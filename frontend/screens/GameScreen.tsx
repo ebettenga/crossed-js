@@ -58,22 +58,6 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
 
 
     useEffect(() => {
-        if (!roomId) {
-            return;
-        }
-        refresh(roomId);
-    }, [roomId, refresh]);
-
-    useFocusEffect(
-        useCallback(() => {
-            if (!roomId) {
-                return;
-            }
-            refresh(roomId);
-        }, [roomId, refresh])
-    );
-
-    useEffect(() => {
         if (!room) return;
 
         if (room.status === 'pending') {
