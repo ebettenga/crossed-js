@@ -217,6 +217,14 @@ function AppContent() {
 
     const subscription = Notifications
       .addNotificationResponseReceivedListener(async (response) => {
+        try {
+          await Notifications.dismissNotificationAsync(
+            response.notification.request.identifier,
+          );
+        } catch (error) {
+          console.warn("Failed to dismiss notification", error);
+        }
+
         const data = response.notification.request.content.data as Record<
           string,
           unknown

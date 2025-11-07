@@ -789,6 +789,9 @@ export class RoomService {
   async acceptChallenge(roomId: number, userId: number): Promise<Room> {
     const room = await this.getRoomById(roomId);
     if (!room) throw new NotFoundError("Room not found");
+    if (room.status === "finished") {
+      throw new BadRequestError("Cannot accept a challenge for a finished game");
+    }
 
     await this.joinExistingRoom(room, userId);
 
