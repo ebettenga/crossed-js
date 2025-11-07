@@ -77,7 +77,12 @@ async function request<T>(
     ...headers,
   };
 
-  if (["POST", "PATCH"].includes(method) && !(body instanceof FormData)) {
+  const shouldSendJson =
+    ["POST", "PATCH", "PUT", "DELETE"].includes(method) &&
+    body !== undefined &&
+    !(body instanceof FormData);
+
+  if (shouldSendJson) {
     requestHeaders["Content-Type"] = "application/json";
   }
 
@@ -124,7 +129,11 @@ async function request<T>(
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
-      throw new Error(error.message || "An error occurred");
+      const message =
+        error?.message ||
+        error?.error ||
+        `Request failed with status ${response.status}`;
+      throw new Error(message);
     }
 
     return response.json();

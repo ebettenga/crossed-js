@@ -87,7 +87,7 @@ export class NotificationService {
     payload: FriendRequestPayload,
   ): Promise<ExpoPushTicket[] | void> {
     if (!this.settings.expo.enabled) {
-      this.logger.debug(
+      this.logger.info(
         { event: "notifications.friend_request", reason: "disabled" },
         "Skipping friend request notification because notifications are disabled.",
       );
@@ -109,7 +109,7 @@ export class NotificationService {
     { senderId, receiverId }: FriendRequestPayload,
   ): Promise<ExpoPushTicket[] | void> {
     if (!this.expo) {
-      this.logger.debug(
+      this.logger.info(
         {
           event: "notifications.friend_request",
           reason: "expo_not_configured",
@@ -160,10 +160,10 @@ export class NotificationService {
     }
 
     const senderName = sender?.username || "A player";
-    const title = this.settings.templates?.friendRequest?.title
-      || "New Friend Request";
-    const bodyTemplate = this.settings.templates?.friendRequest?.body
-      || "{{sender}} sent you a friend request";
+    const title = this.settings.templates?.friendRequest?.title ||
+      "New Friend Request";
+    const bodyTemplate = this.settings.templates?.friendRequest?.body ||
+      "{{sender}} sent you a friend request";
     const body = bodyTemplate.replace("{{sender}}", senderName);
 
     const messages: ExpoPushMessage[] = tokens.map((token) => ({
@@ -254,8 +254,10 @@ export class NotificationService {
       if (trimmed.length === 0) {
         return [];
       }
-      if ((trimmed.startsWith("[") && trimmed.endsWith("]"))
-        || (trimmed.startsWith("{") && trimmed.endsWith("}"))) {
+      if (
+        (trimmed.startsWith("[") && trimmed.endsWith("]")) ||
+        (trimmed.startsWith("{") && trimmed.endsWith("}"))
+      ) {
         try {
           const parsed = JSON.parse(trimmed);
           if (Array.isArray(parsed)) {

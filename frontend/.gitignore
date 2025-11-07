@@ -38,5 +38,4 @@ yarn-error.*
 
 app-example
 
-
-eas-build-key.*
+credentials.json
