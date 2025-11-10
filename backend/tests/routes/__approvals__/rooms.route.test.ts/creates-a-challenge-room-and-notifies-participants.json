@@ -1,0 +1,50 @@
+{
+  "id": 1,
+  "status": "pending",
+  "type": "1v1",
+  "difficulty": "medium",
+  "player_count": 2,
+  "completed_at": null,
+  "players": [
+    {
+      "id": 1,
+      "username": "challenger_creator",
+      "score": 0,
+      "eloRating": 1200
+    },
+    {
+      "id": 2,
+      "username": "challenged_creator",
+      "score": 0,
+      "eloRating": 1200
+    }
+  ],
+  "scores": {
+    "1": 0,
+    "2": 0
+  },
+  "crossword": {
+    "id": 1,
+    "title": "Challenge Creation Puzzle",
+    "col_size": 4,
+    "row_size": 4
+  },
+  "found_letters": [
+    "*",
+    "*",
+    "*",
+    "*",
+    "*",
+    "*",
+    "*",
+    "*",
+    "*",
+    "*",
+    "*",
+    "*",
+    "*",
+    "*",
+    "*",
+    "*"
+  ]
+}

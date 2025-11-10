@@ -1,0 +1,44 @@
+{
+  "id": 1,
+  "status": "playing",
+  "type": "1v1",
+  "difficulty": "easy",
+  "player_count": 1,
+  "created_at": "[timestamp]",
+  "completed_at": null,
+  "players": [
+    {
+      "id": 1,
+      "username": "guesser",
+      "score": 3,
+      "eloRating": 1200
+    }
+  ],
+  "scores": {
+    "1": 3
+  },
+  "crossword": {
+    "id": 1,
+    "title": "Guess Puzzle",
+    "col_size": 4,
+    "row_size": 4
+  },
+  "found_letters": [
+    "A",
+    "*",
+    "*",
+    "*",
+    "*",
+    "*",
+    "*",
+    "*",
+    "*",
+    "*",
+    "*",
+    "*",
+    "*",
+    "*",
+    "*",
+    "*"
+  ]
+}

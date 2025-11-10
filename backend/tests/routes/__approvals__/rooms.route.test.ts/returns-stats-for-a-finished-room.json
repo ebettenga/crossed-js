@@ -1,0 +1,20 @@
+[
+  {
+    "userId": 1,
+    "correctGuesses": 20,
+    "incorrectGuesses": 3,
+    "isWinner": true,
+    "eloAtGame": 1180,
+    "eloChange": 20,
+    "correctGuessDetails": []
+  },
+  {
+    "userId": 2,
+    "correctGuesses": 10,
+    "incorrectGuesses": 6,
+    "isWinner": false,
+    "eloAtGame": 1190,
+    "eloChange": 10,
+    "correctGuessDetails": []
+  }
+]

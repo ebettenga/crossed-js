@@ -1,0 +1,30 @@
+{
+  "topEntries": [
+    {
+      "rank": 1,
+      "roomId": 1,
+      "score": 95,
+      "user": {
+        "id": 3,
+        "username": "champion",
+        "eloRating": 1200
+      },
+      "created_at": "[timestamp]",
+      "completed_at": "[timestamp]",
+      "timeTakenMs": 270000
+    }
+  ],
+  "currentPlayerEntry": {
+    "rank": 3,
+    "roomId": 3,
+    "score": 70,
+    "user": {
+      "id": 1,
+      "username": "runner",
+      "eloRating": 1200
+    },
+    "created_at": "[timestamp]",
+    "completed_at": "[timestamp]",
+    "timeTakenMs": 480000
+  }
+}
