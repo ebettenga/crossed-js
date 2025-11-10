@@ -70,6 +70,9 @@ export default function (
   const authService = new AuthService(fastify.orm);
   const roomService = new RoomService(fastify.orm);
   const socketEventService = createSocketEventService(fastify);
+  fastify.addHook("onClose", async () => {
+    await roomService.close();
+  });
 
   // Subscribe to game events from Redis
   redisService.subscribe("game_events", async (channel, message) => {

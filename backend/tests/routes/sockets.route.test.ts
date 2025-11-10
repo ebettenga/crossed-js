@@ -698,14 +698,15 @@ describe("sockets routes", () => {
   });
 
   it("creates and accepts challenges, notifying all participants", async () => {
+    await createCrossword();
     const challenger = await createUser();
     const challenged = await createUser();
     const challengerClient = await connectClient(challenger);
     const challengedClient = await connectClient(challenged);
 
-    const challengeRoomPromise = waitForClientEvent<any>(
+    const challengeRoomPromise = waitForClientEvents<any>(
       challengerClient,
-      "room",
+      ["room", "error"],
     );
     const createdUpdatePromise = waitForClientEvent<any>(
       challengedClient,
@@ -724,11 +725,12 @@ describe("sockets routes", () => {
     expect(createdUpdate.action).toBe("created");
 
     const challengeRoom = await challengeRoomPromise;
-    const roomId = challengeRoom.id;
+    expect(challengeRoom.event).toBe("room");
+    const roomId = challengeRoom.payload.id;
 
-    const acceptRoomPromise = waitForClientEvent<any>(
+    const acceptRoomPromise = waitForClientEvents<any>(
       challengedClient,
-      "room",
+      ["room", "error"],
     );
     const acceptedUpdatePromise = waitForClientEvent<any>(
       challengerClient,
@@ -745,21 +747,23 @@ describe("sockets routes", () => {
     expect(acceptedUpdate.roomId).toBe(roomId);
 
     const acceptedRoom = await acceptRoomPromise;
-    expect(acceptedRoom.id).toBe(roomId);
+    expect(acceptedRoom.event).toBe("room");
+    expect(acceptedRoom.payload.id).toBe(roomId);
 
     await disconnectClient(challengerClient);
     await disconnectClient(challengedClient);
   });
 
   it("notifies participants when a challenge is rejected", async () => {
+    await createCrossword();
     const challenger = await createUser();
     const challenged = await createUser();
     const challengerClient = await connectClient(challenger);
     const challengedClient = await connectClient(challenged);
 
-    const challengerRoomPromise = waitForClientEvent<any>(
+    const challengerRoomPromise = waitForClientEvents<any>(
       challengerClient,
-      "room",
+      ["room", "error"],
     );
     challengerClient.emit(
       "challenge",
@@ -769,6 +773,7 @@ describe("sockets routes", () => {
       }),
     );
     const challengeRoom = await challengerRoomPromise;
+    expect(challengeRoom.event).toBe("room");
 
     const rejectUpdatePromise = waitForClientEvent<any>(
       challengerClient,
@@ -776,12 +781,12 @@ describe("sockets routes", () => {
     );
     challengedClient.emit(
       "reject_challenge",
-      JSON.stringify({ roomId: challengeRoom.id }),
+      JSON.stringify({ roomId: challengeRoom.payload.id }),
     );
 
     const rejected = await rejectUpdatePromise;
     expect(rejected.action).toBe("rejected");
-    expect(rejected.roomId).toBe(challengeRoom.id);
+    expect(rejected.roomId).toBe(challengeRoom.payload.id);
 
     await disconnectClient(challengerClient);
     await disconnectClient(challengedClient);

@@ -29,6 +29,10 @@ export class RoomService {
     this.redisService = new RedisService();
   }
 
+  async close(): Promise<void> {
+    await this.redisService.close();
+  }
+
   private async ensureGameStatsEntry(
     room: Room,
     user: User,
