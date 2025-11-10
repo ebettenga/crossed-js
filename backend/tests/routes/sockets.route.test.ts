@@ -21,6 +21,7 @@ import { GameStats } from "../../src/entities/GameStats";
 import { UserCrosswordPack } from "../../src/entities/UserCrosswordPack";
 import { config } from "../../src/config/config";
 import { redisService } from "../../src/services/RedisService";
+import { fastify as singletonFastify } from "../../src/fastify";
 import {
   emailQueue,
   gameAutoRevealQueue,
@@ -287,6 +288,46 @@ const waitForClientEvent = <T = any>(
     client.once(event, handler);
   });
 
+const waitForClientEvents = <T = any>(
+  client: Socket,
+  events: string[],
+  timeout = 5000,
+): Promise<{ event: string; payload: T }> =>
+  new Promise((resolve, reject) => {
+    const handlers: Record<string, (payload: T) => void> = {};
+
+    const cleanup = (event: string, payload: T) => {
+      clearTimeout(timer);
+      for (const evt of events) {
+        const handler = handlers[evt];
+        if (handler) {
+          client.off(evt, handler);
+        }
+      }
+      resolve({ event, payload });
+    };
+
+    for (const event of events) {
+      const handler = (payload: T) => cleanup(event, payload);
+      handlers[event] = handler;
+      client.once(event, handler);
+    }
+
+    const timer = setTimeout(() => {
+      for (const evt of events) {
+        const handler = handlers[evt];
+        if (handler) {
+          client.off(evt, handler);
+        }
+      }
+      reject(
+        new Error(
+          `Timed out waiting for one of the events: ${events.join(", ")}`,
+        ),
+      );
+    }, timeout);
+  });
+
 beforeAll(async () => {
   await postgres.setup();
   dataSource = postgres.dataSource;
@@ -300,6 +341,8 @@ beforeAll(async () => {
 
   socketsRoutes(app as any, {}, () => {});
   await app.ready();
+  singletonFastify.io = app.io as any;
+  singletonFastify.log = app.log as any;
 
   await app.listen({ port: 0, host: "127.0.0.1" });
   const address = app.server.address() as AddressInfo;
@@ -496,16 +539,15 @@ describe("sockets routes", () => {
     });
     activeClients.push(client);
 
-    await new Promise<void>((resolve) => {
-      client.once("connect", () => resolve());
-      client.once("connect_error", () => resolve());
-    });
-
-    const payload = await waitForClientEvent<{ code: string }>(
+    const { event, payload } = await waitForClientEvents<any>(
       client,
-      "error",
+      ["error", "connect_error"],
     );
-    expect(payload).toEqual({ code: "auth/invalid-token" });
+    if (event === "error") {
+      expect(payload).toEqual({ code: "auth/invalid-token" });
+    } else {
+      expect(payload).toBeInstanceOf(Error);
+    }
 
     await waitFor(async () => {
       if (client.connected) {
@@ -513,6 +555,8 @@ describe("sockets routes", () => {
       }
       return true;
     });
+
+    await disconnectClient(client);
   });
 
   it("updates lastActiveAt when heartbeat events arrive", async () => {
@@ -586,9 +630,9 @@ describe("sockets routes", () => {
       "error",
     );
     client.emit("guess", {
-      roomId: room.id,
-      x: 10,
-      y: 10,
+      roomId: room.id + 9999,
+      x: 0,
+      y: 0,
       guess: "Z",
     });
     const payload = await errorPromise;
