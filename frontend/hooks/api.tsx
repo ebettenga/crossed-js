@@ -77,7 +77,12 @@ async function request<T>(
     ...headers,
   };
 
-  if (["POST", "PATCH"].includes(method) && !(body instanceof FormData)) {
+  const shouldSendJson =
+    ["POST", "PATCH", "PUT", "DELETE"].includes(method) &&
+    body !== undefined &&
+    !(body instanceof FormData);
+
+  if (shouldSendJson) {
     requestHeaders["Content-Type"] = "application/json";
   }
 
@@ -124,7 +129,11 @@ async function request<T>(
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
-      throw new Error(error.message || "An error occurred");
+      const message =
+        error?.message ||
+        error?.error ||
+        `Request failed with status ${response.status}`;
+      throw new Error(message);
     }
 
     return response.json();
@@ -153,6 +162,22 @@ export function patch<T>(
   return request<T>(endpoint, "PATCH", body, options);
 }
 
-export function del<T>(endpoint: string, options?: RequestOptions): Promise<T> {
-  return request<T>(endpoint, "DELETE", undefined, options);
+export function del<T>(
+  endpoint: string,
+  bodyOrOptions?: any,
+  maybeOptions?: RequestOptions,
+): Promise<T> {
+  const isOptionsObject =
+    bodyOrOptions &&
+    !Array.isArray(bodyOrOptions) &&
+    typeof bodyOrOptions === "object" &&
+    (Object.prototype.hasOwnProperty.call(bodyOrOptions, "auth") ||
+      Object.prototype.hasOwnProperty.call(bodyOrOptions, "params") ||
+      Object.prototype.hasOwnProperty.call(bodyOrOptions, "headers"));
+
+  if (isOptionsObject && maybeOptions === undefined) {
+    return request<T>(endpoint, "DELETE", undefined, bodyOrOptions);
+  }
+
+  return request<T>(endpoint, "DELETE", bodyOrOptions, maybeOptions);
 }

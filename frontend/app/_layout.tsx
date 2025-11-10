@@ -1,7 +1,8 @@
 import { Slot, SplashScreen, useRouter, useSegments } from "expo-router";
+import * as Notifications from "expo-notifications";
 
 import "./globals.css";
-import React, { cloneElement, useEffect, useState } from "react";
+import React, { cloneElement, useCallback, useEffect, useState } from "react";
 import { StyleProp, StyleSheet, Text, TextInput, TextStyle } from "react-native";
 import { useFonts } from "expo-font";
 
@@ -15,6 +16,20 @@ import Toast from "react-native-toast-message";
 import { useColorMode } from "~/hooks/useColorMode";
 import { IncomingChallengeModal } from '~/components/IncomingChallengeModal';
 import { secureStorage } from '~/hooks/storageApi';
+import usePushNotifications from "~/hooks/usePushNotifications";
+import { post } from "~/hooks/api";
+
+const CHALLENGE_NOTIFICATION_CATEGORY = "challenge_invite";
+const CHALLENGE_ACCEPT_ACTION = "challenge_accept";
+const CHALLENGE_REJECT_ACTION = "challenge_reject";
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
+});
 
 // Prevent the splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
@@ -124,6 +139,12 @@ function AppContent() {
   const [hasCheckedHowTo, setHasCheckedHowTo] = useState(false);
   const [shouldShowHowTo, setShouldShowHowTo] = useState(false);
   const { loadColorScheme } = useColorMode();
+  const {
+    token: expoPushToken,
+    lastSyncedToken,
+    refreshToken: refreshPushToken,
+    markTokenSynced,
+  } = usePushNotifications();
   const [fontsLoaded, fontError] = useFonts({
     "Rubik-Light": require("../assets/fonts/Rubik-Light.ttf"),
     "Rubik-Regular": require("../assets/fonts/Rubik-Regular.ttf"),
@@ -136,6 +157,113 @@ function AppContent() {
   useEffect(() => {
     loadColorScheme();
   }, []);
+
+  useEffect(() => {
+    const configureCategories = async () => {
+      try {
+        await Notifications.setNotificationCategoryAsync(
+          CHALLENGE_NOTIFICATION_CATEGORY,
+          [
+            {
+              identifier: CHALLENGE_ACCEPT_ACTION,
+              buttonTitle: "Accept",
+              options: { opensAppToForeground: true },
+            },
+            {
+              identifier: CHALLENGE_REJECT_ACTION,
+              buttonTitle: "Reject",
+              options: { opensAppToForeground: false },
+            },
+          ],
+        );
+      } catch (error) {
+        console.warn("Failed to configure notification categories", error);
+      }
+    };
+
+    configureCategories();
+  }, []);
+
+  const handleChallengeAction = useCallback(async (
+    roomId: number,
+    action: "accept" | "reject",
+  ) => {
+    try {
+      await post(`/rooms/challenge/${roomId}/${action}`, { roomId });
+      if (action === "accept") {
+        Toast.show({
+          text1: "Challenge accepted",
+          type: "success",
+        });
+        router.push(`/game?roomId=${roomId}`);
+      } else {
+        Toast.show({
+          text1: "Challenge rejected",
+          type: "info",
+        });
+      }
+    } catch (error) {
+      Toast.show({
+        text1: `Failed to ${action} challenge`,
+        type: "error",
+      });
+    }
+  }, [router]);
+
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+
+    const subscription = Notifications
+      .addNotificationResponseReceivedListener(async (response) => {
+        try {
+          await Notifications.dismissNotificationAsync(
+            response.notification.request.identifier,
+          );
+        } catch (error) {
+          console.warn("Failed to dismiss notification", error);
+        }
+
+        const data = response.notification.request.content.data as Record<
+          string,
+          unknown
+        >;
+
+        if (data?.type !== "challenge") {
+          return;
+        }
+
+        const roomIdRaw = data.roomId;
+        const roomId = typeof roomIdRaw === "string"
+          ? parseInt(roomIdRaw, 10)
+          : Number(roomIdRaw);
+
+        if (!roomId) {
+          return;
+        }
+
+        if (
+          response.actionIdentifier === Notifications.DEFAULT_ACTION_IDENTIFIER
+        ) {
+          router.push("/(root)/(tabs)/friends?tab=challenges");
+          return;
+        }
+
+        if (response.actionIdentifier === CHALLENGE_ACCEPT_ACTION) {
+          await handleChallengeAction(roomId, "accept");
+          return;
+        }
+
+        if (response.actionIdentifier === CHALLENGE_REJECT_ACTION) {
+          await handleChallengeAction(roomId, "reject");
+        }
+      });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [handleChallengeAction, router, user]);
 
   useEffect(() => {
     if (fontError) {
@@ -228,6 +356,52 @@ function AppContent() {
       setShouldShowHowTo(false);
     }
   }, [user]);
+
+  useEffect(() => {
+    if (!isReady || !user) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const syncPushToken = async () => {
+      try {
+        let tokenToSync = expoPushToken;
+        if (!tokenToSync) {
+          tokenToSync = await refreshPushToken();
+        }
+
+        if (!tokenToSync || cancelled) {
+          return;
+        }
+
+        if (tokenToSync === lastSyncedToken) {
+          return;
+        }
+
+        await post("/users/push-tokens", { token: tokenToSync });
+
+        if (!cancelled) {
+          await markTokenSynced(tokenToSync);
+        }
+      } catch (error) {
+        console.warn("Failed to sync Expo push token", error);
+      }
+    };
+
+    syncPushToken();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    isReady,
+    user?.id,
+    expoPushToken,
+    lastSyncedToken,
+    refreshPushToken,
+    markTokenSynced,
+  ]);
 
   if (!isReady) {
     return null;

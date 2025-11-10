@@ -117,6 +117,64 @@ const createUser = async (overrides: Partial<User> = {}) => {
   return repository.save(user);
 };
 
+const parseStoredTokens = (raw?: string | null): string[] => {
+  if (!raw) {
+    return [];
+  }
+
+  const trimmed = raw.trim();
+  if (!trimmed) {
+    return [];
+  }
+
+  if (
+    (trimmed.startsWith("[") && trimmed.endsWith("]")) ||
+    (trimmed.startsWith("{") && trimmed.endsWith("}"))
+  ) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (Array.isArray(parsed)) {
+        return parsed
+          .map((value) => {
+            if (typeof value === "string") {
+              return value.trim();
+            }
+            if (value && typeof value === "object" && "token" in value) {
+              const tokenValue = (value as { token?: unknown }).token;
+              return typeof tokenValue === "string"
+                ? tokenValue.trim()
+                : "";
+            }
+            return String(value ?? "").trim();
+          })
+          .filter((value) => value.length > 0);
+      }
+    } catch {
+      // Fall through to treat raw as single token
+    }
+  }
+
+  return [trimmed];
+};
+
+const getStoredExpoTokens = async (userId: number): Promise<string[]> => {
+  const repository = dataSource.getRepository(User);
+  const user = await repository.findOne({
+    where: { id: userId },
+    select: {
+      id: true,
+      attributes: true,
+    },
+  });
+
+  const attributes = user?.attributes ?? [];
+  const tokenAttribute = attributes.find(
+    (attribute) => attribute.key === "expoPushToken",
+  );
+
+  return parseStoredTokens(tokenAttribute?.value);
+};
+
 // Helper to create a simple 1x1 PNG image buffer
 const createTestImageBuffer = (): Buffer => {
   // Minimal valid PNG file (1x1 transparent pixel)
@@ -414,6 +472,105 @@ describe("users routes (integration)", () => {
         expect(response.statusCode).toBe(200);
         const payload = response.json();
         expect(payload.email).toBe("my@example.com");
+      } finally {
+        await app.close();
+      }
+    });
+  });
+
+  describe("Expo push token management", () => {
+    const token = "ExponentPushToken[abcdef1234567890]";
+
+    it("stores a new push token for the authenticated user", async () => {
+      const user = await createUser();
+      const app = await buildServer(user);
+      try {
+        const response = await app.inject({
+          method: "POST",
+          url: "/users/push-tokens",
+          payload: { token },
+        });
+
+        expect(response.statusCode).toBe(200);
+        expect(response.json()).toEqual({ tokens: [token] });
+
+        const storedTokens = await getStoredExpoTokens(user.id);
+        expect(storedTokens).toEqual([token]);
+      } finally {
+        await app.close();
+      }
+    });
+
+    it("deduplicates existing push tokens", async () => {
+      const user = await createUser({
+        attributes: [
+          {
+            key: "expoPushToken",
+            value: JSON.stringify([token]),
+          },
+        ],
+      });
+
+      const app = await buildServer(user);
+      try {
+        const response = await app.inject({
+          method: "POST",
+          url: "/users/push-tokens",
+          payload: { token },
+        });
+
+        expect(response.statusCode).toBe(200);
+        expect(response.json()).toEqual({ tokens: [token] });
+
+        const storedTokens = await getStoredExpoTokens(user.id);
+        expect(storedTokens).toEqual([token]);
+      } finally {
+        await app.close();
+      }
+    });
+
+    it("removes a stored push token", async () => {
+      const user = await createUser({
+        attributes: [
+          {
+            key: "expoPushToken",
+            value: JSON.stringify([token]),
+          },
+        ],
+      });
+
+      const app = await buildServer(user);
+      try {
+        const response = await app.inject({
+          method: "DELETE",
+          url: "/users/push-tokens",
+          payload: { token },
+        });
+
+        expect(response.statusCode).toBe(200);
+        expect(response.json()).toEqual({ removed: true, tokens: [] });
+
+        const storedTokens = await getStoredExpoTokens(user.id);
+        expect(storedTokens).toEqual([]);
+      } finally {
+        await app.close();
+      }
+    });
+
+    it("returns 400 when token payload is missing", async () => {
+      const user = await createUser();
+      const app = await buildServer(user);
+      try {
+        const response = await app.inject({
+          method: "POST",
+          url: "/users/push-tokens",
+          payload: {},
+        });
+
+        expect(response.statusCode).toBe(400);
+        expect(response.json().error).toBe(
+          "A valid Expo push token is required.",
+        );
       } finally {
         await app.close();
       }

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "603542574077",
+    "project_id": "crossed-f7500",
+    "storage_bucket": "crossed-f7500.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:603542574077:android:417ec86fe48480c0bfbf94",
+        "android_client_info": {
+          "package_name": "com.bettengasolutions.crossed"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB3eCOLWCDZS6j6FyjIxia99fx1jasdD2E"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

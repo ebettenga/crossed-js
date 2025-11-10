@@ -91,6 +91,9 @@ export default function Home() {
 
     const activeRoomsArray = activeRooms as Room[] || [];
     const pendingRoomsArray = pendingRooms as Room[] || [];
+    const visiblePendingRooms = pendingRoomsArray.filter(
+        (room) => room.join_type !== 'challenge'
+    );
     const userId = user?.id;
     const activeRoomForUser = activeRoomsArray.find((room) =>
         room.players.some((player) => player.id === userId)
@@ -199,15 +202,15 @@ export default function Home() {
                         </View>
                     )}
 
-                    {pendingRoomsArray.length > 0 && (
+                    {visiblePendingRooms.length > 0 && (
                         <View className="w-full h-[80px]">
                             <ScrollView
                                 horizontal
                                 pagingEnabled
-                                showsHorizontalScrollIndicator={pendingRoomsArray.length > 10}
+                                showsHorizontalScrollIndicator={visiblePendingRooms.length > 10}
                                 className="flex-1"
                             >
-                                {pendingRoomsArray.map((pendingRoom) => (
+                                {visiblePendingRooms.map((pendingRoom) => (
                                     <View key={pendingRoom.id} className="w-screen h-[100px] px-[6px]">
                                         <GameBanner
                                             gameId={pendingRoom.id.toString()}

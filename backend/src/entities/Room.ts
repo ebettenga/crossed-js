@@ -169,6 +169,7 @@ export class Room {
       difficulty: this.difficulty,
       type: this.type,
       status: this.status,
+      join_type: this.join_type ?? null,
       player_count: this.player_count,
       players: this.players.map((player) => ({
         id: player.id,

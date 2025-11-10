@@ -2,8 +2,9 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { secureStorage } from "./storageApi";
 import { router, useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
-import { get, patch, post } from './api';
+import { get, patch, post, del } from './api';
 import Toast from "react-native-toast-message";
+import usePushNotifications, { getStoredExpoPushToken } from "./usePushNotifications";
 
 
 
@@ -111,8 +112,24 @@ export const useSignUp = () => {
 
 export const useLogout = () => {
   const queryClient = useQueryClient();
+  const {
+    token: currentPushToken,
+    clearStoredToken: clearStoredPushTokenState,
+  } = usePushNotifications();
 
   return async () => {
+    const storedPushToken =
+      currentPushToken ?? (await getStoredExpoPushToken());
+
+    if (storedPushToken) {
+      try {
+        await del("/users/push-tokens", { token: storedPushToken });
+      } catch (error) {
+        console.warn("Failed to remove Expo push token during logout", error);
+      }
+    }
+
+    await clearStoredPushTokenState();
     await secureStorage.remove("token");
     await secureStorage.remove("refresh_token");
     queryClient.clear();

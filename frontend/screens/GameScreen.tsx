@@ -8,7 +8,7 @@ import { GameMenu } from '../components/game/GameMenu';
 import { useRouter } from 'expo-router';
 import { ClueDisplay } from '../components/game/ClueDisplay';
 import { useRoom } from '~/hooks/socket';
-import { Square, SquareType } from "~/hooks/useJoinRoom";
+import { Square, SquareType, Room } from "~/hooks/useJoinRoom";
 import { LoadingGame } from '~/components/game/LoadingGame';
 import { useUser } from '~/hooks/users';
 import { Avatar } from '~/components/shared/Avatar';
@@ -31,7 +31,7 @@ const CLUE_DISPLAY_HEIGHT = 70;
 export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
     const insets = useSafeAreaInsets();
     const { height: windowHeight } = useWindowDimensions();
-    const { room, guess, refresh, forfeit, showGameSummary, onGameSummaryClose, revealedLetterIndex, isConnected } = useRoom(roomId);
+    const { room: liveRoom, guess, refresh, forfeit, showGameSummary, onGameSummaryClose, revealedLetterIndex, isConnected } = useRoom(roomId);
     const { data: currentUser } = useUser();
     const router = useRouter();
     const [selectedCell, setSelectedCell] = useState<Square | null>(null);
@@ -46,23 +46,16 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
     const hasFallbackTriggeredRef = useRef(false);
     const [topSectionHeight, setTopSectionHeight] = useState(0);
     const [bottomSectionHeight, setBottomSectionHeight] = useState(0);
-
+    const [stableRoom, setStableRoom] = useState<Room | null>(null);
 
     useEffect(() => {
-        if (!roomId) {
-            return;
+        if (liveRoom) {
+            setStableRoom(liveRoom);
         }
-        refresh(roomId);
-    }, [roomId, refresh]);
+    }, [liveRoom]);
 
-    useFocusEffect(
-        useCallback(() => {
-            if (!roomId) {
-                return;
-            }
-            refresh(roomId);
-        }, [roomId, refresh])
-    );
+    const room = liveRoom ?? stableRoom;
+
 
     useEffect(() => {
         if (!room) return;
@@ -101,9 +94,19 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
         prevScores.current = room.scores;
     }, [room?.scores]);
 
+    const lastInitializedRoomIdRef = useRef<number | null>(null);
+
     useEffect(() => {
         const board = room?.board;
-        if (!board || selectedCell) {
+        if (!board) {
+            return;
+        }
+
+        const hasSelectionForRoom =
+            selectedCell &&
+            lastInitializedRoomIdRef.current === room?.id;
+
+        if (hasSelectionForRoom) {
             return;
         }
 
@@ -112,11 +115,12 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
                 const cell = board[x][y];
                 if (cell.squareType !== SquareType.BLACK && cell.squareType !== SquareType.SOLVED) {
                     setSelectedCell(cell);
+                    lastInitializedRoomIdRef.current = room?.id ?? null;
                     return;
                 }
             }
         }
-    }, [room?.board, selectedCell]);
+    }, [room?.board, room?.id, selectedCell]);
 
     useEffect(() => {
         if (!roomId || !isConnected) {

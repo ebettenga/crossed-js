@@ -2,6 +2,7 @@ import { PostgresConnectionOptions } from "typeorm/driver/postgres/PostgresConne
 
 export const config = {
   logger: {
+    level: "info",
     transport: {
       target: "pino-pretty",
       options: {},

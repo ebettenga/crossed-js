@@ -4,6 +4,7 @@ import { PhotoService } from "../../services/PhotoService";
 import multipart from "@fastify/multipart";
 import { ILike } from "typeorm";
 import bcrypt from "bcrypt";
+import { config } from "../../config/config";
 
 export default function (
   fastify: FastifyInstance,
@@ -18,6 +19,52 @@ export default function (
   });
 
   const photoService = new PhotoService();
+  const expoTokenKeys =
+    config.notifications?.expo?.tokenAttributes?.length
+      ? config.notifications.expo.tokenAttributes
+      : ["expoPushToken"];
+
+  const parseStoredTokens = (raw?: string | null): string[] => {
+    if (!raw) {
+      return [];
+    }
+
+    const trimmed = raw.trim();
+    if (!trimmed) {
+      return [];
+    }
+
+    if (
+      (trimmed.startsWith("[") && trimmed.endsWith("]")) ||
+      (trimmed.startsWith("{") && trimmed.endsWith("}"))
+    ) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed)) {
+          return parsed
+            .map((value) => {
+              if (typeof value === "string") {
+                return value.trim();
+              }
+              if (value && typeof value === "object" && "token" in value) {
+                const tokenValue = (value as { token?: unknown }).token;
+                return typeof tokenValue === "string"
+                  ? tokenValue.trim()
+                  : "";
+              }
+              return String(value ?? "").trim();
+            })
+            .filter((value) => value.length > 0);
+        }
+      } catch {
+        // Fall through to treat the raw string as a single token
+      }
+    }
+
+    return [trimmed];
+  };
+
+  const serializeTokens = (tokens: string[]): string => JSON.stringify(tokens);
 
   fastify.get("/me", async (request, reply) => {
     if (!request.user) {
@@ -75,6 +122,121 @@ export default function (
     reply.send(updatedUser);
   });
 
+  fastify.post("/users/push-tokens", async (request, reply) => {
+    if (!request.user) {
+      reply.code(403).send({ error: "Unauthorized" });
+      return;
+    }
+
+    const { token } = request.body as { token?: unknown };
+    if (typeof token !== "string" || token.trim().length === 0) {
+      reply.code(400).send({ error: "A valid Expo push token is required." });
+      return;
+    }
+
+    const normalizedToken = token.trim();
+    const userRepository = fastify.orm.getRepository(User);
+    const user = await userRepository.findOne({
+      where: { id: request.user.id },
+      select: {
+        id: true,
+        attributes: true,
+      },
+    });
+
+    if (!user) {
+      reply.code(404).send({ error: "User not found" });
+      return;
+    }
+
+    const attributes = Array.isArray(user.attributes)
+      ? [...user.attributes]
+      : [];
+    const attributeKey = expoTokenKeys[0];
+    const existingAttribute = attributes.find(
+      (attribute) => attribute.key === attributeKey,
+    );
+    const tokens = existingAttribute
+      ? parseStoredTokens(existingAttribute.value)
+      : [];
+
+    if (!tokens.includes(normalizedToken)) {
+      tokens.push(normalizedToken);
+    }
+
+    const serialized = serializeTokens(tokens);
+    if (existingAttribute) {
+      existingAttribute.value = serialized;
+    } else {
+      attributes.push({
+        key: attributeKey,
+        value: serialized,
+      });
+    }
+
+    await userRepository.update(user.id, { attributes });
+    reply.send({ tokens });
+  });
+
+  fastify.delete("/users/push-tokens", async (request, reply) => {
+    if (!request.user) {
+      reply.code(403).send({ error: "Unauthorized" });
+      return;
+    }
+
+    const { token } = request.body as { token?: unknown };
+    if (typeof token !== "string" || token.trim().length === 0) {
+      reply.code(400).send({ error: "A valid Expo push token is required." });
+      return;
+    }
+
+    const normalizedToken = token.trim();
+    const userRepository = fastify.orm.getRepository(User);
+    const user = await userRepository.findOne({
+      where: { id: request.user.id },
+      select: {
+        id: true,
+        attributes: true,
+      },
+    });
+
+    if (!user) {
+      reply.code(404).send({ error: "User not found" });
+      return;
+    }
+
+    const attributes = Array.isArray(user.attributes)
+      ? [...user.attributes]
+      : [];
+    const attributeKey = expoTokenKeys[0];
+    const existingAttributeIndex = attributes.findIndex(
+      (attribute) => attribute.key === attributeKey,
+    );
+
+    if (existingAttributeIndex === -1) {
+      reply.send({ removed: false, tokens: [] });
+      return;
+    }
+
+    const existingAttribute = attributes[existingAttributeIndex];
+    const tokens = parseStoredTokens(existingAttribute.value);
+    const filteredTokens = tokens.filter((value) => value !== normalizedToken);
+
+    if (filteredTokens.length === tokens.length) {
+      reply.send({ removed: false, tokens });
+      return;
+    }
+
+    if (filteredTokens.length === 0) {
+      attributes.splice(existingAttributeIndex, 1);
+    } else {
+      existingAttribute.value = serializeTokens(filteredTokens);
+    }
+
+    await userRepository.update(user.id, { attributes });
+    reply.send({ removed: true, tokens: filteredTokens });
+  });
+
   fastify.post("/me/photo", async (request, reply) => {
     if (!request.user) {
       reply.code(403).send({ error: "Unauthorized" });
@@ -121,7 +283,7 @@ export default function (
       });
       reply.send(updatedUser);
     } catch (error) {
-      fastify.log.error(error, "Error uploading photo");
+      fastify.log.error({ err: error }, "Error uploading photo");
       if (error.code === "FST_REQ_FILE_TOO_LARGE") {
         reply.code(413).send({ error: "File too large. Maximum size is 5MB." });
         return;

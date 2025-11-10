@@ -20,6 +20,7 @@ const PAPER_COLOR = "#F6FAFE"
 const SELECTED_COLOR = config.theme.colors.primary.DEFAULT
 const BORDER_COLOR = "#000000"
 const REVEALED_COLOR = "#FFE4E1" // Misty Rose - a light red/pink color that will make text visible
+const LETTER_VERTICAL_OFFSET_RATIO = 0.05;
 
 interface CrosswordCellProps {
     letter: string;
@@ -126,8 +127,8 @@ export const CrosswordCell: React.FC<CrosswordCellProps> = ({
                         height: cellSize,
                         borderTopWidth: BORDER_WIDTH,
                         borderLeftWidth: BORDER_WIDTH,
-                        borderRightWidth: coordinates.y === GRID_SIZE - 1 ? BORDER_WIDTH : 0,
-                        borderBottomWidth: coordinates.x === GRID_SIZE - 1 ? BORDER_WIDTH : 0,
+                        borderRightWidth: coordinates.y === GRID_SIZE - 1 ? BORDER_WIDTH : 0.5,
+                        borderBottomWidth: coordinates.x === GRID_SIZE - 1 ? BORDER_WIDTH : 0.5,
                         backgroundColor: getBackgroundColor(),
                         borderTopLeftRadius: isTopLeft ? CORNER_RADIUS : 0,
                         borderTopRightRadius: isTopRight ? CORNER_RADIUS : 0,
@@ -155,6 +156,7 @@ export const CrosswordCell: React.FC<CrosswordCellProps> = ({
                         {
                             color: getTextColor(),
                             fontSize: cellSize * 0.5,
+                            marginTop: cellSize * LETTER_VERTICAL_OFFSET_RATIO,
                         }
                     ]}>
                         {letter}
@@ -188,7 +190,7 @@ const styles = StyleSheet.create({
         borderWidth: BORDER_WIDTH,
     },
     letter: {
-        fontWeight: '600',
+        fontWeight: '400',
         fontFamily: 'Rubik-Regular',
     },
     gridNumber: {

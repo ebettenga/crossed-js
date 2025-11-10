@@ -10,11 +10,15 @@
     "outDir": "dist",
     "experimentalDecorators": true,
     "sourceMap": true,
+    "inlineSources": true,
     "emitDecoratorMetadata": true,
     "jsx": "react",
     "allowJs": true,
     "resolveJsonModule": true,
-    "types": ["node", "jest"]
+    "types": [
+      "node",
+      "jest"
+    ]
   },
   "include": [
     "src/**/*",

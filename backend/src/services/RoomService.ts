@@ -628,8 +628,8 @@ export class RoomService {
       playerIds,
     );
     const packSet = new Set(allowedPacks);
-    const hasExisting =
-      room.crossword && packSet.has(room.crossword.pack || "general");
+    const hasExisting = room.crossword &&
+      packSet.has(room.crossword.pack || "general");
 
     if (hasExisting) {
       for (const id of playerIds) {
@@ -774,14 +774,17 @@ export class RoomService {
     const savedRoom = await this.ormConnection.getRepository(Room).save(room);
 
     // Emit a challenge event through socket.io
-    fastify.io.to(`user_${challenged.id.toString()}`).emit("challenge_received", {
-      room: savedRoom.toJSON(),
-      challenger: {
-        id: challenger.id,
-        username: challenger.username,
+    fastify.io.to(`user_${challenged.id.toString()}`).emit(
+      "challenge_received",
+      {
+        room: savedRoom.toJSON(),
+        challenger: {
+          id: challenger.id,
+          username: challenger.username,
+        },
+        context,
       },
-      context,
-    });
+    );
 
     return savedRoom;
   }
@@ -789,6 +792,11 @@ export class RoomService {
   async acceptChallenge(roomId: number, userId: number): Promise<Room> {
     const room = await this.getRoomById(roomId);
     if (!room) throw new NotFoundError("Room not found");
+    if (room.status === "finished") {
+      throw new BadRequestError(
+        "Cannot accept a challenge for a finished game",
+      );
+    }
 
     await this.joinExistingRoom(room, userId);
 
@@ -808,6 +816,11 @@ export class RoomService {
   async rejectChallenge(roomId: number): Promise<Room> {
     const room = await this.getRoomById(roomId);
     if (!room) throw new NotFoundError("Room not found");
+    if (room.status === "playing" || room.status === "finished") {
+      throw new BadRequestError(
+        "Cannot reject a challenge that has already started or finished",
+      );
+    }
 
     room.status = "cancelled";
     room.markModified();
@@ -951,15 +964,17 @@ export class RoomService {
 
   async getGlobalTimeTrialLeaderboard(
     limit: number = 10,
-  ): Promise<Array<{
-    rank: number;
-    roomId: number;
-    score: number;
-    user: { id: number; username: string; eloRating: number } | null;
-    created_at: string;
-    completed_at: string | null;
-    timeTakenMs: number | null;
-  }>> {
+  ): Promise<
+    Array<{
+      rank: number;
+      roomId: number;
+      score: number;
+      user: { id: number; username: string; eloRating: number } | null;
+      created_at: string;
+      completed_at: string | null;
+      timeTakenMs: number | null;
+    }>
+  > {
     const roomRepository = this.ormConnection.getRepository(Room);
 
     const rooms = await roomRepository.find({

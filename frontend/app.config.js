@@ -1,4 +1,4 @@
-{
+module.exports = {
   "expo": {
     "name": "Crossed",
     "slug": "crossed",
@@ -13,6 +13,7 @@
       "bundleIdentifier": "com.bettengasolutions.crossed"
     },
     "android": {
+      "googleServicesFile": process.env.GOOGLE_SERVICES_JSON ??"./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/icon.png",
         "backgroundColor": "#92979b"
@@ -25,13 +26,15 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
+      "expo-notifications",
       [
         "expo-build-properties",
         {
           "android": {
             "compileSdkVersion": 35,
             "targetSdkVersion": 35,
-            "buildToolsVersion": "35.0.0"
+            "buildToolsVersion": "35.0.0",
+            "minSdkVersion": 26
           }
         }
       ],
@@ -58,15 +61,7 @@
           ]
         }
       ],
-      "expo-secure-store",
-      [
-        "expo-build-properties",
-        {
-          "android": {
-            "minSdkVersion": 26
-          }
-        }
-      ]
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true

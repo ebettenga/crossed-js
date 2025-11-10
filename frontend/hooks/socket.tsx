@@ -477,7 +477,6 @@ export const useRoom = (roomId?: number) => {
   const { socket, isConnected, error, emit } = useSocket();
   const router = useRouter();
   const { room, setRoom } = useContext(RoomContext);
-  const [isInitialized, setIsInitialized] = useState(false);
   const { data: currentUser } = useUser();
   const [showGameSummary, setShowGameSummary] = useState(true);
   const hasCheckedActiveGames = useRef(false);
@@ -579,7 +578,6 @@ export const useRoom = (roomId?: number) => {
       if (data.revealedLetterIndex !== undefined) {
         setRevealedLetterIndex(data.revealedLetterIndex);
       }
-      setIsInitialized(true);
     };
 
     const handleGameStarted = (data: { message: string, room: Room, navigate?: { screen: string, params: any } }) => {
@@ -630,17 +628,11 @@ export const useRoom = (roomId?: number) => {
     }
 
     socket?.on("room", handleRoom);
-    socket?.on("game_started", handleGameStarted);
+    socket?.once("game_started", handleGameStarted);
     socket?.on("game_inactive", handleGameInactive);
     socket?.on("game_forfeited", handleGameForfeited);
     socket?.on("rating_change", handleRatingChange);
     socket?.on("room_cancelled", handleRoomCancelled);
-
-    // Only refresh if we haven't initialized the room yet
-    if (!isInitialized && roomId) {
-      console.log("Initializing room:", roomId);
-      refresh(roomId);
-    }
 
     return () => {
       socket?.off("room", handleRoom);
@@ -650,7 +642,7 @@ export const useRoom = (roomId?: number) => {
       socket?.off("rating_change", handleRatingChange);
       socket?.off("room_cancelled", handleRoomCancelled);
     };
-  }, [socket, isConnected, roomId, isInitialized, currentUser]);
+  }, [socket, isConnected, roomId, currentUser]);
 
   // When we (re)connect, attempt to flush any queued guesses
   useEffect(() => {
@@ -694,7 +686,6 @@ export const useRoom = (roomId?: number) => {
     forfeit,
     isConnected,
     error,
-    isInitialized,
     cancel,
     showGameSummary,
     onGameSummaryClose: handleGameSummaryClose,

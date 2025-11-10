@@ -100,7 +100,7 @@ export class SocketEventService {
                 }
             }
         } catch (error: any) {
-            this.fastify.log.error(error, 'Error handling socket event');
+          this.fastify.log.error({ err: error }, 'Error handling socket event');
         }
     }
 }

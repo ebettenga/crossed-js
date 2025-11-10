@@ -8,11 +8,22 @@
             "platform": "android"
         },
         {
-            "command": "yarn dev",
-            "cwd": "${workspaceFolder}/backend",
-            "name": "Run backend",
+            "type": "node",
             "request": "launch",
-            "type": "node-terminal"
-        },
+            "name": "Debug backend",
+            "cwd": "${workspaceFolder}/backend",
+            "runtimeExecutable": "yarn",
+            "runtimeArgs": [
+                "dev"
+            ],
+            "env": {
+                "NODE_OPTIONS": "--enable-source-maps"
+            },
+            "skipFiles": [
+                "<node_internals>/**",
+                "**/node_modules/**"
+            ],
+            "sourceMaps": true
+        }
     ]
 }
