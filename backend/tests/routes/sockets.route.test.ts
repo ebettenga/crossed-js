@@ -166,25 +166,42 @@ const createCrossword = async (overrides: Partial<Crossword> = {}) => {
   return repository.save(crossword);
 };
 
-const createRoomForUser = async (
-  user: User,
+const buildMaskedGrid = (crossword: Crossword) =>
+  Array.isArray(crossword.grid)
+    ? crossword.grid.map((value) => (value === "." ? "." : "*"))
+    : [];
+
+const createRoomWithPlayers = async (
+  players: User[],
   overrides: Partial<Room> = {},
 ) => {
   const repository = dataSource.getRepository(Room);
   const crossword = overrides.crossword ?? await createCrossword();
+  const defaultScores = players.reduce<Record<number, number>>(
+    (acc, player) => {
+      acc[player.id] = 0;
+      return acc;
+    },
+    {},
+  );
   const room = repository.create({
     type: "1v1",
     status: "pending",
     difficulty: "easy",
-    players: [user],
+    players,
     crossword,
-    scores: { [user.id]: 0 },
-    found_letters: [],
+    scores: overrides.scores ?? defaultScores,
+    found_letters: overrides.found_letters ?? buildMaskedGrid(crossword),
     ...overrides,
   });
   const saved = await repository.save(room);
   return repository.findOneOrFail({ where: { id: saved.id } });
 };
+
+const createRoomForUser = async (
+  user: User,
+  overrides: Partial<Room> = {},
+) => createRoomWithPlayers([user], overrides);
 
 const buildAuthToken = (user: User) =>
   jwt.sign(
@@ -250,6 +267,25 @@ const disconnectClient = async (client: Socket) => {
     activeClients.splice(index, 1);
   }
 };
+
+const waitForClientEvent = <T = any>(
+  client: Socket,
+  event: string,
+  timeout = 5000,
+): Promise<T> =>
+  new Promise((resolve, reject) => {
+    const timer = setTimeout(
+      () => reject(new Error(`Timed out waiting for "${event}" event`)),
+      timeout,
+    );
+
+    const handler = (payload: T) => {
+      clearTimeout(timer);
+      resolve(payload);
+    };
+
+    client.once(event, handler);
+  });
 
 beforeAll(async () => {
   await postgres.setup();
@@ -446,6 +482,275 @@ describe("sockets routes", () => {
     expect(payload.roomId).toBe(room.id);
     expect(payload.reason).toBe("host_left");
     expect(payload.message).toBe("Room cancelled by host");
+
+    await disconnectClient(client);
+  });
+
+  it("rejects invalid token connections", async () => {
+    const client = createClient(serverUrl, {
+      auth: { authToken: "totally-invalid" },
+      transports: ["websocket"],
+      forceNew: true,
+      reconnection: false,
+      timeout: 2000,
+    });
+    activeClients.push(client);
+
+    await new Promise<void>((resolve) => {
+      client.once("connect", () => resolve());
+      client.once("connect_error", () => resolve());
+    });
+
+    const payload = await waitForClientEvent<{ code: string }>(
+      client,
+      "error",
+    );
+    expect(payload).toEqual({ code: "auth/invalid-token" });
+
+    await waitFor(async () => {
+      if (client.connected) {
+        throw new Error("Client still connected");
+      }
+      return true;
+    });
+  });
+
+  it("updates lastActiveAt when heartbeat events arrive", async () => {
+    const user = await createUser({ lastActiveAt: new Date("2000-01-01") });
+    const room = await createRoomForUser(user);
+    const client = await connectClient(user);
+
+    const baseline = (await dataSource.getRepository(User).findOneByOrFail({
+      id: user.id,
+    })).lastActiveAt;
+
+    client.emit("heartbeat");
+
+    const updated = await waitFor(async () => {
+      const stored = await dataSource.getRepository(User).findOneByOrFail({
+        id: user.id,
+      });
+      if (stored.lastActiveAt <= baseline) {
+        throw new Error("Heartbeat not processed yet");
+      }
+      return stored;
+    });
+
+    expect(updated.status).toBe("online");
+
+    await disconnectClient(client);
+  });
+
+  it("loads room snapshots and reports missing rooms", async () => {
+    const user = await createUser();
+    const room = await createRoomForUser(user, { status: "playing" });
+    const client = await connectClient(user);
+
+    const roomPayloadPromise = waitForClientEvent<any>(client, "room");
+    client.emit("loadRoom", { roomId: room.id });
+    const payload = await roomPayloadPromise;
+    expect(payload.id).toBe(room.id);
+    expect(payload.players.some((player: any) => player.id === user.id)).toBe(
+      true,
+    );
+
+    const errorPromise = waitForClientEvent<string>(client, "error");
+    client.emit("loadRoom", { roomId: 999999 });
+    const errorPayload = await errorPromise;
+    expect(errorPayload).toBe("Room not found");
+
+    await disconnectClient(client);
+  });
+
+  it("processes guesses and broadcasts updated room state", async () => {
+    const user = await createUser();
+    const room = await createRoomForUser(user, { status: "playing" });
+    const client = await connectClient(user);
+
+    const roomEvent = waitForClientEvent<any>(client, "room");
+    client.emit("guess", { roomId: room.id, x: 0, y: 0, guess: "A" });
+    const payload = await roomEvent;
+    expect(payload.id).toBe(room.id);
+    expect(payload.found_letters[0]).toBe("A");
+
+    await disconnectClient(client);
+  });
+
+  it("returns an error payload when guess handling fails", async () => {
+    const user = await createUser();
+    const room = await createRoomForUser(user, { status: "playing" });
+    const client = await connectClient(user);
+
+    const errorPromise = waitForClientEvent<{ message: string }>(
+      client,
+      "error",
+    );
+    client.emit("guess", {
+      roomId: room.id,
+      x: 10,
+      y: 10,
+      guess: "Z",
+    });
+    const payload = await errorPromise;
+    expect(payload).toEqual({ message: "Failed to process guess" });
+
+    await disconnectClient(client);
+  });
+
+  it("delivers direct messages through the Redis socket bus", async () => {
+    const user = await createUser();
+    await createRoomForUser(user);
+    const client = await connectClient(user);
+
+    const messagePromise = waitForClientEvent<string>(client, "message");
+    client.emit("message", { message: "hello there" });
+    const payload = await messagePromise;
+    expect(payload).toBe("hello there");
+
+    await disconnectClient(client);
+  });
+
+  it("broadcasts room chat messages to other participants", async () => {
+    const userA = await createUser();
+    const userB = await createUser();
+    const room = await createRoomWithPlayers([userA, userB], {
+      status: "playing",
+    });
+    const clientA = await connectClient(userA);
+    const clientB = await connectClient(userB);
+
+    const messagePromise = waitForClientEvent<number>(clientB, "message");
+    clientA.emit("message_room", { roomId: room.id, message: "ping" });
+    const payload = await messagePromise;
+    expect(payload).toBe(room.id);
+
+    await disconnectClient(clientA);
+    await disconnectClient(clientB);
+  });
+
+  it("notifies players when a room is forfeited", async () => {
+    const userA = await createUser();
+    const userB = await createUser();
+    const room = await createRoomWithPlayers([userA, userB], {
+      status: "playing",
+    });
+    const clientA = await connectClient(userA);
+    const clientB = await connectClient(userB);
+
+    const roomPromise = waitForClientEvent<any>(clientA, "room");
+    const forfeitPromise = waitForClientEvent<any>(clientB, "game_forfeited");
+
+    clientA.emit("forfeit", { roomId: room.id });
+
+    const updatedRoom = await roomPromise;
+    expect(updatedRoom.id).toBe(room.id);
+
+    const forfeitEvent = await forfeitPromise;
+    expect(forfeitEvent.forfeitedBy).toBe(userA.id);
+    expect(forfeitEvent.room.id).toBe(room.id);
+
+    await disconnectClient(clientA);
+    await disconnectClient(clientB);
+  });
+
+  it("creates and accepts challenges, notifying all participants", async () => {
+    const challenger = await createUser();
+    const challenged = await createUser();
+    const challengerClient = await connectClient(challenger);
+    const challengedClient = await connectClient(challenged);
+
+    const challengeRoomPromise = waitForClientEvent<any>(
+      challengerClient,
+      "room",
+    );
+    const createdUpdatePromise = waitForClientEvent<any>(
+      challengedClient,
+      "challenges:updated",
+    );
+
+    challengerClient.emit(
+      "challenge",
+      JSON.stringify({
+        challengedId: challenged.id,
+        difficulty: "easy",
+      }),
+    );
+
+    const createdUpdate = await createdUpdatePromise;
+    expect(createdUpdate.action).toBe("created");
+
+    const challengeRoom = await challengeRoomPromise;
+    const roomId = challengeRoom.id;
+
+    const acceptRoomPromise = waitForClientEvent<any>(
+      challengedClient,
+      "room",
+    );
+    const acceptedUpdatePromise = waitForClientEvent<any>(
+      challengerClient,
+      "challenges:updated",
+    );
+
+    challengedClient.emit(
+      "accept_challenge",
+      JSON.stringify({ roomId }),
+    );
+
+    const acceptedUpdate = await acceptedUpdatePromise;
+    expect(acceptedUpdate.action).toBe("accepted");
+    expect(acceptedUpdate.roomId).toBe(roomId);
+
+    const acceptedRoom = await acceptRoomPromise;
+    expect(acceptedRoom.id).toBe(roomId);
+
+    await disconnectClient(challengerClient);
+    await disconnectClient(challengedClient);
+  });
+
+  it("notifies participants when a challenge is rejected", async () => {
+    const challenger = await createUser();
+    const challenged = await createUser();
+    const challengerClient = await connectClient(challenger);
+    const challengedClient = await connectClient(challenged);
+
+    const challengerRoomPromise = waitForClientEvent<any>(
+      challengerClient,
+      "room",
+    );
+    challengerClient.emit(
+      "challenge",
+      JSON.stringify({
+        challengedId: challenged.id,
+        difficulty: "easy",
+      }),
+    );
+    const challengeRoom = await challengerRoomPromise;
+
+    const rejectUpdatePromise = waitForClientEvent<any>(
+      challengerClient,
+      "challenges:updated",
+    );
+    challengedClient.emit(
+      "reject_challenge",
+      JSON.stringify({ roomId: challengeRoom.id }),
+    );
+
+    const rejected = await rejectUpdatePromise;
+    expect(rejected.action).toBe("rejected");
+    expect(rejected.roomId).toBe(challengeRoom.id);
+
+    await disconnectClient(challengerClient);
+    await disconnectClient(challengedClient);
+  });
+
+  it("responds to ping events with pong", async () => {
+    const user = await createUser();
+    await createRoomForUser(user);
+    const client = await connectClient(user);
+
+    const pongPromise = waitForClientEvent<void>(client, "pong");
+    client.emit("ping");
+    await pongPromise;
 
     await disconnectClient(client);
   });
