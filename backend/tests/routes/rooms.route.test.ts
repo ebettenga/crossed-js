@@ -100,7 +100,14 @@ const redisManager = createRedisTestManager({
 
 const postgres = createPostgresTestManager({
   label: "Rooms route tests",
-  entities: [Room, User, Crossword, GameStats, CrosswordRating, UserCrosswordPack],
+  entities: [
+    Room,
+    User,
+    Crossword,
+    GameStats,
+    CrosswordRating,
+    UserCrosswordPack,
+  ],
   env: {
     database: [
       "ROOM_ROUTES_TEST_DB",
@@ -192,6 +199,70 @@ const sanitizeRoomList = (payload: any[]) =>
   payload
     .map((room) => sanitizeRoomView(room))
     .sort((a, b) => a.id - b.id);
+
+const sanitizeLeaderboard = (payload: any) => ({
+  topEntries: payload.topEntries.map((entry: any) => ({
+    rank: entry.rank,
+    roomId: entry.roomId,
+    score: entry.score,
+    user: entry.user
+      ? {
+        id: entry.user.id,
+        username: entry.user.username,
+        eloRating: entry.user.eloRating,
+      }
+      : null,
+    created_at: entry.created_at ? "[timestamp]" : null,
+    completed_at: entry.completed_at ? "[timestamp]" : null,
+    timeTakenMs: entry.timeTakenMs ?? null,
+  })),
+  currentPlayerEntry: payload.currentPlayerEntry
+    ? {
+      rank: payload.currentPlayerEntry.rank,
+      roomId: payload.currentPlayerEntry.roomId,
+      score: payload.currentPlayerEntry.score,
+      user: payload.currentPlayerEntry.user
+        ? {
+          id: payload.currentPlayerEntry.user.id,
+          username: payload.currentPlayerEntry.user.username,
+          eloRating: payload.currentPlayerEntry.user.eloRating,
+        }
+        : null,
+      created_at: payload.currentPlayerEntry.created_at ? "[timestamp]" : null,
+      completed_at: payload.currentPlayerEntry.completed_at
+        ? "[timestamp]"
+        : null,
+      timeTakenMs: payload.currentPlayerEntry.timeTakenMs ?? null,
+    }
+    : undefined,
+});
+
+const sanitizeRoomStats = (payload: any[]) =>
+  [...payload]
+    .map((stat) => ({
+      userId: stat.userId,
+      correctGuesses: stat.correctGuesses,
+      incorrectGuesses: stat.incorrectGuesses,
+      isWinner: stat.isWinner,
+      eloAtGame: stat.eloAtGame,
+      eloChange: stat.eloChange ?? null,
+      correctGuessDetails: stat.correctGuessDetails ?? [],
+    }))
+    .sort((a, b) => a.userId - b.userId);
+
+const sanitizeRecentGames = (payload: any[]) =>
+  payload.map((entry) => ({
+    room: {
+      id: entry.room.id,
+      status: entry.room.status,
+      type: entry.room.type,
+      difficulty: entry.room.difficulty,
+      created_at: normalizeDate(entry.room.created_at),
+      completed_at: normalizeDate(entry.room.completed_at),
+      scores: entry.room.scores,
+    },
+    stats: entry.stats,
+  }));
 
 const buildServer = async (user: User) => {
   const app = Fastify({ logger: false });
@@ -506,6 +577,616 @@ describe("rooms routes (integration)", () => {
         snapshotName:
           "lists rooms for the authenticated user filtered by status",
         received: sanitized,
+      });
+    } finally {
+      await app.close();
+    }
+  });
+
+  it("returns filtered recent games with stats for the authenticated user", async () => {
+    const viewer = await createUser({ username: "recent_viewer" });
+    const crossword = await createCrossword({ title: "Recent Stats Puzzle" });
+    const roomRepository = dataSource.getRepository(Room);
+    const statsRepository = dataSource.getRepository(GameStats);
+
+    const olderRoom = await createRoom({
+      players: [viewer],
+      crossword,
+      status: "finished",
+      difficulty: "medium",
+    });
+    olderRoom.completed_at = new Date("2024-01-01T10:00:00.000Z");
+    await roomRepository.save(olderRoom);
+    let olderStats = statsRepository.create({
+      room: olderRoom,
+      user: viewer,
+      roomId: olderRoom.id,
+      userId: viewer.id,
+      correctGuesses: 5,
+      incorrectGuesses: 1,
+      isWinner: true,
+      eloAtGame: viewer.eloRating,
+      correctGuessDetails: [],
+    });
+    olderStats = await statsRepository.save(olderStats);
+    olderStats.createdAt = new Date("2024-01-01T10:05:00.000Z");
+    await statsRepository.save(olderStats);
+
+    const recentRoom = await createRoom({
+      players: [viewer],
+      crossword,
+      status: "finished",
+      difficulty: "hard",
+      scores: { [viewer.id]: 42 },
+    });
+    recentRoom.completed_at = new Date("2024-02-01T10:00:00.000Z");
+    await roomRepository.save(recentRoom);
+    let recentStats = statsRepository.create({
+      room: recentRoom,
+      user: viewer,
+      roomId: recentRoom.id,
+      userId: viewer.id,
+      correctGuesses: 12,
+      incorrectGuesses: 3,
+      isWinner: false,
+      eloAtGame: viewer.eloRating,
+      correctGuessDetails: [],
+    });
+    recentStats = await statsRepository.save(recentStats);
+    recentStats.createdAt = new Date("2024-02-01T10:05:00.000Z");
+    await statsRepository.save(recentStats);
+
+    const app = await buildServer(viewer);
+    try {
+      const response = await app.inject({
+        method: "GET",
+        url: "/rooms/recent?limit=5&startTime=2024-01-15T00:00:00.000Z",
+      });
+
+      expect(response.statusCode).toBe(200);
+      const sanitized = sanitizeRecentGames(response.json());
+
+      await ensureApprovedSnapshot({
+        testFile: expect.getState().testPath ?? "rooms.route.test.ts",
+        snapshotName:
+          "returns filtered recent games with stats for the authenticated user",
+        received: sanitized,
+      });
+    } finally {
+      await app.close();
+    }
+  });
+
+  it("validates date ranges when requesting recent games", async () => {
+    const viewer = await createUser({ username: "recent_validator" });
+    const app = await buildServer(viewer);
+    try {
+      const response = await app.inject({
+        method: "GET",
+        url:
+          "/rooms/recent?startTime=2024-03-01T00:00:00.000Z&endTime=2024-02-01T00:00:00.000Z",
+      });
+
+      expect(response.statusCode).toBe(400);
+      expect(response.json()).toEqual({
+        error: "startTime must be before endTime",
+      });
+    } finally {
+      await app.close();
+    }
+  });
+
+  it("lists pending challenge rooms for the authenticated user", async () => {
+    const viewer = await createUser({ username: "challengee" });
+    const challenger = await createUser({ username: "challenger" });
+    const outsider = await createUser({ username: "outsider" });
+    const crossword = await createCrossword({ title: "Challenge Puzzle" });
+    const roomRepository = dataSource.getRepository(Room);
+
+    const challengeRoom = await createRoom({
+      players: [viewer, challenger],
+      crossword,
+      status: "pending",
+      type: "1v1",
+      difficulty: "hard",
+    });
+    challengeRoom.join = JoinMethod.CHALLENGE;
+    challengeRoom.markModified();
+    await roomRepository.save(challengeRoom);
+
+    await createRoom({
+      players: [outsider],
+      crossword,
+      status: "pending",
+      type: "1v1",
+      difficulty: "easy",
+    });
+
+    await createRoom({
+      players: [viewer],
+      crossword,
+      status: "playing",
+      type: "1v1",
+      difficulty: "medium",
+    });
+
+    const app = await buildServer(viewer);
+    try {
+      const response = await app.inject({
+        method: "GET",
+        url: "/rooms/challenges/pending",
+      });
+
+      expect(response.statusCode).toBe(200);
+      const sanitized = sanitizeRoomList(response.json());
+
+      await ensureApprovedSnapshot({
+        testFile: expect.getState().testPath ?? "rooms.route.test.ts",
+        snapshotName:
+          "lists pending challenge rooms for the authenticated user",
+        received: sanitized,
+      });
+    } finally {
+      await app.close();
+    }
+  });
+
+  it("creates a challenge room and notifies participants", async () => {
+    const challenger = await createUser({ username: "challenger_creator" });
+    const challenged = await createUser({ username: "challenged_creator" });
+    await createCrossword({
+      title: "Challenge Creation Puzzle",
+      dow: "Wednesday",
+    });
+
+    const app = await buildServer(challenger);
+    try {
+      const response = await app.inject({
+        method: "POST",
+        url: "/rooms/challenge",
+        payload: {
+          challengedId: challenged.id,
+          difficulty: "medium",
+          context: "friendly_duel",
+        },
+      });
+
+      expect(response.statusCode).toBe(200);
+      const payload = response.json();
+      const sanitized = sanitizeRoomView(payload);
+
+      await ensureApprovedSnapshot({
+        testFile: expect.getState().testPath ?? "rooms.route.test.ts",
+        snapshotName: "creates a challenge room and notifies participants",
+        received: sanitized,
+      });
+
+      const roomId = payload.id.toString();
+      const roomEmits = ioHarness.getRoomEmits();
+      expect(roomEmits).toEqual(
+        expect.arrayContaining([
+          {
+            roomId,
+            event: "room",
+            payload: expect.any(Object),
+          },
+          {
+            roomId: `user_${challenged.id}`,
+            event: "challenge_received",
+            payload: expect.objectContaining({
+              challenger: expect.objectContaining({ id: challenger.id }),
+              room: expect.any(Object),
+            }),
+          },
+        ]),
+      );
+
+      const joins = ioHarness.getJoins();
+      expect(joins).toEqual(
+        expect.arrayContaining([
+          { channel: `user_${challenger.id}`, roomId },
+          { channel: `user_${challenged.id}`, roomId },
+        ]),
+      );
+    } finally {
+      await app.close();
+    }
+  });
+
+  it("accepts a challenge and starts the game", async () => {
+    const challenger = await createUser({ username: "challenger_accept" });
+    const challenged = await createUser({ username: "challenged_accept" });
+    await createCrossword({
+      title: "Challenge Accept Puzzle",
+      dow: "Friday",
+    });
+
+    const creationApp = await buildServer(challenger);
+    let roomId: number;
+    try {
+      const creationResponse = await creationApp.inject({
+        method: "POST",
+        url: "/rooms/challenge",
+        payload: {
+          challengedId: challenged.id,
+          difficulty: "hard",
+          context: "acceptance_test",
+        },
+      });
+      expect(creationResponse.statusCode).toBe(200);
+      roomId = creationResponse.json().id;
+    } finally {
+      await creationApp.close();
+    }
+
+    ioHarness.reset();
+
+    const app = await buildServer(challenged);
+    try {
+      const response = await app.inject({
+        method: "POST",
+        url: `/rooms/challenge/${roomId}/accept`,
+      });
+
+      expect(response.statusCode).toBe(200);
+      const sanitized = sanitizeRoomView(response.json());
+      sanitized.created_at = "[timestamp]";
+      sanitized.completed_at = sanitized.completed_at ? "[timestamp]" : null;
+
+      await ensureApprovedSnapshot({
+        testFile: expect.getState().testPath ?? "rooms.route.test.ts",
+        snapshotName: "accepts a challenge and starts the game",
+        received: sanitized,
+      });
+
+      const roomEmits = ioHarness.getRoomEmits();
+      expect(roomEmits).toEqual(
+        expect.arrayContaining([
+          {
+            roomId: roomId.toString(),
+            event: "room",
+            payload: expect.any(Object),
+          },
+          {
+            roomId: roomId.toString(),
+            event: "game_started",
+            payload: expect.objectContaining({
+              message: "Challenge accepted! Game is starting.",
+            }),
+          },
+        ]),
+      );
+    } finally {
+      await app.close();
+    }
+  });
+
+  it("rejects a challenge and marks it as cancelled", async () => {
+    const challenger = await createUser({ username: "challenger_reject" });
+    const challenged = await createUser({ username: "challenged_reject" });
+    await createCrossword({
+      title: "Challenge Reject Puzzle",
+      dow: "Monday",
+    });
+
+    const creationApp = await buildServer(challenger);
+    let roomId: number;
+    try {
+      const creationResponse = await creationApp.inject({
+        method: "POST",
+        url: "/rooms/challenge",
+        payload: {
+          challengedId: challenged.id,
+          difficulty: "easy",
+          context: "reject_test",
+        },
+      });
+      expect(creationResponse.statusCode).toBe(200);
+      roomId = creationResponse.json().id;
+    } finally {
+      await creationApp.close();
+    }
+
+    ioHarness.reset();
+
+    const app = await buildServer(challenged);
+    try {
+      const response = await app.inject({
+        method: "POST",
+        url: `/rooms/challenge/${roomId}/reject`,
+      });
+
+      expect(response.statusCode).toBe(200);
+      const sanitized = sanitizeRoomView(response.json());
+      sanitized.created_at = "[timestamp]";
+      sanitized.completed_at = sanitized.completed_at ? "[timestamp]" : null;
+
+      await ensureApprovedSnapshot({
+        testFile: expect.getState().testPath ?? "rooms.route.test.ts",
+        snapshotName: "rejects a challenge and marks it as cancelled",
+        received: sanitized,
+      });
+
+      const roomEmits = ioHarness.getRoomEmits();
+      expect(roomEmits).toEqual(
+        expect.arrayContaining([
+          {
+            roomId: roomId.toString(),
+            event: "room",
+            payload: expect.any(Object),
+          },
+        ]),
+      );
+    } finally {
+      await app.close();
+    }
+  });
+
+  it("handles a correct guess and broadcasts the updated room view", async () => {
+    const player = await createUser({ username: "guesser" });
+    const crossword = await createCrossword({
+      title: "Guess Puzzle",
+      dow: "Monday",
+      grid: [
+        "A", "B", "C", "D",
+        "E", "F", "G", "H",
+        "I", "J", "K", "L",
+        "M", "N", "O", "P",
+      ],
+    });
+    const foundLetters = Array(
+      crossword.col_size * crossword.row_size,
+    ).fill("*");
+    const room = await createRoom({
+      players: [player],
+      crossword,
+      status: "playing",
+      difficulty: "easy",
+      foundLetters,
+      scores: { [player.id]: 0 },
+    });
+
+    const app = await buildServer(player);
+    try {
+      const response = await app.inject({
+        method: "POST",
+        url: `/rooms/${room.id}`,
+        payload: {
+          coordinates: { x: 0, y: 0 },
+          guess: "A",
+        },
+      });
+
+      expect(response.statusCode).toBe(200);
+      const sanitized = sanitizeRoomView(response.json());
+      sanitized.created_at = "[timestamp]";
+      sanitized.completed_at = sanitized.completed_at ? "[timestamp]" : null;
+
+      await ensureApprovedSnapshot({
+        testFile: expect.getState().testPath ?? "rooms.route.test.ts",
+        snapshotName:
+          "handles a correct guess and broadcasts the updated room view",
+        received: sanitized,
+      });
+
+      const roomEmits = ioHarness.getRoomEmits();
+      expect(roomEmits).toContainEqual({
+        roomId: room.id.toString(),
+        event: "room",
+        payload: expect.any(Object),
+      });
+    } finally {
+      await app.close();
+    }
+  });
+
+  it("returns a time-trial leaderboard and includes the current player's entry", async () => {
+    const runner = await createUser({ username: "runner" });
+    const rival = await createUser({ username: "rival" });
+    const champion = await createUser({ username: "champion" });
+    const crossword = await createCrossword({ title: "Leaderboard Puzzle" });
+    const roomRepository = dataSource.getRepository(Room);
+
+    const championRoom = await createRoom({
+      players: [champion],
+      crossword,
+      status: "finished",
+      type: "time_trial",
+      difficulty: "expert",
+      scores: { [champion.id]: 95 },
+    });
+    championRoom.created_at = new Date("2024-01-01T10:00:00.000Z");
+    championRoom.completed_at = new Date("2024-01-01T10:04:30.000Z");
+    await roomRepository.save(championRoom);
+
+    const rivalRoom = await createRoom({
+      players: [rival],
+      crossword,
+      status: "finished",
+      type: "time_trial",
+      difficulty: "expert",
+      scores: { [rival.id]: 80 },
+    });
+    rivalRoom.created_at = new Date("2024-01-02T10:00:00.000Z");
+    rivalRoom.completed_at = new Date("2024-01-02T10:06:00.000Z");
+    await roomRepository.save(rivalRoom);
+
+    const runnerRoom = await createRoom({
+      players: [runner],
+      crossword,
+      status: "finished",
+      type: "time_trial",
+      difficulty: "expert",
+      scores: { [runner.id]: 70 },
+    });
+    runnerRoom.created_at = new Date("2024-01-03T10:00:00.000Z");
+    runnerRoom.completed_at = new Date("2024-01-03T10:08:00.000Z");
+    await roomRepository.save(runnerRoom);
+
+    const app = await buildServer(runner);
+    try {
+      const response = await app.inject({
+        method: "GET",
+        url: `/rooms/${runnerRoom.id}/leaderboard/time-trial?limit=1`,
+      });
+
+      expect(response.statusCode).toBe(200);
+      const sanitized = sanitizeLeaderboard(response.json());
+
+      await ensureApprovedSnapshot({
+        testFile: expect.getState().testPath ?? "rooms.route.test.ts",
+        snapshotName:
+          "returns a time-trial leaderboard and includes the current player's entry",
+        received: sanitized,
+      });
+    } finally {
+      await app.close();
+    }
+  });
+
+  it("returns 404 when leaderboard room is missing", async () => {
+    const viewer = await createUser({ username: "leaderboard_missing" });
+    const app = await buildServer(viewer);
+    try {
+      const response = await app.inject({
+        method: "GET",
+        url: "/rooms/99999/leaderboard/time-trial",
+      });
+
+      expect(response.statusCode).toBe(404);
+      expect(response.json()).toEqual({ error: "Room not found" });
+    } finally {
+      await app.close();
+    }
+  });
+
+  it("rejects leaderboard requests for non time-trial rooms", async () => {
+    const viewer = await createUser({ username: "leaderboard_invalid" });
+    const crossword = await createCrossword();
+    const room = await createRoom({
+      players: [viewer],
+      crossword,
+      status: "finished",
+      type: "1v1",
+    });
+
+    const app = await buildServer(viewer);
+    try {
+      const response = await app.inject({
+        method: "GET",
+        url: `/rooms/${room.id}/leaderboard/time-trial`,
+      });
+
+      expect(response.statusCode).toBe(400);
+      expect(response.json()).toEqual({
+        error: "Leaderboard is only available for time_trial games",
+      });
+    } finally {
+      await app.close();
+    }
+  });
+
+  it("returns stats for a finished room", async () => {
+    const winner = await createUser({ username: "winner" });
+    const challenger = await createUser({ username: "stats_challenger" });
+    const crossword = await createCrossword({ title: "Stats Puzzle" });
+    const roomRepository = dataSource.getRepository(Room);
+    const statsRepository = dataSource.getRepository(GameStats);
+
+    const room = await createRoom({
+      players: [winner, challenger],
+      crossword,
+      status: "finished",
+      type: "1v1",
+      scores: {
+        [winner.id]: 55,
+        [challenger.id]: 35,
+      },
+    });
+    room.completed_at = new Date("2024-02-15T12:00:00.000Z");
+    await roomRepository.save(room);
+
+    await statsRepository.save([
+      statsRepository.create({
+        room,
+        user: winner,
+        roomId: room.id,
+        userId: winner.id,
+        correctGuesses: 20,
+        incorrectGuesses: 3,
+        isWinner: true,
+        eloAtGame: 1180,
+        correctGuessDetails: [],
+      }),
+      statsRepository.create({
+        room,
+        user: challenger,
+        roomId: room.id,
+        userId: challenger.id,
+        correctGuesses: 10,
+        incorrectGuesses: 6,
+        isWinner: false,
+        eloAtGame: 1190,
+        correctGuessDetails: [],
+      }),
+    ]);
+
+    const app = await buildServer(winner);
+    try {
+      const response = await app.inject({
+        method: "GET",
+        url: `/rooms/${room.id}/stats`,
+      });
+
+      expect(response.statusCode).toBe(200);
+      const sanitized = sanitizeRoomStats(response.json());
+
+      await ensureApprovedSnapshot({
+        testFile: expect.getState().testPath ?? "rooms.route.test.ts",
+        snapshotName: "returns stats for a finished room",
+        received: sanitized,
+      });
+    } finally {
+      await app.close();
+    }
+  });
+
+  it("returns 404 when requesting stats for a missing room", async () => {
+    const viewer = await createUser({ username: "stats_missing" });
+    const app = await buildServer(viewer);
+    try {
+      const response = await app.inject({
+        method: "GET",
+        url: "/rooms/99999/stats",
+      });
+
+      expect(response.statusCode).toBe(404);
+      expect(response.json()).toEqual({ error: "Room not found" });
+    } finally {
+      await app.close();
+    }
+  });
+
+  it("rejects stats requests when the room is not finished", async () => {
+    const viewer = await createUser({ username: "stats_pending" });
+    const crossword = await createCrossword();
+    const room = await createRoom({
+      players: [viewer],
+      crossword,
+      status: "playing",
+      type: "1v1",
+    });
+
+    const app = await buildServer(viewer);
+    try {
+      const response = await app.inject({
+        method: "GET",
+        url: `/rooms/${room.id}/stats`,
+      });
+
+      expect(response.statusCode).toBe(400);
+      expect(response.json()).toEqual({
+        error: "Game stats are only available for finished games",
       });
     } finally {
       await app.close();
