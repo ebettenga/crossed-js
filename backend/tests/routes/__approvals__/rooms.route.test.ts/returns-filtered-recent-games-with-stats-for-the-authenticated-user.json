@@ -1,0 +1,20 @@
+[
+  {
+    "room": {
+      "id": 2,
+      "status": "finished",
+      "type": "1v1",
+      "difficulty": "hard",
+      "completed_at": "2024-02-01T10:00:00.000Z",
+      "scores": {
+        "1": 42
+      }
+    },
+    "stats": {
+      "correctGuesses": 12,
+      "incorrectGuesses": 3,
+      "isWinner": false,
+      "eloAtGame": 1200
+    }
+  }
+]
