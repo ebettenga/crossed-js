@@ -60,6 +60,7 @@ function spawnClient(id) {
 
     let guesses = 0;
     let intervalId;
+    let timeoutId;
     let finished = false;
 
     const closeClient = (status) => {
@@ -69,6 +70,9 @@ function spawnClient(id) {
       finished = true;
       if (intervalId) {
         clearInterval(intervalId);
+      }
+      if (timeoutId) {
+        clearTimeout(timeoutId);
       }
       if (socket.connected) {
         socket.disconnect();
@@ -103,7 +107,7 @@ function spawnClient(id) {
       closeClient("error");
     });
 
-    setTimeout(() => {
+    timeoutId = setTimeout(() => {
       console.warn(`[WS] Client ${id} timed out after ${clientTimeoutMs}ms`);
       closeClient("error");
     }, clientTimeoutMs);
