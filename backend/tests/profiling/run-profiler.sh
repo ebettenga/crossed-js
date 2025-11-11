@@ -29,6 +29,9 @@ run_dir="${PROFILE_RESULTS_DIR}/run-${timestamp}"
 mkdir -p "$run_dir"
 echo "Run output will be stored in $run_dir"
 rm -f "${PROFILE_RAW_DIR}"/*.cpuprofile 2>/dev/null || true
+rm -f "${PROFILE_RAW_DIR}"/*.heapprofile 2>/dev/null || true
+rm -f "${PROFILE_RAW_DIR}"/*.heapsnapshot 2>/dev/null || true
+SEED_OUTPUT_PATH="${run_dir}/seed-output.json"
 
 wait_for_port() {
   local host=$1
@@ -52,6 +55,38 @@ wait_for_port() {
   echo "Port ${port} is accepting connections."
 }
 
+call_endpoint() {
+  local endpoint="$1"
+  local method="${2:-POST}"
+  ENDPOINT="$endpoint" METHOD="$method" node - <<'NODE'
+const url = process.env.ENDPOINT;
+const method = process.env.METHOD || "POST";
+if (!url) {
+  console.error("Endpoint not defined");
+  process.exit(1);
+}
+(async () => {
+  try {
+    const response = await fetch(url, { method });
+    const text = await response.text();
+    if (text) {
+      try {
+        console.log(JSON.stringify(JSON.parse(text), null, 2));
+      } catch {
+        console.log(text);
+      }
+    }
+    if (!response.ok) {
+      process.exit(1);
+    }
+  } catch (error) {
+    console.error("Endpoint request failed:", error);
+    process.exit(1);
+  }
+})();
+NODE
+}
+
 wait_for_port "api" 3000 180
 
 echo "Seeding database for profiling..."
@@ -66,7 +101,21 @@ PROFILE_TEST_PASSWORD="${PROFILE_TEST_PASSWORD}" \
 PROFILE_TEST_USERNAME="${PROFILE_TEST_USERNAME:-testuser}" \
 PROFILE_TIME_TRIAL_ROOM_ID="${PROFILE_TIME_TRIAL_ROOM_ID:-}" \
 PROFILE_TEST_ROOM_ID="${ROOM_ID}" \
+PROFILE_SEED_OUTPUT_PATH="$SEED_OUTPUT_PATH" \
 npx tsx tests/profiling/seed.ts
+
+if [[ -f "$SEED_OUTPUT_PATH" ]]; then
+  echo "Seed output captured at $SEED_OUTPUT_PATH"
+  GUESS_ROOM_ID=$(node -e "const fs=require('fs');const data=JSON.parse(fs.readFileSync(process.argv[1],'utf8'));if(data.rooms&&data.rooms.guessRoomId) process.stdout.write(String(data.rooms.guessRoomId));" "$SEED_OUTPUT_PATH")
+  LEADERBOARD_ROOM_ID=$(node -e "const fs=require('fs');const data=JSON.parse(fs.readFileSync(process.argv[1],'utf8'));if(data.rooms&&data.rooms.leaderboardRoomId) process.stdout.write(String(data.rooms.leaderboardRoomId));" "$SEED_OUTPUT_PATH")
+  if [[ -n "$GUESS_ROOM_ID" ]]; then
+    echo "Using seeded guess room ID $GUESS_ROOM_ID"
+    ROOM_ID="$GUESS_ROOM_ID"
+  fi
+  if [[ -n "$LEADERBOARD_ROOM_ID" ]]; then
+    export PROFILE_SEEDED_LEADERBOARD_ROOM_ID="$LEADERBOARD_ROOM_ID"
+  fi
+fi
 
 if [[ -z "${PROFILE_TEST_CREDENTIAL:-}" || -z "${PROFILE_TEST_PASSWORD:-}" ]]; then
   echo "PROFILE_TEST_CREDENTIAL and PROFILE_TEST_PASSWORD must be defined (see tests/profiling/.env)" >&2
@@ -100,6 +149,7 @@ process.stdout.write(JSON.stringify(payload));
 NODE
 }
 
+HTTP_GUESS_ENDPOINT="${HTTP_GUESS_ENDPOINT:-/api/rooms/${ROOM_ID}}"
 HTTP_GUESS_BODY="$(build_guess_body)"
 
 run_http_load() {
@@ -141,21 +191,46 @@ run_ws_load() {
   node tests/profiling/ws-guess-load.mjs | tee "$log_file"
 }
 
-HTTP_GUESS_ENDPOINT="${HTTP_GUESS_ENDPOINT:-/api/rooms/${ROOM_ID}}"
 LEADERBOARD_ENDPOINT="${LEADERBOARD_ENDPOINT:-/api/leaderboard}"
+HEAP_SNAPSHOT_ENDPOINT="${PROFILE_HTTP_ORIGIN}/internal/profiling/heap-snapshot"
+CPU_PROFILE_START_ENDPOINT="${PROFILE_HTTP_ORIGIN}/internal/profiling/cpu-profile/start"
+CPU_PROFILE_STOP_ENDPOINT="${PROFILE_HTTP_ORIGIN}/internal/profiling/cpu-profile/stop"
+
+echo "Starting CPU profiler..."
+call_endpoint "$CPU_PROFILE_START_ENDPOINT"
 
 run_http_load "guess" "${PROFILE_HTTP_ORIGIN}${HTTP_GUESS_ENDPOINT}" "POST" "$HTTP_GUESS_BODY" "$HTTP_CONCURRENCY" "$HTTP_DURATION_MS"
 run_http_load "leaderboard" "${PROFILE_HTTP_ORIGIN}${LEADERBOARD_ENDPOINT}" "GET" "" "$LEADERBOARD_CONCURRENCY" "$LEADERBOARD_DURATION_MS"
 run_ws_load
 
+echo "Stopping CPU profiler..."
+call_endpoint "$CPU_PROFILE_STOP_ENDPOINT"
+
+echo "Requesting heap snapshot from API..."
+call_endpoint "$HEAP_SNAPSHOT_ENDPOINT"
+
 profile_copy_dir="${run_dir}/profiles"
-mkdir -p "$profile_copy_dir"
+cpu_copy_dir="${profile_copy_dir}/cpu"
+heap_copy_dir="${profile_copy_dir}/heap"
+mkdir -p "$cpu_copy_dir" "$heap_copy_dir"
 
 if compgen -G "${PROFILE_RAW_DIR}/*.cpuprofile" >/dev/null; then
-  cp "${PROFILE_RAW_DIR}"/*.cpuprofile "$profile_copy_dir"/
-  echo "Copied CPU profiles to ${profile_copy_dir}"
+  cp "${PROFILE_RAW_DIR}"/*.cpuprofile "$cpu_copy_dir"/
+  echo "Copied CPU profiles to ${cpu_copy_dir}"
 else
   echo "No CPU profiles were found in ${PROFILE_RAW_DIR}"
+fi
+
+if compgen -G "${PROFILE_RAW_DIR}/*.heapprofile" >/dev/null; then
+  cp "${PROFILE_RAW_DIR}"/*.heapprofile "$heap_copy_dir"/
+  echo "Copied heap profiles to ${heap_copy_dir}"
+else
+  echo "No heap profiles were found in ${PROFILE_RAW_DIR}"
+fi
+
+if compgen -G "${PROFILE_RAW_DIR}/*.heapsnapshot" >/dev/null; then
+  cp "${PROFILE_RAW_DIR}"/*.heapsnapshot "$heap_copy_dir"/
+  echo "Copied heap snapshots to ${heap_copy_dir}"
 fi
 
 echo "Profiling run complete. Results stored in ${run_dir}"

@@ -1,23 +1,23 @@
 #!/usr/bin/env node
-import { io } from "socket.io-client";
+import { io } from 'socket.io-client';
 
 const {
-  WS_URL = "ws://localhost:3000",
-  WS_PATH = "/socket.io",
-  WS_CLIENTS = "10",
-  WS_GUESSES_PER_CLIENT = "10",
-  WS_GUESS_INTERVAL_MS = "200",
-  WS_CLIENT_TIMEOUT_MS = "60000",
-  ROOM_ID = "62",
-  GUESS_X = "0",
-  GUESS_Y = "1",
-  GUESS_CHAR = "d",
-  AUTH_TOKEN = "",
-  WS_EVENT = "guess",
+  WS_URL = 'ws://localhost:3000',
+  WS_PATH = '/socket.io',
+  WS_CLIENTS = '10',
+  WS_GUESSES_PER_CLIENT = '10',
+  WS_GUESS_INTERVAL_MS = '200',
+  WS_CLIENT_TIMEOUT_MS = '60000',
+  ROOM_ID = '62',
+  GUESS_X = '0',
+  GUESS_Y = '1',
+  GUESS_CHAR = 'd',
+  AUTH_TOKEN = '',
+  WS_EVENT = 'guess',
 } = process.env;
 
 if (!AUTH_TOKEN) {
-  console.error("AUTH_TOKEN is required for websocket load generation");
+  console.error('AUTH_TOKEN is required for websocket load generation');
   process.exit(1);
 }
 
@@ -26,10 +26,14 @@ const guessesPerClient = Number.parseInt(WS_GUESSES_PER_CLIENT, 10);
 const guessIntervalMs = Number.parseInt(WS_GUESS_INTERVAL_MS, 10);
 const clientTimeoutMs = Number.parseInt(WS_CLIENT_TIMEOUT_MS, 10);
 
-if ([clientCount, guessesPerClient, guessIntervalMs, clientTimeoutMs].some((value) =>
-  Number.isNaN(value) || value <= 0
-)) {
-  console.error("Invalid websocket configuration - ensure numeric env vars are positive integers");
+if (
+  [clientCount, guessesPerClient, guessIntervalMs, clientTimeoutMs].some(
+    (value) => Number.isNaN(value) || value <= 0,
+  )
+) {
+  console.error(
+    'Invalid websocket configuration - ensure numeric env vars are positive integers',
+  );
   process.exit(1);
 }
 
@@ -52,7 +56,7 @@ function spawnClient(id) {
   return new Promise((resolve) => {
     const socket = io(WS_URL, {
       path: WS_PATH,
-      transports: ["websocket"],
+      transports: ['websocket'],
       forceNew: true,
       reconnection: false,
       auth: { authToken: AUTH_TOKEN },
@@ -77,7 +81,7 @@ function spawnClient(id) {
       if (socket.connected) {
         socket.disconnect();
       }
-      if (status === "error") {
+      if (status === 'error') {
         stats.clientsErrored += 1;
       } else {
         stats.clientsCompleted += 1;
@@ -85,41 +89,46 @@ function spawnClient(id) {
       resolve();
     };
 
-    socket.on("connect", () => {
+    socket.on('connect', () => {
       stats.clientsConnected += 1;
       intervalId = setInterval(() => {
         socket.emit(WS_EVENT, payload);
         guesses += 1;
         stats.guessesSent += 1;
         if (guesses >= guessesPerClient) {
-          closeClient("done");
+          closeClient('done');
         }
       }, guessIntervalMs);
     });
 
-    socket.on("connect_error", (err) => {
-      console.error(`[WS] Client ${id} failed to connect:`, err?.message ?? err);
-      closeClient("error");
+    socket.on('connect_error', (err) => {
+      console.error(
+        `[WS] Client ${id} failed to connect:`,
+        err?.message ?? err,
+      );
+      closeClient('error');
     });
 
-    socket.on("error", (err) => {
+    socket.on('error', (err) => {
       console.error(`[WS] Client ${id} error:`, err?.message ?? err);
-      closeClient("error");
+      closeClient('error');
     });
 
     timeoutId = setTimeout(() => {
       console.warn(`[WS] Client ${id} timed out after ${clientTimeoutMs}ms`);
-      closeClient("error");
+      closeClient('error');
     }, clientTimeoutMs);
   });
 }
 
-await Promise.all(Array.from({ length: clientCount }, (_, index) => spawnClient(index + 1)));
+await Promise.all(
+  Array.from({ length: clientCount }, (_, index) => spawnClient(index + 1)),
+);
 
-console.log("[WS] Guess load complete");
+console.log('[WS] Guess load complete');
 console.log(JSON.stringify(stats, null, 2));
 
 if (stats.clientsCompleted === 0) {
-  console.error("[WS] No websocket clients completed successfully");
+  console.error('[WS] No websocket clients completed successfully');
   process.exit(1);
 }

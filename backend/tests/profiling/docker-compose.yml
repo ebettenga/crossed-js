@@ -65,7 +65,10 @@ services:
       SMTP_USER: ${SMTP_USER:-""}
       SMTP_PASS: ${SMTP_PASS:-""}
       SMTP_FROM: ${SMTP_FROM:-noreply@crossed.com}
-      NODE_OPTIONS: ${PROFILE_NODE_OPTIONS:---inspect=0.0.0.0:9229 --cpu-prof --cpu-prof-dir=/app/profiles --cpu-prof-name=rooms-stress}
+      NODE_OPTIONS: ${PROFILE_NODE_OPTIONS:---inspect=0.0.0.0:9229 --cpu-prof --cpu-prof-dir=/app/profiles --cpu-prof-name=rooms-stress --heap-prof --heap-prof-dir=/app/profiles --heap-prof-name=rooms-heap}
+      ENABLE_PROFILING_ROUTES: "true"
+      HEAP_SNAPSHOT_DIR: /app/profiles
+      CPU_PROFILE_DIR: /app/profiles
     command:
       - sh
       - -c
