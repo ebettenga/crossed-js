@@ -1,14 +1,6 @@
 name: Run Railway Migrations
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - backend/src/migrations/**
-      - backend/package.json
-      - backend/tsconfig.json
-      - backend/yarn.lock
   workflow_dispatch:
 
 jobs:
