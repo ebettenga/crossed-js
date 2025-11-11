@@ -94,6 +94,7 @@ let dataSource: DataSource;
 let app: FastifyInstance;
 let serverUrl: string;
 const activeClients: Socket[] = [];
+const additionalServers: FastifyInstance[] = [];
 
 const TABLES_TO_TRUNCATE = [
   "game_stats",
@@ -211,9 +212,9 @@ const buildAuthToken = (user: User) =>
     { expiresIn: "1h" },
   );
 
-const connectClient = async (user: User) => {
+const connectClient = async (user: User, targetServerUrl = serverUrl) => {
   const token = buildAuthToken(user);
-  const client = createClient(serverUrl, {
+  const client = createClient(targetServerUrl, {
     auth: { authToken: token },
     transports: ["websocket"],
     forceNew: true,
@@ -337,6 +338,24 @@ const waitForClientEvents = <T = any>(
     }, timeout);
   });
 
+const startAdditionalServer = async () => {
+  if (!dataSource) {
+    throw new Error("Data source not initialized");
+  }
+  const extraApp = Fastify({ logger: false });
+  await extraApp.register(fastifyIO, { cors: config.cors });
+  extraApp.decorate("orm", dataSource as unknown as PluginDataSource);
+  socketsRoutes(extraApp as any, {}, () => {});
+  await extraApp.ready();
+  await extraApp.listen({ port: 0, host: "127.0.0.1" });
+  const address = extraApp.server.address() as AddressInfo;
+  additionalServers.push(extraApp);
+  return {
+    app: extraApp,
+    url: `http://127.0.0.1:${address.port}`,
+  };
+};
+
 beforeAll(async () => {
   await postgres.setup();
   dataSource = postgres.dataSource;
@@ -368,6 +387,12 @@ afterEach(async () => {
     const client = activeClients.pop();
     if (client) {
       await disconnectClient(client);
+    }
+  }
+  while (additionalServers.length > 0) {
+    const server = additionalServers.pop();
+    if (server) {
+      await server.close();
     }
   }
 });
@@ -676,6 +701,50 @@ describe("sockets routes", () => {
     clientA.emit("message_room", { roomId: room.id, message: "ping" });
     const payload = await messagePromise;
     expect(payload).toBe(room.id);
+
+    await disconnectClient(clientA);
+    await disconnectClient(clientB);
+  });
+
+  it("broadcasts room updates across multiple socket servers", async () => {
+    const userA = await createUser();
+    const userB = await createUser();
+    const room = await createRoomWithPlayers([userA, userB], {
+      status: "playing",
+    });
+
+    const { app: secondaryApp, url: secondaryUrl } = await startAdditionalServer();
+
+    const clientA = await connectClient(userA);
+    const clientB = await connectClient(userB, secondaryUrl);
+
+    await waitFor(async () => {
+      const socketA = app.io.of("/").sockets.get(clientA.id);
+      if (!socketA) {
+        throw new Error("Client A not on primary server yet");
+      }
+      return true;
+    });
+
+    await waitFor(async () => {
+      const socketB = secondaryApp.io.of("/").sockets.get(clientB.id);
+      if (!socketB) {
+        throw new Error("Client B not on secondary server yet");
+      }
+      return true;
+    });
+
+    const roomEventA = waitForClientEvent<any>(clientA, "room");
+    const roomEventB = waitForClientEvent<any>(clientB, "room");
+
+    clientA.emit("guess", { roomId: room.id, x: 0, y: 0, guess: "A" });
+
+    const [payloadA, payloadB] = await Promise.all([roomEventA, roomEventB]);
+
+    expect(payloadA.id).toBe(room.id);
+    expect(payloadB.id).toBe(room.id);
+    expect(payloadA.found_letters[0]).toBe("A");
+    expect(payloadB.found_letters[0]).toBe("A");
 
     await disconnectClient(clientA);
     await disconnectClient(clientB);
