@@ -56,8 +56,10 @@ fastify.register(fastifyAutoload, {
 
 if (process.env.ENABLE_PROFILING_ROUTES === "true") {
   const heapSnapshotDir = process.env.HEAP_SNAPSHOT_DIR || "./";
+  const heapProfileDir = process.env.HEAP_PROFILE_DIR || heapSnapshotDir;
   const cpuProfileDir = process.env.CPU_PROFILE_DIR || "./";
   let cpuProfilerSession: inspector.Session | null = null;
+  let heapProfilerSession: inspector.Session | null = null;
 
   const ensureDirectory = async (dir: string) => {
     await fs.promises.mkdir(dir, { recursive: true });
@@ -144,6 +146,76 @@ if (process.env.ENABLE_PROFILING_ROUTES === "true") {
         cpuProfilerSession = null;
       }
       reply.code(500).send({ error: "Failed to stop CPU profiler" });
+    }
+  });
+
+  fastify.post("/internal/profiling/heap-profile/start", async (_request, reply) => {
+    if (heapProfilerSession) {
+      reply.code(409).send({ error: "Heap profiler already running" });
+      return;
+    }
+
+    try {
+      heapProfilerSession = new inspector.Session();
+      heapProfilerSession.connect();
+      await new Promise<void>((resolve, reject) => {
+        heapProfilerSession!.post("HeapProfiler.enable", (err) =>
+          err ? reject(err) : resolve()
+        );
+      });
+      await new Promise<void>((resolve, reject) => {
+        heapProfilerSession!.post(
+          "HeapProfiler.startSampling",
+          { samplingInterval: 512 * 1024 },
+          (err) => (err ? reject(err) : resolve()),
+        );
+      });
+      reply.send({ status: "started" });
+    } catch (error) {
+      fastify.log.error({ err: error }, "Failed to start heap profiler");
+      if (heapProfilerSession) {
+        heapProfilerSession.disconnect();
+        heapProfilerSession = null;
+      }
+      reply.code(500).send({ error: "Failed to start heap profiler" });
+    }
+  });
+
+  fastify.post("/internal/profiling/heap-profile/stop", async (_request, reply) => {
+    if (!heapProfilerSession) {
+      reply.code(400).send({ error: "Heap profiler is not running" });
+      return;
+    }
+
+    try {
+      const profile = await new Promise<any>((resolve, reject) => {
+        heapProfilerSession!.post("HeapProfiler.stopSampling", (err, params) => {
+          if (err) return reject(err);
+          resolve(params.profile);
+        });
+      });
+      await new Promise<void>((resolve, reject) => {
+        heapProfilerSession!.post("HeapProfiler.disable", (err) =>
+          err ? reject(err) : resolve()
+        );
+      });
+      heapProfilerSession.disconnect();
+      heapProfilerSession = null;
+
+      await ensureDirectory(heapProfileDir);
+      const filePath = path.join(
+        heapProfileDir,
+        `heap-profile-${Date.now()}.heapprofile`,
+      );
+      await fs.promises.writeFile(filePath, JSON.stringify(profile));
+      reply.send({ profile: filePath });
+    } catch (error) {
+      fastify.log.error({ err: error }, "Failed to stop heap profiler");
+      if (heapProfilerSession) {
+        heapProfilerSession.disconnect();
+        heapProfilerSession = null;
+      }
+      reply.code(500).send({ error: "Failed to stop heap profiler" });
     }
   });
 }

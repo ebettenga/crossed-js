@@ -87,6 +87,22 @@ if (!url) {
 NODE
 }
 
+wait_for_artifact() {
+  local pattern="$1"
+  local label="$2"
+  local attempts="${3:-10}"
+  local delay="${4:-1}"
+  for ((i = 0; i < attempts; i++)); do
+    if compgen -G "$pattern" >/dev/null; then
+      echo "$label detected"
+      return 0;
+    fi
+    sleep "$delay"
+  done
+  echo "Timed out waiting for $label ($pattern)"
+  return 1
+}
+
 wait_for_port "api" 3000 180
 
 echo "Seeding database for profiling..."
@@ -195,19 +211,28 @@ LEADERBOARD_ENDPOINT="${LEADERBOARD_ENDPOINT:-/api/leaderboard}"
 HEAP_SNAPSHOT_ENDPOINT="${PROFILE_HTTP_ORIGIN}/internal/profiling/heap-snapshot"
 CPU_PROFILE_START_ENDPOINT="${PROFILE_HTTP_ORIGIN}/internal/profiling/cpu-profile/start"
 CPU_PROFILE_STOP_ENDPOINT="${PROFILE_HTTP_ORIGIN}/internal/profiling/cpu-profile/stop"
+HEAP_PROFILE_START_ENDPOINT="${PROFILE_HTTP_ORIGIN}/internal/profiling/heap-profile/start"
+HEAP_PROFILE_STOP_ENDPOINT="${PROFILE_HTTP_ORIGIN}/internal/profiling/heap-profile/stop"
 
 echo "Starting CPU profiler..."
 call_endpoint "$CPU_PROFILE_START_ENDPOINT"
+echo "Starting heap profiler..."
+call_endpoint "$HEAP_PROFILE_START_ENDPOINT"
 
 run_http_load "guess" "${PROFILE_HTTP_ORIGIN}${HTTP_GUESS_ENDPOINT}" "POST" "$HTTP_GUESS_BODY" "$HTTP_CONCURRENCY" "$HTTP_DURATION_MS"
 run_http_load "leaderboard" "${PROFILE_HTTP_ORIGIN}${LEADERBOARD_ENDPOINT}" "GET" "" "$LEADERBOARD_CONCURRENCY" "$LEADERBOARD_DURATION_MS"
 run_ws_load
 
+echo "Stopping heap profiler..."
+call_endpoint "$HEAP_PROFILE_STOP_ENDPOINT"
+wait_for_artifact "${PROFILE_RAW_DIR}/*.heapprofile" "Heap profile" 10 0.5
 echo "Stopping CPU profiler..."
 call_endpoint "$CPU_PROFILE_STOP_ENDPOINT"
+wait_for_artifact "${PROFILE_RAW_DIR}/*.cpuprofile" "CPU profile" 10 0.5
 
 echo "Requesting heap snapshot from API..."
 call_endpoint "$HEAP_SNAPSHOT_ENDPOINT"
+wait_for_artifact "${PROFILE_RAW_DIR}/*.heapsnapshot" "Heap snapshot" 10 0.5
 
 profile_copy_dir="${run_dir}/profiles"
 cpu_copy_dir="${profile_copy_dir}/cpu"
