@@ -1,0 +1,76 @@
+name: Run Railway Migrations
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - backend/src/migrations/**
+      - backend/package.json
+      - backend/tsconfig.json
+      - backend/yarn.lock
+  workflow_dispatch:
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    env:
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
+      RAILWAY_ENVIRONMENT_ID: ${{ secrets.RAILWAY_ENVIRONMENT_ID }}
+      RAILWAY_SERVICE_ID: ${{ secrets.RAILWAY_SERVICE_ID }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Wait for service to be active
+        run: |
+          set -euo pipefail
+          deadline=$((SECONDS + 300))
+          while [ "$SECONDS" -lt "$deadline" ]; do
+            if status_json=$(railway status \
+              --project="$RAILWAY_PROJECT_ID" \
+              --environment="$RAILWAY_ENVIRONMENT_ID" \
+              --service="$RAILWAY_SERVICE_ID" \
+              --json 2>/dev/null); then
+              if echo "$status_json" | jq -e --arg service "$RAILWAY_SERVICE_ID" '
+                (
+                  [
+                    .deployments[]?
+                    | select(.serviceId == $service)
+                    | (.status // .state // .deploymentStatus // "")
+                    | ascii_upcase
+                  ]
+                  +
+                  [
+                    .services[]?
+                    | select(.id == $service)
+                    | (.serviceInstances // [])[]?
+                    | (.state // .status // "")
+                    | ascii_upcase
+                  ]
+                )
+                | map(select(. == "ACTIVE" or . == "RUNNING" or . == "DEPLOYED" or . == "COMPLETED"))
+                | length > 0
+              ' >/dev/null; then
+                echo "Railway service is active."
+                exit 0
+              fi
+            else
+              echo "railway status command failed; retrying..."
+            fi
+            sleep 10
+          done
+          echo "Timed out waiting for Railway service to become active."
+          exit 1
+
+      - name: Run remote migrations
+        run: |
+          railway ssh \
+            --project="$RAILWAY_PROJECT_ID" \
+            --environment="$RAILWAY_ENVIRONMENT_ID" \
+            --service="$RAILWAY_SERVICE_ID" \
+            -- yarn migration:run
