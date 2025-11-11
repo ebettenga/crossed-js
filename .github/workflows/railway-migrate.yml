@@ -6,22 +6,20 @@ on:
 jobs:
   migrate:
     runs-on: ubuntu-latest
+    container: ghcr.io/railwayapp/cli:latest
     env:
       RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
       RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
       RAILWAY_ENVIRONMENT_ID: ${{ secrets.RAILWAY_ENVIRONMENT_ID }}
       RAILWAY_SERVICE_ID: ${{ secrets.RAILWAY_SERVICE_ID }}
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Install Railway CLI
-        run: npm install -g @railway/cli
-
-      - name: Run remote migrations
-        run: |
+      - uses: actions/checkout@v3
+      - run: |
           railway ssh \
             --project="$RAILWAY_PROJECT_ID" \
             --environment="$RAILWAY_ENVIRONMENT_ID" \
             --service="$RAILWAY_SERVICE_ID" \
             -- yarn migration:run
+
+
+            name: Deploy to Railway
