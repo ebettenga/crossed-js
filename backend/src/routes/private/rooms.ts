@@ -89,16 +89,31 @@ export default function (
     reply.send(room.toJSON());
   });
 
-  fastify.get("/rooms", async (request, reply) => {
-    const { status } = request.query as {
+  fastify.get<{
+    Querystring: {
       status?: "playing" | "pending" | "finished" | "cancelled";
     };
-    const rooms = await roomService.getRoomsByUserAndStatus(
-      request.user.id,
-      status,
-    );
-    reply.send(rooms.map((room) => room.toJSON()));
-  });
+  }>(
+    "/rooms",
+    fastify.withResponseCache(
+      {
+        ttlSeconds: 5,
+        shouldCache: (request) => Boolean(request.query.status !== "playing"),
+        key: (request) => {
+          const statusKey = request.query.status || "all";
+          return `rooms:${request.user.id}:${statusKey}`;
+        },
+      },
+      async (request) => {
+        const { status } = request.query;
+        const rooms = await roomService.getRoomsByUserAndStatus(
+          request.user.id,
+          status,
+        );
+        return rooms.map((room) => room.toJSON());
+      },
+    ),
+  );
 
   // Get recent games with stats
   fastify.get<{
@@ -137,7 +152,8 @@ export default function (
   });
 
   fastify.post("/rooms/challenge", async (request, reply) => {
-    const { challengedId, difficulty, context } = request.body as ChallengeParams;
+    const { challengedId, difficulty, context } = request
+      .body as ChallengeParams;
     const room = await roomService.createChallengeRoom(
       request.user.id,
       challengedId,

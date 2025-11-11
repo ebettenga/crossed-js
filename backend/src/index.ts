@@ -17,6 +17,7 @@ import fastifyAutoload from "@fastify/autoload";
 import { User } from "./entities/User";
 import { Server } from "socket.io";
 import { closeWorkers, initializeWorkers } from "./jobs/workers/index";
+import responseCachePlugin from "./plugins/response-cache";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -38,6 +39,8 @@ fastify.register(fastifySecureSession, {
 fastify.register(fastifyIO, {
   cors: config.cors,
 });
+
+await fastify.register(responseCachePlugin);
 
 fastify.register(fastifyAutoload, {
   dir: join(__dirname, "./routes/private"),
@@ -232,7 +235,7 @@ async function startServer() {
     await fastify.ready();
 
     // Initialize workers with database connection
-    initializeWorkers(AppDataSource, fastify.io);
+    initializeWorkers(AppDataSource, fastify);
 
     // Handle graceful shutdown
     process.on("SIGTERM", async () => {

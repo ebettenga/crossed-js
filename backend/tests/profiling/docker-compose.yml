@@ -94,6 +94,7 @@ services:
       - ./.env
     environment:
       NODE_ENV: production
+      PROFILE_SINGLE_RUN: ${PROFILE_SINGLE_RUN:-0}
       PROFILE_BASE_URL: http://api:3000/api
       PROFILE_HTTP_ORIGIN: http://api:3000
       PROFILE_SOCKET_URL: ws://api:3000

@@ -70,6 +70,7 @@ export const commonConfig = {
       password: redisURL?.password || "",
     } as RedisOptions,
     gameTTL: 86400, // 1 day in seconds
+    responseCacheTTL: parseInt(process.env.RESPONSE_CACHE_TTL || "15", 10),
   },
   email: {
     host: process.env.SMTP_HOST || "smtp.gmail.com",

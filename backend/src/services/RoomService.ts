@@ -11,6 +11,7 @@ import { gameAutoRevealQueue, gameTimeoutQueue } from "../jobs/queues";
 import { v4 as uuidv4 } from "uuid";
 import { EntityManager } from "typeorm";
 import { CachedGameInfo, RedisService } from "./RedisService";
+import { TimeTrialLeaderboardEntry } from "../entities/TimeTrialLeaderboardEntry";
 
 export class RoomService {
   private crosswordService: CrosswordService;
@@ -187,6 +188,10 @@ export class RoomService {
     }
 
     await this.ormConnection.getRepository(Room).save(room);
+
+    if (room.type === "time_trial") {
+      await this.updateTimeTrialLeaderboard(room);
+    }
   }
 
   async createRoom(
@@ -503,6 +508,60 @@ export class RoomService {
     }
 
     return query.getMany();
+  }
+
+  private async updateTimeTrialLeaderboard(room: Room): Promise<void> {
+    if (
+      room.type !== "time_trial" ||
+      !room.players ||
+      room.players.length === 0
+    ) {
+      return;
+    }
+
+    const player = room.players[0];
+    if (!player) {
+      return;
+    }
+
+    const leaderboardRepo = this.ormConnection.getRepository(
+      TimeTrialLeaderboardEntry,
+    );
+    const scoreValues = Object.values(room.scores || {});
+    const score = scoreValues.length > 0 ? Math.max(...scoreValues) : 0;
+    const timeTakenMs = room.completed_at && room.created_at
+      ? room.completed_at.getTime() - room.created_at.getTime()
+      : null;
+
+    const existing = await leaderboardRepo.findOne({
+      where: {
+        crossword: { id: room.crossword.id },
+        user: { id: player.id },
+      },
+    });
+
+    const existingTime = existing?.timeTakenMs ?? Number.MAX_SAFE_INTEGER;
+    const newTime = timeTakenMs ?? Number.MAX_SAFE_INTEGER;
+    const shouldUpdate = !existing ||
+      score > existing.score ||
+      (score === existing.score && newTime < existingTime);
+
+    if (!shouldUpdate) {
+      return;
+    }
+
+    const entry = existing ??
+      leaderboardRepo.create({
+        crossword: room.crossword,
+        user: player,
+      });
+
+    entry.roomId = room.id;
+    entry.score = score;
+    entry.timeTakenMs = timeTakenMs;
+    entry.roomCompletedAt = room.completed_at ?? null;
+
+    await leaderboardRepo.save(entry);
   }
 
   private isGameFinished(room: Room): boolean {
@@ -891,61 +950,34 @@ export class RoomService {
       ? room.players[0].id
       : null;
 
-    // Fetch finished time-trial games on the same crossword
-    const rooms = await this.ormConnection.getRepository(Room).find({
-      where: {
-        type: "time_trial",
-        status: "finished",
-        crossword: { id: crosswordId },
-      },
-      order: { completed_at: "DESC" },
-    });
+    const leaderboardRepo = this.ormConnection.getRepository(
+      TimeTrialLeaderboardEntry,
+    );
 
-    // Build leaderboard entries
-    const entries = rooms.map((r) => {
-      const scoresObj = r.scores || {};
-      const scoreValues = Object.values(scoresObj);
-      const score = scoreValues.length > 0 ? Math.max(...scoreValues) : 0;
+    const entries = await leaderboardRepo
+      .createQueryBuilder("entry")
+      .where(`"entry"."crosswordId" = :crosswordId`, { crosswordId })
+      .orderBy("entry.score", "DESC")
+      .addOrderBy("entry.timeTakenMs", "ASC", "NULLS LAST")
+      .addOrderBy("entry.updated_at", "ASC")
+      .getMany();
 
-      const player = r.players && r.players.length > 0 ? r.players[0] : null;
-
-      const timeTakenMs = r.completed_at && r.created_at
-        ? r.completed_at.getTime() - r.created_at.getTime()
-        : null;
-
-      return {
-        roomId: r.id,
-        user: player
-          ? {
-            id: player.id,
-            username: player.username,
-            eloRating: player.eloRating,
-          }
-          : null,
-        score,
-        created_at: r.created_at,
-        completed_at: r.completed_at,
-        timeTakenMs,
-      };
-    });
-
-    // Sort by score (desc), then by time taken (asc if available)
-    entries.sort((a, b) => {
-      if (b.score !== a.score) return b.score - a.score;
-      const ta = a.timeTakenMs ?? Number.MAX_SAFE_INTEGER;
-      const tb = b.timeTakenMs ?? Number.MAX_SAFE_INTEGER;
-      return ta - tb;
-    });
-
-    // Add ranks to all entries
-    const rankedEntries = entries.map((e, idx) => ({
+    const rankedEntries = entries.map((entry, idx) => ({
       rank: idx + 1,
-      roomId: e.roomId,
-      score: e.score,
-      user: e.user,
-      created_at: e.created_at.toISOString(),
-      completed_at: e.completed_at ? e.completed_at.toISOString() : null,
-      timeTakenMs: e.timeTakenMs,
+      roomId: entry.roomId,
+      score: entry.score,
+      user: entry.user
+        ? {
+          id: entry.user.id,
+          username: entry.user.username,
+          eloRating: entry.user.eloRating,
+        }
+        : null,
+      created_at: entry.created_at.toISOString(),
+      completed_at: entry.roomCompletedAt
+        ? entry.roomCompletedAt.toISOString()
+        : null,
+      timeTakenMs: entry.timeTakenMs,
     }));
 
     // Get top N entries
@@ -954,7 +986,9 @@ export class RoomService {
     // Find current player's entry if not in top N
     let currentPlayerEntry: typeof rankedEntries[0] | undefined;
     if (currentPlayerId) {
-      const currentEntry = rankedEntries.find((e) => e.roomId === roomId);
+      const currentEntry = rankedEntries.find((e) =>
+        e.user?.id === currentPlayerId
+      );
       if (currentEntry && currentEntry.rank > limit) {
         currentPlayerEntry = currentEntry;
       }

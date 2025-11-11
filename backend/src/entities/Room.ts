@@ -2,6 +2,7 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  Index,
   Join,
   JoinColumn,
   JoinTable,
@@ -48,11 +49,17 @@ export interface Square {
   acrossQuestion?: string;
 }
 
+@Index("IDX_room_status_type_last_activity_at", [
+  "status",
+  "type",
+  "last_activity_at",
+])
 @Entity()
 export class Room {
   @PrimaryGeneratedColumn()
   id: number;
 
+  @Index("IDX_room_type")
   @Column({
     type: "enum",
     enum: ["1v1", "2v2", "free4all", "time_trial"],
@@ -60,6 +67,7 @@ export class Room {
   })
   type: GameType;
 
+  @Index("IDX_room_status")
   @Column({
     type: "enum",
     enum: ["playing", "pending", "finished", "cancelled"],
@@ -115,6 +123,7 @@ export class Room {
   @OneToMany("GameStats", (gameStats) => gameStats.room)
   stats: GameStats[];
 
+  @Index("IDX_room_last_activity_at")
   @Column({ type: "timestamp", nullable: true })
   last_activity_at: Date;
 
