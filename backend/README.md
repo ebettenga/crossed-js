@@ -125,3 +125,20 @@ The `-d ./src/data-source.ts` flag is baked into the scripts so the CLI uses the
 - Serve the coverage report locally:
   ```
   yarn serve:coverage
+
+## Profiling & Stress Testing
+
+- Create `tests/profiling/.env` from the provided example and fill in the test account + room you want to stress:
+  ```
+  cp tests/profiling/.env.example tests/profiling/.env
+  ```
+- Run the full Docker flow (Redis + Postgres + API + profiler container). It automatically runs migrations, seeds a demo crossword/user/room/leaderboard dataset, logs in, drives the `/guess` HTTP + Socket.IO load, hammers `/leaderboard`, and snapshots the CPU profile artifacts into `tests/profiling/results/run-<timestamp>/`:
+  ```
+  make profile
+  ```
+- Every run produces load logs plus any generated `*.cpuprofile` files inside `tests/profiling/results/`. Open those files in Chrome DevTools or speedscope.app to inspect hot paths.
+- Useful environment variables:
+  - `PROFILE_TEST_ROOM_ID`, `PROFILE_TIME_TRIAL_ROOM_ID`, `GUESS_X`, `GUESS_Y`, `GUESS_CHAR` – payload/room overrides for the seeded data.
+  - `HTTP_CONCURRENCY`, `HTTP_DURATION_MS`, `LEADERBOARD_CONCURRENCY`, `LEADERBOARD_DURATION_MS` – HTTP pressure and runtime.
+  - `WS_CLIENTS`, `WS_GUESSES_PER_CLIENT`, `WS_GUESS_INTERVAL_MS` – socket.io stress knobs.
+  - `PROFILE_HTTP_ORIGIN`, `PROFILE_SOCKET_URL`, `PROFILE_BASE_URL` – override service URLs if you change the compose networking.

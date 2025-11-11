@@ -1,0 +1,121 @@
+services:
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-password}
+    ports:
+      - "6379:6379"
+    volumes:
+      - profiling_redis_data:/data
+    networks:
+      - profiling-net
+
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: crossed
+      TZ: 'GMT'
+      PGTZ: 'GMT'
+    ports:
+      - "5432:5432"
+    volumes:
+      - profiling_postgres_data:/var/lib/postgresql/data
+    networks:
+      - profiling-net
+
+  db-test:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: crossed_test
+      TZ: 'GMT'
+      PGTZ: 'GMT'
+    ports:
+      - "5433:5432"
+    volumes:
+      - profiling_postgres_test_data:/var/lib/postgresql/data
+    networks:
+      - profiling-net
+
+  api:
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+    env_file:
+      - ./.env
+    environment:
+      NODE_ENV: production
+      SERVER_MODE: api
+      PGHOST: db
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      POSTGRES_DB: crossed
+      SECRET_ACCESS_TOKEN: ${SECRET_ACCESS_TOKEN:-adfhadfhadfh2j51jk}
+      SECRET_KEY_PATH: ./config/secret-key
+      REDIS_HOST: redis
+      REDIS_URL: redis://redis:6379
+      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER:-""}
+      SMTP_PASS: ${SMTP_PASS:-""}
+      SMTP_FROM: ${SMTP_FROM:-noreply@crossed.com}
+      NODE_OPTIONS: ${PROFILE_NODE_OPTIONS:---inspect=0.0.0.0:9229 --cpu-prof --cpu-prof-dir=/app/profiles --cpu-prof-name=rooms-stress}
+    command:
+      - sh
+      - -c
+      - |
+        yarn migration:run && yarn start
+    ports:
+      - "3000:3000"
+      - "9229:9229"
+    volumes:
+      - ./results/raw:/app/profiles
+    depends_on:
+      - db
+      - redis
+    networks:
+      - profiling-net
+
+  profiler:
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+    env_file:
+      - ./.env
+    environment:
+      NODE_ENV: production
+      PROFILE_BASE_URL: http://api:3000/api
+      PROFILE_HTTP_ORIGIN: http://api:3000
+      PROFILE_SOCKET_URL: ws://api:3000
+      PROFILE_SIGNIN_PATH: /signin
+      PROFILE_RESULTS_DIR: /results
+      PROFILE_RAW_DIR: /app/profiles
+      PGHOST: db
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      POSTGRES_DB: crossed
+    depends_on:
+      api:
+        condition: service_started
+    volumes:
+      - ./results/raw:/app/profiles
+      - ./results:/results
+    command: ["bash", "tests/profiling/run-profiler.sh"]
+    networks:
+      - profiling-net
+
+volumes:
+  profiling_redis_data:
+  profiling_postgres_data:
+  profiling_postgres_test_data:
+
+networks:
+  profiling-net:
+    driver: bridge
