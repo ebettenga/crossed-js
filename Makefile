@@ -46,3 +46,8 @@ coverage: ## serve backend coverage report on port 3476
 tests: ## run backend test suite (skips sockets route tests; they leak connections)
 	@echo "Skipping tests/routes/sockets.route.test.ts (known to leave connections open)."
 	cd backend && yarn test --detectOpenHandles --forceExit
+
+.PHONY: count
+count: ## count the number of lines in the project. assumes you have cloc installed (brewe.g. brew install cloc)
+	@echo "Counting lines in the project..."
+	cloc . --exclude-dir=node_modules,android,ios,crosswords
