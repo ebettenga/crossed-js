@@ -459,6 +459,10 @@ export class RoomService {
 
     await this.ormConnection.getRepository(Room).save(room);
 
+    if (room.type === "time_trial") {
+      await this.updateTimeTrialLeaderboard(room);
+    }
+
     // If game was forfeited, emit forfeit event
     if (forfeitedBy !== undefined) {
       fastify.io.to(room.id.toString()).emit("game_forfeited", {
@@ -508,6 +512,29 @@ export class RoomService {
     }
 
     return query.getMany();
+  }
+
+  private async syncTimeTrialLeaderboardForCrossword(
+    crosswordId: number,
+  ): Promise<void> {
+    const rooms = await this.ormConnection.getRepository(Room).find({
+      where: {
+        type: "time_trial",
+        status: "finished",
+        crossword: { id: crosswordId },
+      },
+      relations: ["players", "crossword"],
+    });
+
+    if (!rooms.length) {
+      return;
+    }
+
+    await Promise.all(
+      rooms.map((finishedRoom) =>
+        this.updateTimeTrialLeaderboard(finishedRoom)
+      ),
+    );
   }
 
   private async updateTimeTrialLeaderboard(room: Room): Promise<void> {
@@ -950,12 +977,15 @@ export class RoomService {
       ? room.players[0].id
       : null;
 
+    await this.syncTimeTrialLeaderboardForCrossword(crosswordId);
+
     const leaderboardRepo = this.ormConnection.getRepository(
       TimeTrialLeaderboardEntry,
     );
 
     const entries = await leaderboardRepo
       .createQueryBuilder("entry")
+      .leftJoinAndSelect("entry.user", "user")
       .where(`"entry"."crosswordId" = :crosswordId`, { crosswordId })
       .orderBy("entry.score", "DESC")
       .addOrderBy("entry.timeTakenMs", "ASC", "NULLS LAST")
