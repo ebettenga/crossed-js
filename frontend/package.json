@@ -13,6 +13,7 @@
     "build:android:local": "eas build --platform android --local",
     "build:ios": "eas build --platform ios",
     "build:ios:dev": "eas build --platform ios --profile development",
+    "build:ios:sim": "eas build --platform ios --profile development-simulator",
     "build:web": "eas build --platform web",
     "build": "eas build --platform all",
     "prebuild:android": "npx expo prebuild --platform android --clean",

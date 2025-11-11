@@ -9,7 +9,6 @@
     "dev": "tsx --env-file .env --watch ./src/index.ts",
     "dev:worker": "SERVER_MODE=worker tsx --env-file .env --watch ./src/index.ts",
     "build": "pkgroll",
-    "profile:stress": "bash ./tests/profiling/profile-stress.sh",
     "commands": "tsx ./src/commands/cli.ts",
     "start-game": "yarn commands start-game",
     "prepare": "if [ \"$CI\" != \"true\" ]; then pre-commit install; fi",

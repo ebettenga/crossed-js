@@ -49,7 +49,7 @@ export default function Credits() {
                         >
                             <ExternalLink size={18} color={isDark ? '#DDE1E5' : '#1D2124'} />
                             <Text className="text-base text-[#8B0000] dark:text-[#E39B9B] font-rubik">
-                                cadien — listen on Spotify
+                                lake j — listen on Spotify
                             </Text>
                         </TouchableOpacity>
                     </View>
