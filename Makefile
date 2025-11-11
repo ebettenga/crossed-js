@@ -28,8 +28,8 @@ create: ## set up the project
 
 OPEN_CMD = $(shell which xdg-open 2>/dev/null || which open 2>/dev/null || echo "start")
 ssh-prod: ## gain a shell on the production enviroment to run migrations and reports
-	@echo "🌐 Opening Railway CLI SSH guide..."
-	@$(OPEN_CMD) "https://docs.railway.com/guides/cli#ssh"
+	@echo "🌐 Opening Railway CLI SSH channel..."
+	railway ssh --project=3a25f6b6-cba4-4467-b74c-61968cb4b93f --environment=5da76b23-4abb-439d-8a41-b06808f52c64 --service=541b5b15-5c8f-4526-b922-7a5adb320b0d
 
 
 report: ## alias to run a report command
