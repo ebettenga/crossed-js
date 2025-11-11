@@ -13,30 +13,44 @@ export default function (
     Querystring: {
       limit?: string;
     };
-  }>("/leaderboard", async (request, reply) => {
-    const { limit: limitParam } = request.query;
-    const limit = limitParam ? Math.max(parseInt(limitParam, 10), 1) : 10;
+  }>(
+    "/leaderboard",
+    fastify.withResponseCache(
+      {
+        ttlSeconds: 30,
+        key: (request) => {
+          const limit = request.query.limit
+            ? Math.max(parseInt(request.query.limit, 10) || 0, 1)
+            : 10;
+          return `leaderboard:${limit}`;
+        },
+      },
+      async (request) => {
+        const { limit: limitParam } = request.query;
+        const limit = limitParam ? Math.max(parseInt(limitParam, 10), 1) : 10;
 
-    const userRepository = fastify.orm.getRepository(User);
-    const topUsers = await userRepository.find({
-      order: { eloRating: "DESC" },
-      take: limit,
-    });
+        const userRepository = fastify.orm.getRepository(User);
+        const topUsers = await userRepository.find({
+          order: { eloRating: "DESC" },
+          take: limit,
+        });
 
-    const topElo = topUsers.map((user, index) => ({
-      rank: index + 1,
-      user: user.toJSON(),
-    }));
+        const topElo = topUsers.map((user, index) => ({
+          rank: index + 1,
+          user: user.toJSON(),
+        }));
 
-    const topTimeTrials = await roomService.getGlobalTimeTrialLeaderboard(
-      limit,
-    );
+        const topTimeTrials = await roomService.getGlobalTimeTrialLeaderboard(
+          limit,
+        );
 
-    reply.send({
-      topElo,
-      topTimeTrials,
-    });
-  });
+        return {
+          topElo,
+          topTimeTrials,
+        };
+      },
+    ),
+  );
 
   next();
 }

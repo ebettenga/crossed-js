@@ -136,6 +136,10 @@ The `-d ./src/data-source.ts` flag is baked into the scripts so the CLI uses the
   ```
   make profile
   ```
+- Capture just a single pass through the stack (one `/guess`, one `/leaderboard`, one Socket.IO `guess`) with:
+  ```
+  make profile-single
+  ```
 - Every run produces load logs plus any generated `*.cpuprofile`, `*.heapprofile`, and `*.heapsnapshot` files inside `tests/profiling/results/`, along with the `seed-output.json` that captures the IDs of the seeded rooms. Open the CPU files in Chrome DevTools or speedscope.app, and load the heap artifacts (snapshots or profiler output) in DevTools to inspect memory usage.
 - Useful environment variables:
   - `PROFILE_TEST_ROOM_ID`, `PROFILE_TIME_TRIAL_ROOM_ID`, `GUESS_X`, `GUESS_Y`, `GUESS_CHAR` – payload/room overrides for the seeded data.

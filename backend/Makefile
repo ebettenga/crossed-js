@@ -12,3 +12,7 @@ profile:
 
 .PHONY: profile-test-room
 profile-test-room: profile
+
+.PHONY: profile-single
+profile-single:
+	PROFILE_SINGLE_RUN=1 $(MAKE) profile

@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Users, Timer, Swords } from 'lucide-react-native';
 
@@ -71,6 +72,7 @@ export default function HowToPlay() {
   const [activeSlide, setActiveSlide] = useState(0);
   const { isDark } = useColorMode();
   const { data: user } = useUser();
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     if (!user) return;
@@ -195,7 +197,7 @@ export default function HowToPlay() {
         </View>
       </View>
 
-      <View className="px-6 mt-12 mb-10">
+      <View className="px-6 mt-12" style={{ paddingBottom: Math.max(insets.bottom, 16) }}>
         <TouchableOpacity
           onPress={handleNext}
           className={cn(

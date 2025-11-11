@@ -32,6 +32,7 @@ import { Crossword } from "../../src/entities/Crossword";
 import { GameStats } from "../../src/entities/GameStats";
 import { CrosswordRating } from "../../src/entities/CrosswordRating";
 import { UserCrosswordPack } from "../../src/entities/UserCrosswordPack";
+import { TimeTrialLeaderboardEntry } from "../../src/entities/TimeTrialLeaderboardEntry";
 import { fastify as singletonFastify } from "../../src/fastify";
 import { config } from "../../src/config/config";
 import { redisService } from "../../src/services/RedisService";
@@ -41,6 +42,7 @@ import {
   gameTimeoutQueue,
   statusCleanupQueue,
 } from "../../src/jobs/queues";
+import responseCachePlugin from "../../src/plugins/response-cache";
 
 type ToEmit = { roomId: string; event: string; payload: any };
 type InJoin = { channel: string; roomId: string };
@@ -107,6 +109,7 @@ const postgres = createPostgresTestManager({
     GameStats,
     CrosswordRating,
     UserCrosswordPack,
+    TimeTrialLeaderboardEntry,
   ],
   env: {
     database: [
@@ -156,6 +159,7 @@ const TABLES_TO_TRUNCATE = [
   "room",
   "crossword",
   "user_crossword_pack",
+  "time_trial_leaderboard_entry",
   "user",
 ];
 
@@ -273,6 +277,8 @@ const buildServer = async (user: User) => {
     request.user = user;
     done();
   });
+
+  await app.register(responseCachePlugin);
 
   roomsRoutes(app as any, {}, () => {});
   await app.ready();

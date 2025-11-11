@@ -59,6 +59,24 @@ export class RedisService {
     return game ? JSON.parse(game) : null;
   }
 
+  async setJSON(key: string, value: unknown, ttlSeconds?: number): Promise<void> {
+    const payload = JSON.stringify(value);
+    if (ttlSeconds && ttlSeconds > 0) {
+      await this.redis.set(key, payload, "EX", ttlSeconds);
+    } else {
+      await this.redis.set(key, payload);
+    }
+  }
+
+  async getJSON<T>(key: string): Promise<T | null> {
+    const value = await this.redis.get(key);
+    return value ? JSON.parse(value) : null;
+  }
+
+  async deleteKey(key: string): Promise<void> {
+    await this.redis.del(key);
+  }
+
   // Register a user's socket connection with this server
   async registerUserSocket(userId: number) {
     await this.redis.hset("user_servers", userId.toString(), this.serverId);

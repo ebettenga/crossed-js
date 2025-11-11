@@ -5,13 +5,16 @@
   },
   "build": {
     "development": {
-       "ios": {
+      "developmentClient": true,
+      "distribution": "internal"
+    },
+    "development-simulator": {
+      "ios": {
         "simulator": true
       },
       "developmentClient": true,
       "distribution": "internal"
     },
-
     "preview": {
       "distribution": "internal"
     },

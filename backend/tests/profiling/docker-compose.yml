@@ -65,7 +65,7 @@ services:
       SMTP_USER: ${SMTP_USER:-""}
       SMTP_PASS: ${SMTP_PASS:-""}
       SMTP_FROM: ${SMTP_FROM:-noreply@crossed.com}
-      NODE_OPTIONS: ${PROFILE_NODE_OPTIONS:---inspect=0.0.0.0:9229 --cpu-prof --cpu-prof-dir=/app/profiles --cpu-prof-name=rooms-stress --heap-prof --heap-prof-dir=/app/profiles --heap-prof-name=rooms-heap}
+      NODE_OPTIONS: ${PROFILE_NODE_OPTIONS:---inspect=0.0.0.0:9229 --cpu-prof --cpu-prof-dir=/app/profiles --cpu-prof-name=rooms-stress --heap-prof --heap-prof-dir=/app/profiles --heap-prof-name=rooms-heap --experimental-specifier-resolution=node}
       ENABLE_PROFILING_ROUTES: "true"
       HEAP_SNAPSHOT_DIR: /app/profiles
       HEAP_PROFILE_DIR: /app/profiles
@@ -94,6 +94,7 @@ services:
       - ./.env
     environment:
       NODE_ENV: production
+      PROFILE_SINGLE_RUN: ${PROFILE_SINGLE_RUN:-0}
       PROFILE_BASE_URL: http://api:3000/api
       PROFILE_HTTP_ORIGIN: http://api:3000
       PROFILE_SOCKET_URL: ws://api:3000

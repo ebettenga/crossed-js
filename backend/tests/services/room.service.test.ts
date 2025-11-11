@@ -18,12 +18,20 @@ import { RedisService, redisService } from "../../src/services/RedisService";
 import { ForbiddenError } from "../../src/errors/api";
 import { createPostgresTestManager } from "../utils/postgres";
 import { createRedisTestManager, RedisTestManager } from "../utils/redis";
+import { TimeTrialLeaderboardEntry } from "../../src/entities/TimeTrialLeaderboardEntry";
 
 jest.setTimeout(60000);
 
 const postgres = createPostgresTestManager({
   label: "RoomService tests",
-  entities: [Room, User, Crossword, GameStats, UserCrosswordPack],
+  entities: [
+    Room,
+    User,
+    Crossword,
+    GameStats,
+    UserCrosswordPack,
+    TimeTrialLeaderboardEntry,
+  ],
   env: {
     database: ["ROOM_SERVICE_TEST_DB", "POSTGRES_DB"],
     schema: ["ROOM_SERVICE_TEST_SCHEMA"],
@@ -82,6 +90,7 @@ const flushQueues = async () => {
 
 const clearDatabase = async () => {
   await postgres.truncate([
+    "time_trial_leaderboard_entry",
     "game_stats",
     "room_players",
     "room",

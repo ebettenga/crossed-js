@@ -23,6 +23,7 @@ WS_GUESS_INTERVAL_MS="${WS_GUESS_INTERVAL_MS:-200}"
 WS_CLIENT_TIMEOUT_MS="${WS_CLIENT_TIMEOUT_MS:-60000}"
 WS_EVENT="${WS_EVENT:-guess}"
 WS_PATH="${WS_PATH:-/socket.io}"
+SINGLE_RUN="${PROFILE_SINGLE_RUN:-0}"
 
 timestamp="$(date +%Y%m%d-%H%M%S)"
 run_dir="${PROFILE_RESULTS_DIR}/run-${timestamp}"
@@ -101,6 +102,125 @@ wait_for_artifact() {
   done
   echo "Timed out waiting for $label ($pattern)"
   return 1
+}
+
+single_http_request() {
+  local name=$1
+  local url=$2
+  local method=$3
+  local body=$4
+  local log_file="${run_dir}/${name}-single-http.json"
+  HTTP_NAME="$name" HTTP_TARGET="$url" HTTP_METHOD="$method" HTTP_BODY="$body" AUTH_TOKEN="$AUTH_TOKEN" node - <<'NODE' | tee "$log_file"
+const {
+  HTTP_NAME,
+  HTTP_TARGET,
+  HTTP_METHOD,
+  HTTP_BODY,
+  AUTH_TOKEN,
+} = process.env;
+
+(async () => {
+  const headers = {};
+  if (AUTH_TOKEN) {
+    headers.Authorization = `Bearer ${AUTH_TOKEN}`;
+  }
+  if (HTTP_BODY) {
+    headers["Content-Type"] = "application/json";
+  }
+  const start = performance.now();
+  const response = await fetch(HTTP_TARGET, {
+    method: HTTP_METHOD,
+    headers,
+    body: HTTP_BODY || undefined,
+  });
+  const text = await response.text();
+  const duration = performance.now() - start;
+  const result = {
+    name: HTTP_NAME,
+    url: HTTP_TARGET,
+    method: HTTP_METHOD,
+    status: response.status,
+    ok: response.ok,
+    durationMs: Number(duration.toFixed(3)),
+    body: text,
+  };
+  console.log(JSON.stringify(result, null, 2));
+  if (!response.ok) {
+    process.exit(1);
+  }
+})().catch((error) => {
+  console.error("Single HTTP request failed:", error);
+  process.exit(1);
+});
+NODE
+}
+
+single_ws_guess() {
+  local log_file="${run_dir}/ws-${WS_EVENT}-single.json"
+  WS_URL="$PROFILE_SOCKET_URL" \
+  WS_EVENT="$WS_EVENT" \
+  AUTH_TOKEN="$AUTH_TOKEN" \
+  ROOM_ID="$ROOM_ID" \
+  GUESS_X="$GUESS_X" \
+  GUESS_Y="$GUESS_Y" \
+  GUESS_CHAR="$GUESS_CHAR" \
+  node --input-type=module - <<'NODE' | tee "$log_file"
+import { io } from "socket.io-client";
+
+const {
+  WS_URL,
+  WS_EVENT,
+  AUTH_TOKEN,
+  ROOM_ID,
+  GUESS_X,
+  GUESS_Y,
+  GUESS_CHAR,
+} = process.env;
+
+const payload = {
+  roomId: Number(ROOM_ID),
+  x: Number(GUESS_X),
+  y: Number(GUESS_Y),
+  guess: GUESS_CHAR,
+};
+
+const start = performance.now();
+
+await new Promise((resolve, reject) => {
+  const socket = io(WS_URL, {
+    path: "/socket.io",
+    transports: ["websocket"],
+    forceNew: true,
+    auth: { authToken: AUTH_TOKEN },
+  });
+
+  const timeout = setTimeout(() => {
+    socket.disconnect();
+    reject(new Error("Websocket single run timed out"));
+  }, 5000);
+
+  socket.on("connect", () => {
+    socket.emit(WS_EVENT, payload);
+    setTimeout(() => {
+      clearTimeout(timeout);
+      socket.disconnect();
+      resolve();
+    }, 500);
+  });
+
+  socket.on("connect_error", (err) => {
+    clearTimeout(timeout);
+    reject(err);
+  });
+});
+
+const duration = performance.now() - start;
+console.log(JSON.stringify({
+  event: WS_EVENT,
+  durationMs: Number(duration.toFixed(3)),
+  payload,
+}, null, 2));
+NODE
 }
 
 wait_for_port "api" 3000 180
@@ -219,9 +339,18 @@ call_endpoint "$CPU_PROFILE_START_ENDPOINT"
 echo "Starting heap profiler..."
 call_endpoint "$HEAP_PROFILE_START_ENDPOINT"
 
-run_http_load "guess" "${PROFILE_HTTP_ORIGIN}${HTTP_GUESS_ENDPOINT}" "POST" "$HTTP_GUESS_BODY" "$HTTP_CONCURRENCY" "$HTTP_DURATION_MS"
-run_http_load "leaderboard" "${PROFILE_HTTP_ORIGIN}${LEADERBOARD_ENDPOINT}" "GET" "" "$LEADERBOARD_CONCURRENCY" "$LEADERBOARD_DURATION_MS"
-run_ws_load
+if [[ "$SINGLE_RUN" == "1" ]]; then
+  echo "Running single HTTP guess request..."
+  single_http_request "guess" "${PROFILE_HTTP_ORIGIN}${HTTP_GUESS_ENDPOINT}" "POST" "$HTTP_GUESS_BODY"
+  echo "Running single HTTP leaderboard request..."
+  single_http_request "leaderboard" "${PROFILE_HTTP_ORIGIN}${LEADERBOARD_ENDPOINT}" "GET" ""
+  echo "Running single websocket guess event..."
+  single_ws_guess
+else
+  run_http_load "guess" "${PROFILE_HTTP_ORIGIN}${HTTP_GUESS_ENDPOINT}" "POST" "$HTTP_GUESS_BODY" "$HTTP_CONCURRENCY" "$HTTP_DURATION_MS"
+  run_http_load "leaderboard" "${PROFILE_HTTP_ORIGIN}${LEADERBOARD_ENDPOINT}" "GET" "" "$LEADERBOARD_CONCURRENCY" "$LEADERBOARD_DURATION_MS"
+  run_ws_load
+fi
 
 echo "Stopping heap profiler..."
 call_endpoint "$HEAP_PROFILE_STOP_ENDPOINT"
