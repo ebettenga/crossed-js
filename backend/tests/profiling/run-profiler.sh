@@ -29,7 +29,6 @@ run_dir="${PROFILE_RESULTS_DIR}/run-${timestamp}"
 mkdir -p "$run_dir"
 echo "Run output will be stored in $run_dir"
 rm -f "${PROFILE_RAW_DIR}"/*.cpuprofile 2>/dev/null || true
-SEED_OUTPUT_PATH="${run_dir}/seed-output.json"
 
 wait_for_port() {
   local host=$1
@@ -67,21 +66,7 @@ PROFILE_TEST_PASSWORD="${PROFILE_TEST_PASSWORD}" \
 PROFILE_TEST_USERNAME="${PROFILE_TEST_USERNAME:-testuser}" \
 PROFILE_TIME_TRIAL_ROOM_ID="${PROFILE_TIME_TRIAL_ROOM_ID:-}" \
 PROFILE_TEST_ROOM_ID="${ROOM_ID}" \
-PROFILE_SEED_OUTPUT_PATH="$SEED_OUTPUT_PATH" \
 npx tsx tests/profiling/seed.ts
-
-if [[ -f "$SEED_OUTPUT_PATH" ]]; then
-  echo "Seed output captured at $SEED_OUTPUT_PATH"
-  GUESS_ROOM_ID=$(node -e "const fs=require('fs');const path=process.argv[1];const data=JSON.parse(fs.readFileSync(path,'utf8'));if(data.rooms?.guessRoomId) console.log(data.rooms.guessRoomId);" "$SEED_OUTPUT_PATH")
-  LEADERBOARD_ROOM_ID=$(node -e "const fs=require('fs');const path=process.argv[1];const data=JSON.parse(fs.readFileSync(path,'utf8'));if(data.rooms?.leaderboardRoomId) console.log(data.rooms.leaderboardRoomId);" "$SEED_OUTPUT_PATH")
-  if [[ -n "$GUESS_ROOM_ID" ]]; then
-    echo "Using seeded guess room ID $GUESS_ROOM_ID"
-    ROOM_ID="$GUESS_ROOM_ID"
-  fi
-  if [[ -n "$LEADERBOARD_ROOM_ID" ]]; then
-    export PROFILE_SEEDED_LEADERBOARD_ROOM_ID="$LEADERBOARD_ROOM_ID"
-  fi
-fi
 
 if [[ -z "${PROFILE_TEST_CREDENTIAL:-}" || -z "${PROFILE_TEST_PASSWORD:-}" ]]; then
   echo "PROFILE_TEST_CREDENTIAL and PROFILE_TEST_PASSWORD must be defined (see tests/profiling/.env)" >&2
