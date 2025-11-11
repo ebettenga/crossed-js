@@ -100,12 +100,12 @@ Documentation files related to the project, including API documentation and deve
 
 ### Production migrations on Railway
 
-The `Run Railway Migrations` workflow (`.github/workflows/railway-migrate.yml`) uses the Railway CLI to execute `yarn migration:run` inside the running production container whenever backend migrations change on `main` (or whenever the workflow is run manually). Configure the following repository secrets before enabling it:
+The `Run Railway Migrations` workflow (`.github/workflows/railway-migrate.yml`) is exposed as a manual GitHub Actions button. It uses the Railway CLI to execute `yarn migration:run` inside the running production container when you trigger it from the Actions tab. Configure the following repository secrets before enabling it:
 
 - `RAILWAY_TOKEN`: Generate via `railway login --browserless` and copy the token from `~/.railway/config.json`.
 - `RAILWAY_PROJECT_ID`, `RAILWAY_ENVIRONMENT_ID`, `RAILWAY_SERVICE_ID`: Copy from the Railway dashboard (Project → Settings → IDs).
 
-Once the secrets exist, the workflow will install `@railway/cli`, authenticate using the token, SSH into the specified service, and run pending TypeORM migrations right after each deploy-triggering push. You can also trigger the workflow manually from the GitHub Actions tab (useful for re-running migrations without a code change).
+Once the secrets exist, triggering the workflow installs `@railway/cli`, authenticates using the token, waits for the service to be active, then SSHs into the container to run pending TypeORM migrations. Use the button after a deployment finishes to keep the database schema in sync.
 
 
 ## Contributing
