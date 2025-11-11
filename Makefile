@@ -31,6 +31,11 @@ ssh-prod: ## gain a shell on the production enviroment to run migrations and rep
 	@echo "🌐 Opening Railway CLI SSH channel..."
 	railway ssh --project=3a25f6b6-cba4-4467-b74c-61968cb4b93f --environment=5da76b23-4abb-439d-8a41-b06808f52c64 --service=541b5b15-5c8f-4526-b922-7a5adb320b0d
 
+report-prod: ## gain a shell on the production enviroment to run migrations and reports
+	@echo "Installing yarn dev depencencies in production enviroment..."
+	railway ssh --project=3a25f6b6-cba4-4467-b74c-61968cb4b93f --environment=5da76b23-4abb-439d-8a41-b06808f52c64 --service=541b5b15-5c8f-4526-b922-7a5adb320b0d -- yarn --production=false
+		@echo "📊 Opening Railway CLI SSH channel for report..."
+	railway ssh --project=3a25f6b6-cba4-4467-b74c-61968cb4b93f --environment=5da76b23-4abb-439d-8a41-b06808f52c64 --service=541b5b15-5c8f-4526-b922-7a5adb320b0d -- yarn commands report
 
 report: ## alias to run a report command
 	cd backend && yarn commands report
