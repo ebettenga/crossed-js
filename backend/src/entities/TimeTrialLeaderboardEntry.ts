@@ -5,8 +5,8 @@ import {
   PrimaryGeneratedColumn,
   Unique,
 } from "typeorm";
-import { Crossword } from "./Crossword";
-import { User } from "./User";
+import { Crossword } from "./Crossword.js";
+import { User } from "./User.js";
 
 @Entity()
 @Unique(

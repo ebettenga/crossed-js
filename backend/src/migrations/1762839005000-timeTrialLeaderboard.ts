@@ -1,8 +1,6 @@
 import { MigrationInterface, QueryRunner } from "typeorm";
 
-export class TimeTrialLeaderboard1762839005000
-  implements MigrationInterface
-{
+export class TimeTrialLeaderboard1762839005000 implements MigrationInterface {
   name = "TimeTrialLeaderboard1762839005000";
 
   public async up(queryRunner: QueryRunner): Promise<void> {

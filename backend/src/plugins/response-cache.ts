@@ -1,9 +1,10 @@
 import {
   FastifyInstance,
-  FastifyPluginCallback,
+  FastifyPluginAsync,
   FastifyRequest,
   RouteHandlerMethod,
 } from "fastify";
+import fp from "fastify-plugin";
 import { config } from "../config/config";
 import { redisService } from "../services/RedisService";
 
@@ -31,7 +32,7 @@ declare module "fastify" {
   }
 }
 
-const responseCachePlugin: FastifyPluginCallback = (fastify, _opts, done) => {
+const responseCachePlugin: FastifyPluginAsync = fp(async (fastify) => {
   fastify.decorate(
     "withResponseCache",
     function withResponseCache<
@@ -117,8 +118,6 @@ const responseCachePlugin: FastifyPluginCallback = (fastify, _opts, done) => {
       return wrapped;
     },
   );
-
-  done();
-};
+});
 
 export default responseCachePlugin;
