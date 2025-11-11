@@ -20,6 +20,3 @@ jobs:
             --environment="${{secrets.RAILWAY_ENVIRONMENT_ID}}" \
             --service="${{secrets.RAILWAY_SERVICE_ID}}" \
             -- yarn migration:run
-
-
-            name: Deploy to Railway
