@@ -5,7 +5,7 @@ WORKDIR /app
 ENV CI=true
 
 # Add build dependencies for native modules
-RUN apk add --no-cache g++ gcc libsodium gcompat
+RUN apk add --no-cache bash g++ gcc libsodium gcompat
 
 COPY package.json yarn.lock ./
 RUN yarn install --frozen-lockfile

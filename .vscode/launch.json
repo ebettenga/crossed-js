@@ -24,6 +24,28 @@
                 "**/node_modules/**"
             ],
             "sourceMaps": true
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Debug backend tests",
+            "cwd": "${workspaceFolder}/backend",
+            "runtimeExecutable": "yarn",
+            "runtimeArgs": [
+                "test",
+                "--runInBand",
+                "--watchAll=false"
+            ],
+            "env": {
+                "NODE_OPTIONS": "--enable-source-maps"
+            },
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "neverOpen",
+            "skipFiles": [
+                "<node_internals>/**",
+                "**/node_modules/**"
+            ],
+            "sourceMaps": true
         }
     ]
 }

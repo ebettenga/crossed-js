@@ -6,6 +6,8 @@ backend/dist
 
 /backend/coverage
 
+backend/tests/profiling/results/
+
 private_crosswords
 
 
