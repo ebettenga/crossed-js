@@ -1,4 +1,4 @@
-name: Release mobile store builds
+name: Release Android Play Store build
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
       - fix/ios-fixes
 
 jobs:
-  eas-submit:
+  eas-submit-android:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -33,16 +33,13 @@ jobs:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
-      - name: Submit latest production build to App Store
-        env:
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+      - name: Build production Android artifact
         run: |
-          eas submit \
-            --platform ios \
+          eas build \
+            --platform android \
             --profile production \
-            --latest \
-            --non-interactive
+            --non-interactive \
+            --wait
 
       - name: Submit latest production build to Play Console
         env:

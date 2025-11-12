@@ -109,16 +109,14 @@ Once the secrets exist, triggering the workflow installs `@railway/cli`, authent
 
 ### Mobile store submissions via EAS
 
-The `Release mobile store builds` workflow (`.github/workflows/eas-submit.yml`) runs automatically on every push to `main`. It installs the Expo app dependencies inside `frontend/`, authenticates via `expo/expo-github-action`, and sequentially runs `eas submit --platform ios|android --profile production --latest --non-interactive` so the most recent production builds are uploaded to App Store Connect and Google Play without manual intervention.
+Two workflows handle mobile releases in parallel whenever `main` gets a push:
 
-Configure these repository secrets before relying on the workflow:
+- `Release iOS App Store build` (`.github/workflows/eas-submit-ios.yml`) installs the Expo dependencies inside `frontend/`, authenticates via `expo/expo-github-action`, runs `eas build --platform ios --profile production --non-interactive --wait`, and then submits the latest build with `eas submit --platform ios --profile production --latest --non-interactive`.
+  - Required secrets: `EXPO_TOKEN`, `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`.
+- `Release Android Play Store build` (`.github/workflows/eas-submit-android.yml`) performs the same setup, runs `eas build --platform android --profile production --non-interactive --wait`, and then calls `eas submit --platform android --profile production --latest --non-interactive --key play-console-service-account.json`.
+  - Required secrets: `EXPO_TOKEN`, `GOOGLE_SERVICE_ACCOUNT_KEY` (JSON for a Google Cloud service account with `Service Account User` + Google Play `Release Manager` access).
 
-- `EXPO_TOKEN`: Get from expo account settings.
-- `APPLE_ID`: The Apple Developer account email used for App Store Connect.
-- `APPLE_APP_SPECIFIC_PASSWORD`: App-specific password created under Apple ID → Sign-In & Security → App-Specific Passwords.
-- `GOOGLE_SERVICE_ACCOUNT_KEY`: JSON for a Google Cloud service account with `Service Account User` + Google Play `Release Manager` access. Create via Google Play Console → Setup → API access, then store the JSON as a secret.
-
-Keep the `submit.production` profile inside `eas.json` up to date with the desired metadata. The workflow assumes the Expo project lives in `frontend/`.
+Keep the `submit.production` profile inside `eas.json` up to date with the desired metadata. Both workflows assume the Expo project lives in `frontend/`.
 
 
 ## Contributing
