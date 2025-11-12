@@ -2,9 +2,6 @@ name: Release Android Play Store build
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - fix/ios-fixes
 
 jobs:
   eas-submit-android:
