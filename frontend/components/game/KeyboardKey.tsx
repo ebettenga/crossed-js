@@ -14,6 +14,8 @@ interface KeyboardKeyProps {
   disabled?: boolean;
 }
 
+const HIT_SLOP = { top: 6, bottom: 6, left: 6, right: 6 };
+
 export const KeyboardKey: React.FC<KeyboardKeyProps> = ({
   letter,
   onPress,
@@ -36,7 +38,7 @@ export const KeyboardKey: React.FC<KeyboardKeyProps> = ({
   };
 
   return (
-    <TouchableOpacity onPress={handlePress}>
+    <TouchableOpacity onPress={handlePress} hitSlop={HIT_SLOP}>
       <Animated.View
         className={cn(
           "w-8 h-[45px] bg-white dark:bg-neutral-700 justify-center items-center m-0.5 rounded border",
