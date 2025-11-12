@@ -116,8 +116,14 @@ export class RoomService {
 
     if (!player) throw new Error("User not found");
 
-    room.players.push(player);
-    room.markModified();
+    const isAlreadyPlayer = room.players.some(
+      (existing) => existing.id === player.id,
+    );
+
+    if (!isAlreadyPlayer) {
+      room.players.push(player);
+      room.markModified();
+    }
     if (room.scores[player.id] === undefined) {
       room.scores[player.id] = 0;
       room.markModified();

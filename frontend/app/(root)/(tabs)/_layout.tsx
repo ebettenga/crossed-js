@@ -1,4 +1,4 @@
-import { View, Text, Image, StatusBar } from 'react-native'
+import { View, Text, Image, StatusBar, Platform } from 'react-native'
 import React, { useEffect } from 'react'
 import { Tabs } from "expo-router";
 import { usePathname } from 'expo-router';
@@ -63,10 +63,11 @@ const TabsLayout = () => {
     const { isDark } = useColorMode();
     const { challenges } = useChallenge();
     const challengeCount = challenges?.length ?? 0;
+    const isIOS = Platform.OS === 'ios';
 
     useEffect(() => {
-        StatusBar.setBackgroundColor(isDark ? '#0F1417' : '#F6FAFE');
         StatusBar.setBarStyle(isDark ? 'light-content' : 'dark-content');
+        StatusBar.setTranslucent(true);
     }, [isDark]);
 
     const height = __DEV__ ? 70 : 120
@@ -75,11 +76,14 @@ const TabsLayout = () => {
         <Tabs
             screenOptions={{
                 tabBarShowLabel: false,
+                tabBarSafeAreaInsets: { bottom: 0 },
                 tabBarStyle: {
                     height: height,
                     backgroundColor: isDark ? '#0F1417' : '#F6FAFE',
                     position: 'absolute',
                     display: hideTabBar ? 'none' : 'flex',
+                    bottom: isIOS ? -12 : 0,
+                    paddingBottom: isIOS ? 24 : 12,
                     shadowColor: '#000',
                     shadowOffset: {
                         width: 0,

@@ -107,6 +107,17 @@ The `Run Railway Migrations` workflow (`.github/workflows/railway-migrate.yml`) 
 
 Once the secrets exist, triggering the workflow installs `@railway/cli`, authenticates using the token, waits for the service to be active, then SSHs into the container to run pending TypeORM migrations. Use the button after a deployment finishes to keep the database schema in sync.
 
+### Mobile store submissions via EAS
+
+Two workflows handle mobile releases in parallel whenever `main` gets a push:
+
+- `Release iOS App Store build` (`.github/workflows/eas-submit-ios.yml`) installs the Expo dependencies inside `frontend/`, authenticates via `expo/expo-github-action`, runs `eas build --platform ios --profile production --non-interactive --wait`, and then submits the latest build with `eas submit --platform ios --profile production --latest --non-interactive`.
+  - Required secrets: `EXPO_TOKEN`, `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`.
+- `Release Android Play Store build` (`.github/workflows/eas-submit-android.yml`) performs the same setup, runs `eas build --platform android --profile production --non-interactive --wait`, and then calls `eas submit --platform android --profile production --latest --non-interactive --key play-console-service-account.json`.
+  - Required secrets: `EXPO_TOKEN`, `GOOGLE_SERVICE_ACCOUNT_KEY` (JSON for a Google Cloud service account with `Service Account User` + Google Play `Release Manager` access).
+
+Keep the `submit.production` profile inside `eas.json` up to date with the desired metadata. Both workflows assume the Expo project lives in `frontend/`.
+
 
 ## Contributing
 

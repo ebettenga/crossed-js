@@ -24,26 +24,32 @@ export const ClueDisplay: React.FC<ClueDisplayProps> = ({
   const clueText = decode(rawClueText);
 
   return (
-    <View className="p-2 flex-row items-center justify-between min-h-[40px]">
-      <TouchableOpacity
-        onPress={() => onNavigate('previous')}
-        className="p-2"
-      >
-        <ChevronLeft size={24} color="#666666" />
-      </TouchableOpacity>
+    <View className="relative p-2 min-h-[40px] justify-center">
+      <View className="absolute inset-0 flex-row">
+        <TouchableOpacity
+          onPress={() => onNavigate('previous')}
+          className="flex-1 justify-center items-start px-4"
+          accessibilityRole="button"
+          accessibilityLabel="Previous clue"
+        >
+          <ChevronLeft size={24} color="#666666" />
+        </TouchableOpacity>
 
-      <View className="flex-1 px-4">
+        <TouchableOpacity
+          onPress={() => onNavigate('next')}
+          className="flex-1 justify-center items-end px-4"
+          accessibilityRole="button"
+          accessibilityLabel="Next clue"
+        >
+          <ChevronRight size={24} color="#666666" />
+        </TouchableOpacity>
+      </View>
+
+      <View className="px-4" pointerEvents="none">
         <Text className="text-base text-[#2B2B2B] dark:text-[#DDE1E5] leading-6 text-center">
           {clueText}
         </Text>
       </View>
-
-      <TouchableOpacity
-        onPress={() => onNavigate('next')}
-        className="p-2"
-      >
-        <ChevronRight size={24} color="#666666" />
-      </TouchableOpacity>
     </View>
   );
 };

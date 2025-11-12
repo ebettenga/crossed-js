@@ -3,18 +3,12 @@
   "status": "playing",
   "type": "1v1",
   "difficulty": "hard",
-  "player_count": 3,
+  "player_count": 2,
   "completed_at": null,
   "players": [
     {
       "id": 1,
       "username": "challenger_accept",
-      "score": 0,
-      "eloRating": 1200
-    },
-    {
-      "id": 2,
-      "username": "challenged_accept",
       "score": 0,
       "eloRating": 1200
     },
