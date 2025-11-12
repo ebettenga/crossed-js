@@ -1,10 +1,7 @@
 name: Release iOS App Store build
 
 on:
-  push:
-    branches:
-      - main
-      - fix/ios-fixes
+  workflow_dispatch:
 
 jobs:
   eas-submit:

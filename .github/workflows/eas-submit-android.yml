@@ -1,9 +1,9 @@
 name: Release Android Play Store build
 
 on:
+  workflow_dispatch:
   push:
     branches:
-      - main
       - fix/ios-fixes
 
 jobs:
@@ -45,11 +45,10 @@ jobs:
         env:
           GOOGLE_SERVICE_ACCOUNT_KEY: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}
         run: |
-          printf '%s' "$GOOGLE_SERVICE_ACCOUNT_KEY" > play-console-service-account.json
+          printf '%s' "$GOOGLE_SERVICE_ACCOUNT_KEY" > eas-build-key.json
           eas submit \
             --platform android \
             --profile production \
             --latest \
-            --non-interactive \
-            --key play-console-service-account.json
-          rm -f play-console-service-account.json
+            --non-interactive
+          rm -f eas-build-key.json
