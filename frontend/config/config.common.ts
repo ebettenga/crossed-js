@@ -19,6 +19,9 @@ export const commonConfig = {
       borderWidth: 0.5,
       cornerRadius: 4,
     },
+    buttons: {
+      hitslop: { top: 2, bottom: 2, left: 0, right: 0 },
+    },
   },
   social: {
     reddit: {

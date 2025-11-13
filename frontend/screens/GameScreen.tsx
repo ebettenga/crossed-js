@@ -307,6 +307,7 @@ TODO: figure out why there's a error happening with this hook not getting loaded
     };
 
     const handleKeyPress = (key: string) => {
+        console.log('handleKeyPress called with key:', key);
         if (!selectedCell || !room?.board) {
             return;
         }
