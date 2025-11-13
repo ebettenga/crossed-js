@@ -27,7 +27,6 @@ export const KeyboardKey: React.FC<KeyboardKeyProps> = ({
   }));
 
   const handlePress = () => {
-    console.log('KeyboardKey pressed:', letter);
     if (!disabled) {
       scale.value = withSequence(
         withSpring(0.9, { damping: 12 }),
