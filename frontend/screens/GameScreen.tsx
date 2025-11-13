@@ -590,13 +590,19 @@ TODO: figure out why there's a error happening with this hook not getting loaded
                         )}
                     </View>
                     <View className="flex-row items-end justify-between bg-neutral-100 dark:bg-neutral-800 border-t border-neutral-200 dark:border-neutral-700 px-4 pt-2 pb-2 gap-4 shadow-lg">
-                        <CluesButton
-                            clues={formattedClues}
-                            onCluePress={(square, isAcrossMode) => {
-                                setSelectedCell(square);
-                                setIsAcrossMode(isAcrossMode);
-                            }}
-                        />
+                        <View className="flex-row items-end gap-3">
+                            <CluesButton
+                                clues={formattedClues}
+                                isAcrossMode={isAcrossMode}
+                                onButtonPress={(square, isAcrossMode) => {
+                                    setIsAcrossMode((value) => !value);
+                                }}
+                                onCluePress={(square, isAcrossMode) => {
+                                    setSelectedCell(square);
+                                    setIsAcrossMode(isAcrossMode);
+                                }}
+                            />
+                        </View>
                         <View className="flex-1">
                             <Keyboard
                                 onKeyPress={handleKeyPress}
