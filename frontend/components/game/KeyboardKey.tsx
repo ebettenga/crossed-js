@@ -8,6 +8,7 @@ import Animated, {
 import { TouchableOpacity } from 'react-native'
 import { cn } from '~/lib/utils';
 import { config } from '~/config/config';
+import { useHaptics } from '~/hooks/useHaptics';
 
 interface KeyboardKeyProps {
   letter: string;
@@ -21,6 +22,7 @@ export const KeyboardKey: React.FC<KeyboardKeyProps> = ({
   disabled = false
 }) => {
   const scale = useSharedValue(1);
+  const { selection: haptics } = useHaptics();
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
@@ -28,6 +30,7 @@ export const KeyboardKey: React.FC<KeyboardKeyProps> = ({
 
   const handlePress = () => {
     if (!disabled) {
+      haptics();
       scale.value = withSequence(
         withSpring(0.9, { damping: 12 }),
         withSpring(1, { damping: 12 })

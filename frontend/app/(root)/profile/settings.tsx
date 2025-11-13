@@ -2,20 +2,31 @@ import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { PageHeader } from '~/components/Header';
 import { Switch } from '~/components/ui/switch';
-import { Moon, Sun, ChevronLeft, ChevronRight, Volume2, VolumeX, Eye, EyeOff, HelpCircle, Sparkles } from 'lucide-react-native';
+import { Moon, Sun, ChevronLeft, ChevronRight, Volume2, VolumeX, Eye, EyeOff, HelpCircle, Sparkles, Vibrate } from 'lucide-react-native';
 import { useColorMode } from '~/hooks/useColorMode';
 import { useSoundPreference } from '~/hooks/useSoundPreference';
 import { useEloVisibility } from '~/hooks/useEloVisibility';
 import { useRouter } from 'expo-router';
+import { useHapticsPreference } from '~/hooks/useHapticsPreference';
+import { useHaptics } from '~/hooks/useHaptics';
 
 export default function Settings() {
     const { isDark } = useColorMode();
     const { isSoundEnabled, setSoundEnabled } = useSoundPreference();
+    const { isHapticsEnabled, setHapticsEnabled } = useHapticsPreference();
     const { isEloVisible, setEloVisibility } = useEloVisibility();
+    const { previewSelection } = useHaptics();
     const router = useRouter();
 
     const toggleSound = () => {
         setSoundEnabled(!isSoundEnabled);
+    };
+
+    const toggleHaptics = () => {
+        if (!isHapticsEnabled) {
+            previewSelection();
+        }
+        setHapticsEnabled(!isHapticsEnabled);
     };
 
     const toggleEloVisibility = () => {
@@ -59,6 +70,19 @@ export default function Settings() {
                                 </Text>
                             </View>
                             <Switch checked={isSoundEnabled} onCheckedChange={toggleSound} />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            className="flex-row items-center justify-between"
+                            onPress={toggleHaptics}
+                            activeOpacity={0.7}
+                        >
+                            <View className="flex-row items-center gap-3">
+                                <Vibrate size={24} color={isDark ? '#DDE1E5' : '#1D2124'} />
+                                <Text className="text-base text-[#1D2124] dark:text-[#DDE1E5] font-rubik">
+                                    Haptics
+                                </Text>
+                            </View>
+                            <Switch checked={isHapticsEnabled} onCheckedChange={toggleHaptics} />
                         </TouchableOpacity>
 
                         <TouchableOpacity

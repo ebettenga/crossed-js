@@ -5,6 +5,7 @@ import React, { useCallback, useContext, useEffect, useMemo, useState } from "re
 import { Room } from "./useJoinRoom";
 import { useRouter } from "expo-router";
 import { useUser } from "./users";
+import { useHaptics } from "./useHaptics";
 
 export const CHALLENGES_UPDATED_EVENT = 'challenges:updated';
 
@@ -29,6 +30,7 @@ export const ChallengeProvider = ({ children }: { children: React.ReactNode }) =
     const queryClient = useQueryClient();
     const { socket, isConnected } = useSocket();
     const [incomingChallenge, setIncomingChallenge] = useState<IncomingChallengePayload | null>(null);
+    const { notification } = useHaptics();
 
     const clearIncomingChallenge = useCallback(() => setIncomingChallenge(null), []);
     const invalidateChallengeRelatedQueries = useCallback(() => {
@@ -42,6 +44,7 @@ export const ChallengeProvider = ({ children }: { children: React.ReactNode }) =
         const handleChallengeReceived = (data: IncomingChallengePayload) => {
             setIncomingChallenge(data);
             invalidateChallengeRelatedQueries();
+            notification();
         };
 
         const handleChallengesUpdated = () => {
@@ -55,7 +58,7 @@ export const ChallengeProvider = ({ children }: { children: React.ReactNode }) =
             socket.off("challenge_received", handleChallengeReceived);
             socket.off(CHALLENGES_UPDATED_EVENT, handleChallengesUpdated);
         };
-    }, [socket, isConnected, invalidateChallengeRelatedQueries]);
+    }, [socket, isConnected, invalidateChallengeRelatedQueries, notification]);
 
     const value = useMemo(() => ({
         incomingChallenge,

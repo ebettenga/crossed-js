@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import { ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { decode } from 'html-entities';
 import { Square } from '~/hooks/useJoinRoom';
+import { useHaptics } from '~/hooks/useHaptics';
 
 interface ClueDisplayProps {
   selectedSquare: Square | null;
@@ -15,6 +16,13 @@ export const ClueDisplay: React.FC<ClueDisplayProps> = ({
   isAcrossMode,
   onNavigate
 }) => {
+  const { selection } = useHaptics();
+
+  const handleNavigate = (direction: 'next' | 'previous') => {
+    selection();
+    onNavigate(direction);
+  };
+
   if (!selectedSquare) return null;
   const clue = isAcrossMode ? selectedSquare.acrossQuestion : selectedSquare.downQuestion;
 
@@ -27,7 +35,7 @@ export const ClueDisplay: React.FC<ClueDisplayProps> = ({
     <View className="relative p-2 min-h-[40px] justify-center">
       <View className="absolute inset-0 flex-row">
         <TouchableOpacity
-          onPress={() => onNavigate('previous')}
+          onPress={() => handleNavigate('previous')}
           className="flex-1 justify-center items-start px-4"
           accessibilityRole="button"
           accessibilityLabel="Previous clue"
@@ -36,7 +44,7 @@ export const ClueDisplay: React.FC<ClueDisplayProps> = ({
         </TouchableOpacity>
 
         <TouchableOpacity
-          onPress={() => onNavigate('next')}
+          onPress={() => handleNavigate('next')}
           className="flex-1 justify-center items-end px-4"
           accessibilityRole="button"
           accessibilityLabel="Next clue"
