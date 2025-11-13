@@ -64,6 +64,9 @@ export default function Credits() {
                         <Text className="text-base text-[#2B2B2B] dark:text-[#DDE1E5] font-rubik">
                             Zackypoo
                         </Text>
+                        <Text className="text-base text-[#2B2B2B] dark:text-[#DDE1E5] font-rubik">
+                            caughtdead
+                        </Text>
                     </View>
 
                     <View className="gap-2">

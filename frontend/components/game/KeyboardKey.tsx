@@ -40,7 +40,7 @@ export const KeyboardKey: React.FC<KeyboardKeyProps> = ({
     <TouchableOpacity onPress={handlePress} hitSlop={config.game.buttons.hitslop}>
       <Animated.View
         className={cn(
-          "w-9 h-[45px] bg-white dark:bg-neutral-700 justify-center items-center m-0.5  rounded border",
+          "w-10 h-[45px] bg-white dark:bg-neutral-700 justify-center items-center m-0.5  rounded border",
           "border-neutral-200 dark:border-neutral-600",
           disabled && "bg-neutral-200 dark:bg-neutral-800"
         )}
