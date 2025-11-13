@@ -5,16 +5,15 @@ import Animated, {
   useSharedValue,
   withSequence,
 } from 'react-native-reanimated';
-import { TouchableOpacity } from 'react-native-gesture-handler';
+import { TouchableOpacity } from 'react-native'
 import { cn } from '~/lib/utils';
+import { config } from '~/config/config';
 
 interface KeyboardKeyProps {
   letter: string;
   onPress: () => void;
   disabled?: boolean;
 }
-
-const HIT_SLOP = { top: 6, bottom: 6, left: 6, right: 6 };
 
 export const KeyboardKey: React.FC<KeyboardKeyProps> = ({
   letter,
@@ -38,10 +37,10 @@ export const KeyboardKey: React.FC<KeyboardKeyProps> = ({
   };
 
   return (
-    <TouchableOpacity onPress={handlePress} hitSlop={HIT_SLOP}>
+    <TouchableOpacity onPress={handlePress} hitSlop={config.game.buttons.hitslop}>
       <Animated.View
         className={cn(
-          "w-8 h-[45px] bg-white dark:bg-neutral-700 justify-center items-center m-0.5 rounded border",
+          "w-9 h-[45px] bg-white dark:bg-neutral-700 justify-center items-center m-0.5  rounded border",
           "border-neutral-200 dark:border-neutral-600",
           disabled && "bg-neutral-200 dark:bg-neutral-800"
         )}

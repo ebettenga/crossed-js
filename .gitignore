@@ -10,6 +10,8 @@ backend/tests/profiling/results/
 
 private_crosswords
 
+.tmp
+/tmp
 
 .codex
 
