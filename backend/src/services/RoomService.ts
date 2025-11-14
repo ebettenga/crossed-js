@@ -497,7 +497,9 @@ export class RoomService {
       throw new Error("User is not a participant in this room");
     }
 
-    const shouldDeleteRoom = !(await this.hasRecordedCorrectGuess(room));
+    const hasRecordedGuess = await this.hasRecordedCorrectGuess(room);
+    const shouldDeleteRoom = !hasRecordedGuess &&
+      (room.type === "time_trial" || room.status !== "playing");
 
     if (shouldDeleteRoom) {
       fastify.log.info(
@@ -642,7 +644,23 @@ export class RoomService {
         select: ["correctGuesses"],
       });
 
-    return statsSource?.some((stat) => stat.correctGuesses > 0) || false;
+    if (statsSource?.some((stat) => stat.correctGuesses > 0)) {
+      return true;
+    }
+
+    const hasFoundLetters = Array.isArray(room.found_letters) &&
+      room.found_letters.some((letter) => letter && letter !== "*");
+    if (hasFoundLetters) {
+      return true;
+    }
+
+    const hasPositiveScore = room.scores &&
+      Object.values(room.scores).some((score) => Number(score) > 0);
+    if (hasPositiveScore) {
+      return true;
+    }
+
+    return false;
   }
 
   private async emitGameCancelled(room: Room, message: string): Promise<void> {
