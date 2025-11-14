@@ -7,46 +7,46 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0AF10637743A42CDB49DE55F /* Rubik-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = BC32111799ED455A8BA71DDC /* Rubik-Bold.ttf */; };
 		13B07FBC1A68108700A75B9A /* AppDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = 13B07FB01A68108700A75B9A /* AppDelegate.mm */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		13B07FC11A68108700A75B9A /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 13B07FB71A68108700A75B9A /* main.m */; };
+		189F7EDBAC7C40EB8B626831 /* Rubik-ExtraBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = C92769653D2840FEA9F98B68 /* Rubik-ExtraBold.ttf */; };
+		1FA0C0FAC5C344FBAE0F3E8F /* Rubik-Light.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 49D6B4E8ED6A48E89FD2DC45 /* Rubik-Light.ttf */; };
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
-		3E98A51DC3C24547BD8A7D11 /* Rubik-Light.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 40DB10FB8BCD41708523DE1F /* Rubik-Light.ttf */; };
-		3FF3BCEA51978878D28DA9E4 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 6A622043E2F50242367D1E69 /* PrivacyInfo.xcprivacy */; };
-		60B28A23591B42D3B6432BD5 /* Rubik-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = C36D72BFACC247119EBA567D /* Rubik-SemiBold.ttf */; };
-		661A6E1AB4FB46B3A32800DF /* Rubik-ExtraBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 1EE5567D0DFF4B03B84B8E54 /* Rubik-ExtraBold.ttf */; };
+		43E00CE952E25A3D75799CD7 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = FF49C8F600456E2669C39291 /* PrivacyInfo.xcprivacy */; };
+		6A10136DE50848B3901D465A /* noop-file.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E53D44CAAF247F184C3058B /* noop-file.swift */; };
+		6BE80CFE725545479B50692F /* Rubik-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 9BB0CC7CFE6C4D92A7AC8616 /* Rubik-SemiBold.ttf */; };
 		96905EF65AED1B983A6B3ABC /* libPods-Crossed.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 58EEBF8E8E6FB1BC6CAF49B5 /* libPods-Crossed.a */; };
 		B18059E884C0ABDD17F3DC3D /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAC715A2D49A985799AEE119 /* ExpoModulesProvider.swift */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
-		C8772158E71D4ED591AB57E4 /* Rubik-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 767D176DB45B43FEAD20779D /* Rubik-Medium.ttf */; };
-		D5923A0B57DE4A238A715AA2 /* noop-file.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61DA0EA133904A9191D0CE78 /* noop-file.swift */; };
-		DDFFE820583944199699DC41 /* Rubik-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = C94AA44EBEB74FA896B01000 /* Rubik-Bold.ttf */; };
-		ECF1A93320074192A4B8B5F7 /* Rubik-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 2C17D53C090D44458EE780F5 /* Rubik-Regular.ttf */; };
+		E2C03D13F0C04750A79187D6 /* Rubik-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 613B11AA9EF641329D295B2D /* Rubik-Regular.ttf */; };
+		EA138DECC0B04A7382216504 /* Rubik-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 90AB63107928433A999C8E05 /* Rubik-Medium.ttf */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		0275E248DD714A969FAE3234 /* Crossed-Bridging-Header.h */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = sourcecode.c.h; name = "Crossed-Bridging-Header.h"; path = "Crossed/Crossed-Bridging-Header.h"; sourceTree = "<group>"; };
 		13B07F961A680F5B00A75B9A /* Crossed.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Crossed.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FAF1A68108700A75B9A /* AppDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = AppDelegate.h; path = Crossed/AppDelegate.h; sourceTree = "<group>"; };
 		13B07FB01A68108700A75B9A /* AppDelegate.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = AppDelegate.mm; path = Crossed/AppDelegate.mm; sourceTree = "<group>"; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = Crossed/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = Crossed/Info.plist; sourceTree = "<group>"; };
 		13B07FB71A68108700A75B9A /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = main.m; path = Crossed/main.m; sourceTree = "<group>"; };
-		17860190A2AC416EAFF183E6 /* Crossed-Bridging-Header.h */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = sourcecode.c.h; name = "Crossed-Bridging-Header.h"; path = "Crossed/Crossed-Bridging-Header.h"; sourceTree = "<group>"; };
-		1EE5567D0DFF4B03B84B8E54 /* Rubik-ExtraBold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "Rubik-ExtraBold.ttf"; path = "../assets/fonts/Rubik-ExtraBold.ttf"; sourceTree = "<group>"; };
-		2C17D53C090D44458EE780F5 /* Rubik-Regular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "Rubik-Regular.ttf"; path = "../assets/fonts/Rubik-Regular.ttf"; sourceTree = "<group>"; };
-		40DB10FB8BCD41708523DE1F /* Rubik-Light.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "Rubik-Light.ttf"; path = "../assets/fonts/Rubik-Light.ttf"; sourceTree = "<group>"; };
+		49D6B4E8ED6A48E89FD2DC45 /* Rubik-Light.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "Rubik-Light.ttf"; path = "../assets/fonts/Rubik-Light.ttf"; sourceTree = "<group>"; };
 		58EEBF8E8E6FB1BC6CAF49B5 /* libPods-Crossed.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-Crossed.a"; sourceTree = BUILT_PRODUCTS_DIR; };
-		61DA0EA133904A9191D0CE78 /* noop-file.swift */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = sourcecode.swift; name = "noop-file.swift"; path = "Crossed/noop-file.swift"; sourceTree = "<group>"; };
-		6A622043E2F50242367D1E69 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = Crossed/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		613B11AA9EF641329D295B2D /* Rubik-Regular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "Rubik-Regular.ttf"; path = "../assets/fonts/Rubik-Regular.ttf"; sourceTree = "<group>"; };
 		6C2E3173556A471DD304B334 /* Pods-Crossed.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Crossed.debug.xcconfig"; path = "Target Support Files/Pods-Crossed/Pods-Crossed.debug.xcconfig"; sourceTree = "<group>"; };
-		767D176DB45B43FEAD20779D /* Rubik-Medium.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "Rubik-Medium.ttf"; path = "../assets/fonts/Rubik-Medium.ttf"; sourceTree = "<group>"; };
+		6E53D44CAAF247F184C3058B /* noop-file.swift */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = sourcecode.swift; name = "noop-file.swift"; path = "Crossed/noop-file.swift"; sourceTree = "<group>"; };
 		7A4D352CD337FB3A3BF06240 /* Pods-Crossed.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Crossed.release.xcconfig"; path = "Target Support Files/Pods-Crossed/Pods-Crossed.release.xcconfig"; sourceTree = "<group>"; };
+		90AB63107928433A999C8E05 /* Rubik-Medium.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "Rubik-Medium.ttf"; path = "../assets/fonts/Rubik-Medium.ttf"; sourceTree = "<group>"; };
+		9BB0CC7CFE6C4D92A7AC8616 /* Rubik-SemiBold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "Rubik-SemiBold.ttf"; path = "../assets/fonts/Rubik-SemiBold.ttf"; sourceTree = "<group>"; };
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = Crossed/SplashScreen.storyboard; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
-		C36D72BFACC247119EBA567D /* Rubik-SemiBold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "Rubik-SemiBold.ttf"; path = "../assets/fonts/Rubik-SemiBold.ttf"; sourceTree = "<group>"; };
-		C94AA44EBEB74FA896B01000 /* Rubik-Bold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "Rubik-Bold.ttf"; path = "../assets/fonts/Rubik-Bold.ttf"; sourceTree = "<group>"; };
+		BC32111799ED455A8BA71DDC /* Rubik-Bold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "Rubik-Bold.ttf"; path = "../assets/fonts/Rubik-Bold.ttf"; sourceTree = "<group>"; };
+		C92769653D2840FEA9F98B68 /* Rubik-ExtraBold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "Rubik-ExtraBold.ttf"; path = "../assets/fonts/Rubik-ExtraBold.ttf"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		FAC715A2D49A985799AEE119 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-Crossed/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
+		FF49C8F600456E2669C39291 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = Crossed/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -71,9 +71,9 @@
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				13B07FB71A68108700A75B9A /* main.m */,
 				AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */,
-				61DA0EA133904A9191D0CE78 /* noop-file.swift */,
-				17860190A2AC416EAFF183E6 /* Crossed-Bridging-Header.h */,
-				6A622043E2F50242367D1E69 /* PrivacyInfo.xcprivacy */,
+				6E53D44CAAF247F184C3058B /* noop-file.swift */,
+				0275E248DD714A969FAE3234 /* Crossed-Bridging-Header.h */,
+				FF49C8F600456E2669C39291 /* PrivacyInfo.xcprivacy */,
 			);
 			name = Crossed;
 			sourceTree = "<group>";
@@ -103,7 +103,7 @@
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
 				D65327D7A22EEC0BE12398D9 /* Pods */,
 				D7E4C46ADA2E9064B798F356 /* ExpoModulesProviders */,
-				BE494DB372954932BEB0B8A8 /* Resources */,
+				F1DDA8B082D047AA8F05926E /* Resources */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -135,20 +135,6 @@
 			path = Crossed/Supporting;
 			sourceTree = "<group>";
 		};
-		BE494DB372954932BEB0B8A8 /* Resources */ = {
-			isa = PBXGroup;
-			children = (
-				C94AA44EBEB74FA896B01000 /* Rubik-Bold.ttf */,
-				1EE5567D0DFF4B03B84B8E54 /* Rubik-ExtraBold.ttf */,
-				767D176DB45B43FEAD20779D /* Rubik-Medium.ttf */,
-				40DB10FB8BCD41708523DE1F /* Rubik-Light.ttf */,
-				2C17D53C090D44458EE780F5 /* Rubik-Regular.ttf */,
-				C36D72BFACC247119EBA567D /* Rubik-SemiBold.ttf */,
-			);
-			name = Resources;
-			path = "";
-			sourceTree = "<group>";
-		};
 		D65327D7A22EEC0BE12398D9 /* Pods */ = {
 			isa = PBXGroup;
 			children = (
@@ -166,6 +152,20 @@
 			name = ExpoModulesProviders;
 			sourceTree = "<group>";
 		};
+		F1DDA8B082D047AA8F05926E /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				BC32111799ED455A8BA71DDC /* Rubik-Bold.ttf */,
+				C92769653D2840FEA9F98B68 /* Rubik-ExtraBold.ttf */,
+				90AB63107928433A999C8E05 /* Rubik-Medium.ttf */,
+				49D6B4E8ED6A48E89FD2DC45 /* Rubik-Light.ttf */,
+				613B11AA9EF641329D295B2D /* Rubik-Regular.ttf */,
+				9BB0CC7CFE6C4D92A7AC8616 /* Rubik-SemiBold.ttf */,
+			);
+			name = Resources;
+			path = "";
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -174,13 +174,13 @@
 			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "Crossed" */;
 			buildPhases = (
 				08A4A3CD28434E44B6B9DE2E /* [CP] Check Pods Manifest.lock */,
-				DFF2CDAD188C4AA43B05BAF4 /* [Expo] Configure project */,
+				C9DB6A862186941E3F4A73B6 /* [Expo] Configure project */,
 				13B07F871A680F5B00A75B9A /* Sources */,
 				13B07F8C1A680F5B00A75B9A /* Frameworks */,
 				13B07F8E1A680F5B00A75B9A /* Resources */,
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
 				800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */,
-				A4AB6CAFFE34DC381DB493C1 /* [CP] Embed Pods Frameworks */,
+				361AD569E17104FD86056AC7 /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -230,13 +230,13 @@
 				BB2F792D24A3F905000567C9 /* Expo.plist in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
-				DDFFE820583944199699DC41 /* Rubik-Bold.ttf in Resources */,
-				661A6E1AB4FB46B3A32800DF /* Rubik-ExtraBold.ttf in Resources */,
-				C8772158E71D4ED591AB57E4 /* Rubik-Medium.ttf in Resources */,
-				3E98A51DC3C24547BD8A7D11 /* Rubik-Light.ttf in Resources */,
-				ECF1A93320074192A4B8B5F7 /* Rubik-Regular.ttf in Resources */,
-				60B28A23591B42D3B6432BD5 /* Rubik-SemiBold.ttf in Resources */,
-				3FF3BCEA51978878D28DA9E4 /* PrivacyInfo.xcprivacy in Resources */,
+				0AF10637743A42CDB49DE55F /* Rubik-Bold.ttf in Resources */,
+				189F7EDBAC7C40EB8B626831 /* Rubik-ExtraBold.ttf in Resources */,
+				EA138DECC0B04A7382216504 /* Rubik-Medium.ttf in Resources */,
+				1FA0C0FAC5C344FBAE0F3E8F /* Rubik-Light.ttf in Resources */,
+				E2C03D13F0C04750A79187D6 /* Rubik-Regular.ttf in Resources */,
+				6BE80CFE725545479B50692F /* Rubik-SemiBold.ttf in Resources */,
+				43E00CE952E25A3D75799CD7 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -278,6 +278,24 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+		361AD569E17104FD86056AC7 /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-Crossed/Pods-Crossed-frameworks.sh",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/hermes-engine/Pre-built/hermes.framework/hermes",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputPaths = (
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/hermes.framework",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Crossed/Pods-Crossed-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 		800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */ = {
@@ -328,25 +346,7 @@
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Crossed/Pods-Crossed-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
-		A4AB6CAFFE34DC381DB493C1 /* [CP] Embed Pods Frameworks */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-Crossed/Pods-Crossed-frameworks.sh",
-				"${PODS_XCFRAMEWORKS_BUILD_DIR}/hermes-engine/Pre-built/hermes.framework/hermes",
-			);
-			name = "[CP] Embed Pods Frameworks";
-			outputPaths = (
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/hermes.framework",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Crossed/Pods-Crossed-frameworks.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
-		DFF2CDAD188C4AA43B05BAF4 /* [Expo] Configure project */ = {
+		C9DB6A862186941E3F4A73B6 /* [Expo] Configure project */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
@@ -375,7 +375,7 @@
 				13B07FBC1A68108700A75B9A /* AppDelegate.mm in Sources */,
 				13B07FC11A68108700A75B9A /* main.m in Sources */,
 				B18059E884C0ABDD17F3DC3D /* ExpoModulesProvider.swift in Sources */,
-				D5923A0B57DE4A238A715AA2 /* noop-file.swift in Sources */,
+				6A10136DE50848B3901D465A /* noop-file.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
