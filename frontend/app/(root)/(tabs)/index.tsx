@@ -16,6 +16,7 @@ import { useSound } from "~/hooks/useSound";
 import { pencilSounds, randomPencilKey } from '~/assets/sounds/randomButtonSound';
 import { useSoundPreference } from '~/hooks/useSoundPreference';
 import { useLogger } from '~/hooks/useLogs';
+import { useCancellationStore } from '~/hooks/useCancellationStore';
 import Toast from 'react-native-toast-message';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -40,6 +41,7 @@ export default function Home() {
     const [selectedGameMode, setSelectedGameMode] = React.useState<GameMode | null>(null);
     const { isSoundEnabled } = useSoundPreference();
     const { play } = useSound(pencilSounds, { enabled: isSoundEnabled });
+    const { state: cancellationState, completeCancellation } = useCancellationStore();
 
     const onRefresh = React.useCallback(async () => {
         setRefreshing(true);
@@ -104,6 +106,10 @@ export default function Home() {
     const hasActiveGame = Boolean(activeRoomForUser);
     const hasPendingGame = Boolean(pendingRoomForUser);
     const isSchedulingBlocked = hasActiveGame || hasPendingGame;
+    const isCancellationBlockingNavigation =
+        cancellationState.cancelledRoomId !== null &&
+        cancellationState.stage !== "idle" &&
+        activeRoomForUser?.id === cancellationState.cancelledRoomId;
 
     const handleGameModePress = React.useCallback((mode: GameMode) => {
         if (hasActiveGame || hasPendingGame) {
@@ -115,7 +121,7 @@ export default function Home() {
                 type: 'info'
             });
 
-            if (hasActiveGame && activeRoomForUser) {
+            if (hasActiveGame && activeRoomForUser && !isCancellationBlockingNavigation) {
                 router.replace(`/game?roomId=${activeRoomForUser.id}`);
             }
             return;
@@ -123,7 +129,7 @@ export default function Home() {
 
         setSelectedGameMode(mode);
         setDifficultyDialogVisible(true);
-    }, [activeRoomForUser, hasActiveGame, hasPendingGame, router]);
+    }, [activeRoomForUser, hasActiveGame, hasPendingGame, isCancellationBlockingNavigation, router]);
 
     const refreshRooms = React.useCallback(() => {
         refetchActiveRooms();
@@ -133,8 +139,20 @@ export default function Home() {
     useFocusEffect(React.useCallback(() => {
         refreshRooms();
 
-        if (hasActiveGame && activeRoomForUser) {
+        if (
+            hasActiveGame &&
+            activeRoomForUser &&
+            activeRoomForUser.status === 'playing' &&
+            !isCancellationBlockingNavigation
+        ) {
             router.replace(`/game?roomId=${activeRoomForUser.id}`);
+        }
+
+        if (
+            cancellationState.cancelledRoomId !== null &&
+            !hasActiveGame
+        ) {
+            completeCancellation(cancellationState.cancelledRoomId);
         }
 
         const intervalId = setInterval(() => {
@@ -144,7 +162,15 @@ export default function Home() {
         return () => {
             clearInterval(intervalId);
         };
-    }, [activeRoomForUser, hasActiveGame, refreshRooms, router]));
+    }, [
+        activeRoomForUser,
+        hasActiveGame,
+        refreshRooms,
+        router,
+        isCancellationBlockingNavigation,
+        cancellationState.cancelledRoomId,
+        completeCancellation,
+    ]));
 
 
     // Show loading state while any data is loading

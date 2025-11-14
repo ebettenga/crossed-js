@@ -18,6 +18,7 @@ import { SupportModal } from '../components/game/SupportModal';
 import { GameSummaryModal } from '../components/game/GameSummaryModal';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { showToast } from '~/components/shared/Toast';
+import { useCancellationStore } from '~/hooks/useCancellationStore';
 
 
 type MenuOption = {
@@ -31,7 +32,8 @@ const CLUE_DISPLAY_HEIGHT = 70;
 export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
     const insets = useSafeAreaInsets();
     const { height: windowHeight } = useWindowDimensions();
-    const { room: liveRoom, guess, refresh, forfeit, showGameSummary, onGameSummaryClose, revealedLetterIndex, isConnected } = useRoom(roomId);
+    const { room: liveRoom, guess, refresh, forfeit, showGameSummary, onGameSummaryClose, revealedLetterIndex, isConnected, clearRoomState } = useRoom(roomId);
+    const { state: cancellationState, startRedirect } = useCancellationStore();
     const { data: currentUser } = useUser();
     const router = useRouter();
     const [selectedCell, setSelectedCell] = useState<Square | null>(null);
@@ -51,10 +53,14 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
     useEffect(() => {
         if (liveRoom) {
             setStableRoom(liveRoom);
+        } else {
+            setStableRoom(null);
         }
     }, [liveRoom]);
 
     const room = liveRoom ?? stableRoom;
+    const [navigatingHome, setNavigatingHome] = useState(false);
+    const isCancelledRoom = cancellationState.cancelledRoomId === roomId;
 
 
     useEffect(() => {
@@ -158,12 +164,19 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
             return;
         }
 
+
         if (room && room.id === roomId) {
             hasFallbackTriggeredRef.current = false;
             return;
         }
 
-        if (hasFallbackTriggeredRef.current) {
+
+
+        if (
+            hasFallbackTriggeredRef.current ||
+            isCancelledRoom ||
+            cancellationState.stage !== "idle"
+        ) {
             return;
         }
 
@@ -183,7 +196,7 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
                 fallbackTimeoutRef.current = null;
             }
         };
-    }, [room, roomId, router]);
+    }, [room, roomId, router, isCancelledRoom, cancellationState.stage]);
 
     useEffect(() => {
         return () => {
@@ -200,10 +213,10 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
 
 
     /*
-This useEffect is to move the cursor for the player if the letter gets filled in by someone else / the job
+    This useEffect is to move the cursor for the player if the letter gets filled in by someone else / the job
 
-TODO: figure out why there's a error happening with this hook not getting loaded
-*/
+    TODO: figure out why there's a error happening with this hook not getting loaded
+    */
     // useEffect(() => {
     //     if (!room?.board || !selectedCell) {
     //         return;
@@ -488,6 +501,47 @@ TODO: figure out why there's a error happening with this hook not getting loaded
         0,
         windowHeight - insets.top - insets.bottom - topSectionHeight - bottomSectionHeight
     );
+
+
+    const cancelRedirectTriggeredRef = useRef(false);
+
+    useEffect(() => {
+        if (!isCancelledRoom) {
+            cancelRedirectTriggeredRef.current = false;
+            if (navigatingHome) {
+                setNavigatingHome(false);
+            }
+            return;
+        }
+
+        if (cancelRedirectTriggeredRef.current || cancellationState.stage === 'redirecting') {
+            return;
+        }
+
+        cancelRedirectTriggeredRef.current = true;
+        setNavigatingHome(true);
+        startRedirect(roomId);
+        showToast(
+            'info',
+            cancellationState.message || 'Game cancelled.',
+            'Sending you home.',
+        );
+        clearRoomState();
+        router.replace('/(root)/(tabs)');
+    }, [
+        isCancelledRoom,
+        cancellationState.stage,
+        cancellationState.message,
+        navigatingHome,
+        startRedirect,
+        router,
+        roomId,
+        clearRoomState,
+    ]);
+
+    if (navigatingHome) {
+        return null;
+    }
 
     if (!room || room.id !== roomId) {
         return <LoadingGame />;

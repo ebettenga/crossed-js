@@ -1,4 +1,5 @@
 import { And, DataSource, In, LessThan, Not } from "typeorm";
+import type { JobType } from "bullmq";
 import { JoinMethod, Room } from "../entities/Room";
 import { User } from "../entities/User";
 import { CrosswordService } from "./CrosswordService";
@@ -361,8 +362,8 @@ export class RoomService {
     room.status = "finished";
     room.completed_at = new Date();
 
-    // If game was forfeited, adjust scores
-    if (forfeitedBy !== undefined) {
+    // If game was forfeited, adjust scores (but skip penalties for time trials)
+    if (forfeitedBy !== undefined && room.type !== "time_trial") {
       const minScore = Math.min(...Object.values(room.scores)) +
         config.game.points.forfeit;
       room.scores[forfeitedBy] = minScore;
@@ -492,6 +493,19 @@ export class RoomService {
       throw new Error("User is not a participant in this room");
     }
 
+    const shouldDeleteRoom = !(await this.hasRecordedCorrectGuess(room));
+
+    if (shouldDeleteRoom) {
+      fastify.log.info(
+        { roomId: room.id },
+        "Deleting unplayed room after forfeit",
+      );
+      await this.cleanupUnplayedRoom(room);
+      room.status = "cancelled";
+      room.completed_at = null;
+      return room;
+    }
+
     // Ensure game stats exist for all players before ending the game
     for (const player of room.players) {
       await this.ensureGameStatsEntry(room, player);
@@ -604,6 +618,79 @@ export class RoomService {
     // Check if all letters have been found
     // found_letters is a string array where '*' represents unfound letters
     return !room.found_letters.includes("*");
+  }
+
+  private async hasRecordedCorrectGuess(room: Room): Promise<boolean> {
+    const cachedGameInfo = await this.redisService.getGame(room.id.toString());
+
+    if (cachedGameInfo?.userGuessCounts) {
+      const hasCorrectGuess = Object.values(cachedGameInfo.userGuessCounts)
+        .some((counts) => (counts?.correct || 0) > 0);
+      if (hasCorrectGuess) {
+        return true;
+      }
+    }
+
+    const statsSource = room.stats && room.stats.length > 0
+      ? room.stats
+      : await this.ormConnection.getRepository(GameStats).find({
+        where: { roomId: room.id },
+        select: ["correctGuesses"],
+      });
+
+    return statsSource?.some((stat) => stat.correctGuesses > 0) || false;
+  }
+
+  private async emitGameCancelled(room: Room, message: string): Promise<void> {
+    if (!room.players || room.players.length === 0) {
+      return;
+    }
+
+    const payload = {
+      message,
+      roomId: room.id,
+    };
+
+    for (const player of room.players) {
+      fastify.io.to(`user_${player.id}`).emit("game_cancelled", payload);
+    }
+
+    fastify.io.to(room.id.toString()).emit("game_cancelled", payload);
+  }
+
+  private async removeAutoRevealJobsForRoom(roomId: number): Promise<void> {
+    try {
+      const jobStates: JobType[] = ["waiting", "delayed", "paused"];
+      const jobs = await gameAutoRevealQueue.getJobs(
+        jobStates,
+        0,
+        -1,
+        false,
+      );
+
+      await Promise.all(
+        jobs
+          .filter((job) => job?.data?.roomId === roomId)
+          .map((job) => job.remove()),
+      );
+    } catch (error) {
+      fastify.log.error(
+        { err: error, roomId },
+        "Failed to clear auto-reveal jobs for room",
+      );
+    }
+  }
+
+  private async cleanupUnplayedRoom(room: Room): Promise<void> {
+    await this.emitGameCancelled(room, "Game cancelled");
+    await this.removeAutoRevealJobsForRoom(room.id);
+    await this.redisService.deleteKey(room.id.toString());
+
+    await this.ormConnection.getRepository(GameStats).delete({
+      roomId: room.id,
+    });
+
+    await this.ormConnection.getRepository(Room).remove(room);
   }
 
   async handleGuess(

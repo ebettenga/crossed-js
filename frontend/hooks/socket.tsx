@@ -9,6 +9,7 @@ import { useUser } from './users';
 import { post } from './api';
 import { showToast } from '~/components/shared/Toast';
 import { useActiveRooms } from './useActiveRooms';
+import { useCancellationStore } from './useCancellationStore';
 
 // Create a function to get a new socket instance with the current token
 const createSocketInstance = (token: string) => {
@@ -28,14 +29,12 @@ const createSocketInstance = (token: string) => {
 
 export const SocketContext = createContext<Socket | null>(null);
 
-interface RoomContextType {
+export const RoomContext = createContext<{
   room: Room | null;
   setRoom: (room: Room | null) => void;
-}
-
-export const RoomContext = createContext<RoomContextType>({
+}>({
   room: null,
-  setRoom: () => { },
+  setRoom: () => {},
 });
 
 export const SocketProvider = ({ children }: { children: ReactNode }) => {
@@ -208,7 +207,12 @@ export const RoomProvider = ({ children }: { children: ReactNode }) => {
   }, [socket, isConnected, currentUser, router]);
 
   return (
-    <RoomContext.Provider value={{ room, setRoom }}>
+    <RoomContext.Provider
+      value={{
+        room,
+        setRoom,
+      }}
+    >
       {children}
     </RoomContext.Provider>
   );
@@ -477,6 +481,7 @@ export const useRoom = (roomId?: number) => {
   const { socket, isConnected, error, emit } = useSocket();
   const router = useRouter();
   const { room, setRoom } = useContext(RoomContext);
+  const { queueCancellation } = useCancellationStore();
   const { data: currentUser } = useUser();
   const [showGameSummary, setShowGameSummary] = useState(true);
   const hasCheckedActiveGames = useRef(false);
@@ -603,6 +608,7 @@ export const useRoom = (roomId?: number) => {
         return;
       }
       setRoom(data.room);
+      queryClient.invalidateQueries({ queryKey: ['rooms', 'playing'] });
 
       if (currentUser) {
         setShowGameSummary(true);
@@ -627,12 +633,40 @@ export const useRoom = (roomId?: number) => {
       );
     }
 
+    const handleGameCancelled = (data: { message?: string, roomId?: number }) => {
+      console.log("Game cancelled event received", data, { roomId, currentRoomId: room?.id });
+      const cancelledRoomId = data.roomId !== undefined ? Number(data.roomId) : null;
+
+      if (roomId !== undefined && cancelledRoomId !== null && cancelledRoomId !== roomId) {
+        console.log("Ignoring cancellation for other room", cancelledRoomId, roomId);
+        return;
+      }
+
+      if (room?.id && cancelledRoomId !== null && room.id !== cancelledRoomId) {
+        console.log("Ignoring cancellation due to active room mismatch", room.id, cancelledRoomId);
+        return;
+      }
+
+      const toastMessage = data.message || 'Game cancelled';
+      showToast('info', toastMessage);
+
+      queueCancellation(cancelledRoomId, toastMessage);
+      guessQueue.current = [];
+      isProcessingGuess.current = false;
+      setRevealedLetterIndex(undefined);
+      queryClient.invalidateQueries({ queryKey: ['rooms', 'playing'] });
+      queryClient.invalidateQueries({ queryKey: ['rooms', 'pending'] });
+      refetchActiveRooms();
+      setShowGameSummary(false);
+    };
+
     socket?.on("room", handleRoom);
     socket?.once("game_started", handleGameStarted);
     socket?.on("game_inactive", handleGameInactive);
     socket?.on("game_forfeited", handleGameForfeited);
     socket?.on("rating_change", handleRatingChange);
     socket?.on("room_cancelled", handleRoomCancelled);
+    socket?.on("game_cancelled", handleGameCancelled);
 
     return () => {
       socket?.off("room", handleRoom);
@@ -641,8 +675,9 @@ export const useRoom = (roomId?: number) => {
       socket?.off("game_forfeited", handleGameForfeited);
       socket?.off("rating_change", handleRatingChange);
       socket?.off("room_cancelled", handleRoomCancelled);
+      socket?.off("game_cancelled", handleGameCancelled);
     };
-  }, [socket, isConnected, roomId, currentUser]);
+  }, [socket, isConnected, roomId, currentUser, room, queryClient, refetchActiveRooms, setRoom, queueCancellation]);
 
   // When we (re)connect, attempt to flush any queued guesses
   useEffect(() => {
@@ -679,6 +714,10 @@ export const useRoom = (roomId?: number) => {
     emit("forfeit", JSON.stringify({ roomId }));
   }, [emit]);
 
+  const clearRoomState = useCallback(() => {
+    setRoom(null);
+  }, [setRoom]);
+
   return {
     room,
     guess,
@@ -690,6 +729,7 @@ export const useRoom = (roomId?: number) => {
     showGameSummary,
     onGameSummaryClose: handleGameSummaryClose,
     revealedLetterIndex,
+    clearRoomState,
   };
 };
 

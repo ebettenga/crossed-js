@@ -9,6 +9,7 @@ import { useFonts } from "expo-font";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { PortalHost } from '@rn-primitives/portal';
 import { RoomProvider, SocketProvider } from '~/hooks/socket';
+import { CancellationProvider } from '~/hooks/useCancellationStore';
 import { ChallengeProvider } from '~/hooks/useChallenge';
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useUser } from "~/hooks/users";
@@ -419,13 +420,15 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <SocketProvider>
-        <RoomProvider>
-          <ChallengeProvider>
-            <AppContent />
-            <IncomingChallengeModal />
-            <Toast />
-          </ChallengeProvider>
-        </RoomProvider>
+        <CancellationProvider>
+          <RoomProvider>
+            <ChallengeProvider>
+              <AppContent />
+              <IncomingChallengeModal />
+              <Toast />
+            </ChallengeProvider>
+          </RoomProvider>
+        </CancellationProvider>
       </SocketProvider>
     </QueryClientProvider>
   );
