@@ -882,7 +882,7 @@ describe("RoomService integration", () => {
   // forfeitGame Tests
   // ============================================================================
   describe("forfeitGame", () => {
-    it("allows a participant to forfeit a game", async () => {
+    it("removes an unplayed 1v1 game when a participant forfeits", async () => {
       const user1 = await createUser();
       const user2 = await createUser();
       await createCrossword();
@@ -899,7 +899,12 @@ describe("RoomService integration", () => {
 
       const forfeited = await service.forfeitGame(room.id, user1.id);
 
-      expect(forfeited.status).toBe("finished");
+      expect(forfeited.status).toBe("cancelled");
+
+      const persisted = await dataSource
+        .getRepository(Room)
+        .findOneBy({ id: room.id });
+      expect(persisted).toBeNull();
     });
 
     it("throws error when room not found", async () => {
@@ -938,6 +943,8 @@ describe("RoomService integration", () => {
         });
       await service.joinExistingRoom(reloadedRoom!, user2.id);
 
+      await service.handleGuess(room.id, user2.id, 0, 0, "A");
+
       await service.forfeitGame(room.id, user1.id);
 
       const stats = await dataSource.getRepository(GameStats).find({
@@ -961,6 +968,8 @@ describe("RoomService integration", () => {
           relations: ["players", "crossword"],
         });
       await service.joinExistingRoom(reloadedRoom!, user2.id);
+
+      await service.handleGuess(room.id, user2.id, 0, 0, "A");
 
       await service.forfeitGame(room.id, user1.id);
 
@@ -1078,6 +1087,94 @@ describe("RoomService integration", () => {
         ([eventName]) => eventName === "game_cancelled",
       );
       expect(cancelEvent).toBeUndefined();
+    });
+
+    it("keeps free4all games running with three players when the first player forfeits before any answers", async () => {
+      const players = await Promise.all([
+        createUser(),
+        createUser(),
+        createUser(),
+        createUser(),
+      ]);
+      await createCrossword();
+      const service = createRoomService();
+
+      const room = await service.createRoom(players[0].id, "easy", "free4all");
+      const roomRepo = dataSource.getRepository(Room);
+
+      const reloadRoom = async () => await roomRepo.findOne({
+        where: { id: room.id },
+        relations: ["players", "crossword"],
+      });
+
+      let reloaded = await reloadRoom();
+      await service.joinExistingRoom(reloaded!, players[1].id);
+      reloaded = await reloadRoom();
+      await service.joinExistingRoom(reloaded!, players[2].id);
+      reloaded = await reloadRoom();
+      await service.joinExistingRoom(reloaded!, players[3].id);
+
+      const updatedRoom = await service.forfeitGame(room.id, players[0].id);
+
+      const expectedPlayers = [players[1].id, players[2].id, players[3].id]
+        .sort((a, b) => a - b);
+      expect(updatedRoom.players.map((p) => p.id).sort((a, b) => a - b))
+        .toEqual(expectedPlayers);
+
+      const persistedRoom = await reloadRoom();
+      expect(persistedRoom).not.toBeNull();
+      expect(persistedRoom?.status).toBe("playing");
+      expect(persistedRoom?.players.map((p) => p.id).sort((a, b) => a - b))
+        .toEqual(expectedPlayers);
+      expect(persistedRoom?.scores[players[0].id]).toBeUndefined();
+
+      const cancelEvent = emitSpy.mock.calls.find(
+        ([eventName]) => eventName === "game_cancelled",
+      );
+      expect(cancelEvent).toBeUndefined();
+    });
+
+    it("cancels free4all games when two players forfeit before any answers", async () => {
+      const players = await Promise.all([
+        createUser(),
+        createUser(),
+        createUser(),
+        createUser(),
+      ]);
+      await createCrossword();
+      const service = createRoomService();
+
+      const room = await service.createRoom(players[0].id, "easy", "free4all");
+      const roomRepo = dataSource.getRepository(Room);
+
+      const reloadRoom = async () => await roomRepo.findOne({
+        where: { id: room.id },
+        relations: ["players", "crossword"],
+      });
+
+      let reloaded = await reloadRoom();
+      await service.joinExistingRoom(reloaded!, players[1].id);
+      reloaded = await reloadRoom();
+      await service.joinExistingRoom(reloaded!, players[2].id);
+      reloaded = await reloadRoom();
+      await service.joinExistingRoom(reloaded!, players[3].id);
+
+      await service.forfeitGame(room.id, players[0].id);
+      emitSpy.mockClear();
+
+      const cancelledRoom = await service.forfeitGame(room.id, players[1].id);
+
+      const persistedRoom = await roomRepo.findOneBy({ id: room.id });
+      expect(persistedRoom).toBeNull();
+      expect(cancelledRoom.status).toBe("cancelled");
+
+      expect(emitSpy).toHaveBeenCalledWith(
+        "game_cancelled",
+        expect.objectContaining({
+          message: "Game cancelled",
+          roomId: room.id,
+        }),
+      );
     });
 
     it("deletes unplayed multiplayer rooms on forfeit and emits cancellation event", async () => {

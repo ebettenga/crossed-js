@@ -498,8 +498,16 @@ export class RoomService {
     }
 
     const hasRecordedGuess = await this.hasRecordedCorrectGuess(room);
-    const shouldDeleteRoom = !hasRecordedGuess &&
-      (room.type === "time_trial" || room.status !== "playing");
+    const isUnplayed = !hasRecordedGuess;
+
+    if (room.type === "free4all" && isUnplayed) {
+      return await this.handleFreeForAllForfeit(room, userId);
+    }
+
+    const shouldDeleteRoom = isUnplayed &&
+      (room.type === "time_trial" ||
+        room.type === "1v1" ||
+        room.status !== "playing");
 
     if (shouldDeleteRoom) {
       fastify.log.info(
@@ -713,6 +721,51 @@ export class RoomService {
     });
 
     await this.ormConnection.getRepository(Room).remove(room);
+  }
+
+  private async handleFreeForAllForfeit(
+    room: Room,
+    forfeitingUserId: number,
+  ): Promise<Room> {
+    const remainingPlayers = room.players.filter((player) =>
+      player.id !== forfeitingUserId
+    );
+
+    if (remainingPlayers.length === room.players.length) {
+      return room;
+    }
+
+    room.players = remainingPlayers;
+    delete room.scores[forfeitingUserId];
+    room.markModified();
+    await this.ormConnection.getRepository(Room).save(room);
+
+    const cachedGameInfo = await this.redisService.getGame(room.id.toString());
+    if (cachedGameInfo) {
+      delete cachedGameInfo.scores[forfeitingUserId];
+      if (cachedGameInfo.userGuessCounts) {
+        delete cachedGameInfo.userGuessCounts[forfeitingUserId];
+      }
+      if (cachedGameInfo.correctGuessDetails) {
+        delete cachedGameInfo.correctGuessDetails[forfeitingUserId];
+      }
+      await this.redisService.cacheGame(room.id.toString(), cachedGameInfo);
+    }
+
+    await this.ormConnection.getRepository(GameStats).delete({
+      roomId: room.id,
+      userId: forfeitingUserId,
+    });
+
+    if (room.players.length >= 3) {
+      fastify.io.to(room.id.toString()).emit("room", room.toJSON());
+      return room;
+    }
+
+    await this.cleanupUnplayedRoom(room);
+    room.status = "cancelled";
+    room.completed_at = null;
+    return room;
   }
 
   async handleGuess(
