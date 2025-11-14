@@ -1,9 +1,9 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, TouchableOpacity, Pressable, ScrollView, useColorScheme, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, Pressable, ScrollView, useColorScheme, ActivityIndicator, Linking } from 'react-native';
 import { Dialog, DialogContent } from '~/components/ui/dialog';
 import { Room, SquareType } from '~/hooks/useJoinRoom';
 import { useUser } from '~/hooks/users';
-import { Home, Star, ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Swords, Share2 } from 'lucide-react-native';
+import { Home, Star, ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Swords, Reddit, Facebook, Instagram, Twitter } from 'lucide-react-native';
 import { useRateDifficulty, useRateQuality } from '~/hooks/useRatings';
 import { useTimeTrialLeaderboard } from '~/hooks/useLeaderboard';
 import { useGameStats, GameStats } from '~/hooks/useGameStats';
@@ -22,6 +22,7 @@ import { useJoinRoom } from '~/hooks/useJoinRoom';
 import { useRouter } from 'expo-router';
 import { showToast } from '~/components/shared/Toast';
 import * as WebBrowser from 'expo-web-browser';
+import * as Clipboard from 'expo-clipboard';
 import { config } from '~/config/config';
 
 const formatMs = (ms: number | null) => {
@@ -112,7 +113,18 @@ const toTitleCase = (value: string | undefined) => {
         .join(' ');
 };
 
-const formatStandingsBlock = (room: Room) => {
+const truncateForTweet = (text: string, maxLength: number = 270) => {
+    if (!text) return '';
+    if (text.length <= maxLength) return text;
+    return `${text.slice(0, maxLength - 1)}…`;
+};
+
+interface StandingsBlock {
+    markdown: string;
+    plain: string;
+}
+
+const formatStandingsBlock = (room: Room): StandingsBlock | null => {
     if (!room.players?.length) return null;
     const sortedPlayers = [...room.players].sort((a, b) =>
         (room.scores[b.id] || 0) - (room.scores[a.id] || 0)
@@ -127,18 +139,21 @@ const formatStandingsBlock = (room: Room) => {
     if (sortedPlayers.length > limit) {
         lines.push('...more players');
     }
-    return ['```', '#  Player          Score', ...lines, '```'].join('\n');
+    const header = '#  Player          Score';
+    const markdown = ['```', header, ...lines, '```'].join('\n');
+    const plain = [header, ...lines].join('\n');
+    return { markdown, plain };
 };
 
-type RedditSharePayload = { title: string; text: string };
+type SharePayload = { title: string; markdown: string; plain: string };
 
-const createRedditSharePayload = (
+const createSharePayload = (
     room: Room,
     currentUserId: number,
     currentUsername: string,
     gameStats: GameStats[] | undefined,
     redditCommunity: string
-): RedditSharePayload | null => {
+): SharePayload | null => {
     const playerStats = gameStats?.find(stat => stat.userId === currentUserId);
 
     const difficultyLabel = toTitleCase(room.difficulty);
@@ -166,58 +181,87 @@ const createRedditSharePayload = (
     const titleSuffix = metaParts.length ? ` — ${metaParts.join(' • ')}` : '';
     const title = `${emoji} ${room.crossword?.title || 'Crossed run'}${titleSuffix}`;
 
-    const lines: string[] = [
+    const markdownLines: string[] = [
         `**Mode:** ${modeLabel}`,
         `**Difficulty:** ${difficultyLabel || '—'}`,
         `**Puzzle:** ${room.crossword?.title || 'Unknown puzzle'}${room.crossword?.author ? ` by ${room.crossword.author}` : ''}`,
     ];
 
+    const plainLines: string[] = [
+        `Mode: ${modeLabel}`,
+        `Difficulty: ${difficultyLabel || '—'}`,
+        `Puzzle: ${room.crossword?.title || 'Unknown puzzle'}${room.crossword?.author ? ` by ${room.crossword.author}` : ''}`,
+    ];
+
     if (formattedDuration && formattedDuration !== '—') {
-        lines.push(`**Time:** ${formattedDuration}`);
+        markdownLines.push(`**Time:** ${formattedDuration}`);
+        plainLines.push(`Time: ${formattedDuration}`);
     }
 
-    lines.push(
+    markdownLines.push(
         '',
         `**My Run (${currentUsername})**`,
         `- Score: ${userScore} pts`,
     );
+    plainLines.push(
+        '',
+        `My Run (${currentUsername})`,
+        `- Score: ${userScore} pts`,
+    );
 
     if (playerStats && accuracy !== null) {
-        lines.push(`- Accuracy: ${accuracy.toFixed(1)}% (${playerStats.correctGuesses}/${totalGuesses || 0})`);
+        const accuracyLine = `- Accuracy: ${accuracy.toFixed(1)}% (${playerStats.correctGuesses}/${totalGuesses || 0})`;
+        markdownLines.push(accuracyLine);
+        plainLines.push(accuracyLine);
     }
 
     if (playerStats && gridCompletion !== null) {
-        lines.push(`- Grid Solved: ${gridCompletion.toFixed(1)}%`);
+        const gridLine = `- Grid Solved: ${gridCompletion.toFixed(1)}%`;
+        markdownLines.push(gridLine);
+        plainLines.push(gridLine);
     }
 
     if (playerStats && contribution !== null && gameStats && gameStats.length > 1) {
-        lines.push(`- Contribution: ${contribution.toFixed(1)}%`);
+        const contributionLine = `- Contribution: ${contribution.toFixed(1)}%`;
+        markdownLines.push(contributionLine);
+        plainLines.push(contributionLine);
     }
 
     if (playerStats && playerStats.eloAtGame !== undefined && playerStats.eloAtGame !== null) {
         if (typeof playerStats.eloChange === 'number' && playerStats.eloChange !== 0) {
-            lines.push(`- Rating: ${playerStats.eloAtGame} (${playerStats.eloChange > 0 ? '+' : ''}${playerStats.eloChange})`);
+            const ratingLine = `- Rating: ${playerStats.eloAtGame} (${playerStats.eloChange > 0 ? '+' : ''}${playerStats.eloChange})`;
+            markdownLines.push(ratingLine);
+            plainLines.push(ratingLine);
         } else {
-            lines.push(`- Rating: ${playerStats.eloAtGame}`);
+            const ratingLine = `- Rating: ${playerStats.eloAtGame}`;
+            markdownLines.push(ratingLine);
+            plainLines.push(ratingLine);
         }
     }
 
     if (outcome) {
-        lines.push(`- Result: ${outcome.isWinner ? 'Win' : 'Loss'} (${(outcome.isWinner ? '+' : '-')}${Math.abs(outcome.margin)} pts)`);
+        const resultLine = `- Result: ${outcome.isWinner ? 'Win' : 'Loss'} (${(outcome.isWinner ? '+' : '-')}${Math.abs(outcome.margin)} pts)`;
+        markdownLines.push(resultLine);
+        plainLines.push(resultLine);
         if (room.type === '2v2' && outcome.teamScore !== undefined && outcome.opponentScore !== undefined) {
-            lines.push(`- Team Score: ${outcome.teamScore} - ${outcome.opponentScore}`);
+            const teamLine = `- Team Score: ${outcome.teamScore} - ${outcome.opponentScore}`;
+            markdownLines.push(teamLine);
+            plainLines.push(teamLine);
         }
     }
 
     if (standingsBlock) {
-        lines.push('', '**Final Standings**', standingsBlock);
+        markdownLines.push('', '**Final Standings**', standingsBlock.markdown);
+        plainLines.push('', 'Final Standings', standingsBlock.plain);
     }
 
-    lines.push('', `Come play with us in ${redditCommunity}!`);
+    markdownLines.push('', `Come play with us in ${redditCommunity}!`);
+    plainLines.push('', `Come play with us in ${redditCommunity}!`);
 
     return {
         title,
-        text: lines.join('\n'),
+        markdown: markdownLines.join('\n'),
+        plain: plainLines.join('\n'),
     };
 };
 
@@ -606,6 +650,9 @@ export const GameSummaryModal: React.FC<GameSummaryModalProps> = ({
     const isDarkMode = colorScheme === 'dark';
     const homeIconColor = isDarkMode ? '#FFFFFF' : '#343434';
     const redditBrandColor = config.social?.reddit?.color || '#FF4500';
+    const facebookBrandColor = config.social?.facebook?.color || '#1877F2';
+    const twitterBrandColor = config.social?.twitter?.color || '#1DA1F2';
+    const instagramBrandColor = config.social?.instagram?.color || '#E4405F';
     const rawRedditCommunity = config.social?.reddit?.community || 'r/crossed_mobile';
     const normalizedRedditCommunity = rawRedditCommunity.startsWith('r/')
         ? rawRedditCommunity
@@ -634,11 +681,11 @@ export const GameSummaryModal: React.FC<GameSummaryModalProps> = ({
         5
     );
 
-    const redditSharePayload = useMemo(() => {
+    const sharePayload = useMemo(() => {
         if (!room || !currentUser?.id || !currentUser?.username) {
             return null;
         }
-        return createRedditSharePayload(
+        return createSharePayload(
             room,
             currentUser.id,
             currentUser.username,
@@ -646,7 +693,7 @@ export const GameSummaryModal: React.FC<GameSummaryModalProps> = ({
             normalizedRedditCommunity
         );
     }, [room, currentUser?.id, currentUser?.username, gameStats, normalizedRedditCommunity]);
-    const isShareDisabled = statsLoading || !redditSharePayload;
+    const isShareDisabled = statsLoading || !sharePayload;
 
     if (!room || !currentUser) return null;
 
@@ -792,7 +839,7 @@ export const GameSummaryModal: React.FC<GameSummaryModalProps> = ({
     };
 
     const handleShareToReddit = async () => {
-        if (!redditSharePayload) {
+        if (!sharePayload) {
             showToast('info', 'Stats are still loading. Please try again in a moment.');
             return;
         }
@@ -802,8 +849,8 @@ export const GameSummaryModal: React.FC<GameSummaryModalProps> = ({
             if (redditCommunitySlug) {
                 params.append('sr', redditCommunitySlug);
             }
-            params.append('title', redditSharePayload.title);
-            params.append('text', redditSharePayload.text);
+            params.append('title', sharePayload.title);
+            params.append('text', sharePayload.markdown);
             const separator = redditSubmitUrl.includes('?') ? '&' : '?';
             const targetUrl = `${redditSubmitUrl}${separator}${params.toString()}`;
             await WebBrowser.openBrowserAsync(targetUrl);
@@ -811,6 +858,83 @@ export const GameSummaryModal: React.FC<GameSummaryModalProps> = ({
         } catch (error) {
             logger.mutate({ log: { context: 'handleShareToReddit failed', error }, severity: 'error' });
             showToast('error', 'Unable to open Reddit right now.');
+        }
+    };
+
+    const handleShareToFacebook = async () => {
+        if (!sharePayload) {
+            showToast('info', 'Stats are still loading. Please try again in a moment.');
+            return;
+        }
+
+        try {
+            const targetLink = config.social?.facebook?.url || 'https://www.facebook.com/';
+            const params = new URLSearchParams();
+            params.append('u', targetLink);
+            params.append('quote', sharePayload.plain);
+            const url = `https://www.facebook.com/sharer/sharer.php?${params.toString()}`;
+            await WebBrowser.openBrowserAsync(url);
+            showToast('success', 'Opening Facebook composer...');
+        } catch (error) {
+            logger.mutate({ log: { context: 'handleShareToFacebook failed', error }, severity: 'error' });
+            showToast('error', 'Unable to open Facebook right now.');
+        }
+    };
+
+    const handleShareToTwitter = async () => {
+        if (!sharePayload) {
+            showToast('info', 'Stats are still loading. Please try again in a moment.');
+            return;
+        }
+
+        try {
+            const params = new URLSearchParams();
+            const text = truncateForTweet(`${sharePayload.title}\n\n${sharePayload.plain}`);
+            params.append('text', text);
+            if (config.social?.twitter?.url) {
+                params.append('url', config.social.twitter.url);
+            }
+            const url = `https://twitter.com/intent/tweet?${params.toString()}`;
+            await WebBrowser.openBrowserAsync(url);
+            showToast('success', 'Opening X composer...');
+        } catch (error) {
+            logger.mutate({ log: { context: 'handleShareToTwitter failed', error }, severity: 'error' });
+            showToast('error', 'Unable to open X right now.');
+        }
+    };
+
+    const handleShareToInstagram = async () => {
+        if (!sharePayload) {
+            showToast('info', 'Stats are still loading. Please try again in a moment.');
+            return;
+        }
+
+        try {
+            await Clipboard.setStringAsync(`${sharePayload.title}\n\n${sharePayload.plain}`);
+            showToast('success', 'Copied stats! Paste into your Instagram post.');
+        } catch (error) {
+            logger.mutate({ log: { context: 'copyStatsForInstagram failed', error }, severity: 'error' });
+            showToast('error', 'Unable to copy stats right now.');
+            return;
+        }
+
+        try {
+            const instagramDeepLink = 'instagram://app';
+            const canOpen = await Linking.canOpenURL(instagramDeepLink);
+            if (canOpen) {
+                await Linking.openURL(instagramDeepLink);
+                return;
+            }
+        } catch (error) {
+            logger.mutate({ log: { context: 'openInstagramDeepLink failed', error }, severity: 'warn' });
+        }
+
+        try {
+            const fallbackUrl = config.social?.instagram?.url || 'https://www.instagram.com/';
+            await WebBrowser.openBrowserAsync(fallbackUrl);
+        } catch (error) {
+            logger.mutate({ log: { context: 'handleShareToInstagram fallback failed', error }, severity: 'error' });
+            showToast('error', 'Unable to open Instagram right now.');
         }
     };
 
@@ -989,41 +1113,55 @@ export const GameSummaryModal: React.FC<GameSummaryModalProps> = ({
                             </View>
                         )}
 
-                        <View
-                            className={cn(
-                                "border-[1.5px] border-[#343434] dark:border-neutral-600 bg-[#FAFAF7] dark:bg-neutral-800 w-full h-16 rounded-sm mt-2",
-                                isShareDisabled && "opacity-75"
-                            )}
-                        >
-                            <Pressable
-                                onPress={handleShareToReddit}
-                                disabled={isShareDisabled}
-                                style={({ pressed }) => ({
-                                    backgroundColor: pressed
-                                        ? '#F0F0ED'
-                                        : '#FAFAF7'
-                                })}
-                                className={cn(
-                                    "flex-1 justify-center items-center relative dark:bg-neutral-800",
-                                    "active:bg-[#F0F0ED] active:dark:bg-neutral-700",
-                                )}
-                            >
-                                <View className="w-full h-full flex flex-row items-center justify-center gap-3 px-4">
-                                    {statsLoading ? (
-                                        <ActivityIndicator size="small" color={redditBrandColor} />
-                                    ) : (
-                                        <Share2 color={redditBrandColor} />
+                        <View className="flex-row gap-2 mt-2">
+                            {[
+                                {
+                                    key: 'reddit',
+                                    Icon: Reddit,
+                                    color: redditBrandColor,
+                                    onPress: handleShareToReddit,
+                                },
+                                {
+                                    key: 'facebook',
+                                    Icon: Facebook,
+                                    color: facebookBrandColor,
+                                    onPress: handleShareToFacebook,
+                                },
+                                {
+                                    key: 'twitter',
+                                    Icon: Twitter,
+                                    color: twitterBrandColor,
+                                    onPress: handleShareToTwitter,
+                                },
+                                {
+                                    key: 'instagram',
+                                    Icon: Instagram,
+                                    color: instagramBrandColor,
+                                    onPress: handleShareToInstagram,
+                                },
+                            ].map(({ key, Icon, color, onPress }) => (
+                                <Pressable
+                                    key={key}
+                                    onPress={onPress}
+                                    disabled={isShareDisabled}
+                                    style={({ pressed }) => ({
+                                        backgroundColor: pressed
+                                            ? '#F0F0ED'
+                                            : '#FAFAF7'
+                                    })}
+                                    className={cn(
+                                        "flex-1 h-16 border-[1.5px] border-[#343434] dark:border-neutral-600 rounded-sm items-center justify-center dark:bg-neutral-800",
+                                        isShareDisabled && "opacity-75",
+                                        "active:bg-[#F0F0ED] active:dark:bg-neutral-700",
                                     )}
-                                    <View className="flex flex-col items-start">
-                                        <Text className="text-base font-rubik text-[#2B2B2B] dark:text-[#DDE1E5]">
-                                            Share to Reddit
-                                        </Text>
-                                        <Text className="text-xs font-rubik text-[#666666] dark:text-neutral-400">
-                                            {normalizedRedditCommunity}
-                                        </Text>
-                                    </View>
-                                </View>
-                            </Pressable>
+                                >
+                                    {statsLoading ? (
+                                        <ActivityIndicator size="small" color={color} />
+                                    ) : (
+                                        <Icon color={color} />
+                                    )}
+                                </Pressable>
+                            ))}
                         </View>
 
                         <View
