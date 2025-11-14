@@ -17,6 +17,13 @@ type ChallengeNotificationPayload = {
   context?: string;
 };
 
+type ChallengeAcceptedNotificationPayload = {
+  challengerId: number;
+  challengedId: number;
+  roomId: number;
+  difficulty: string;
+};
+
 type NotificationsConfig = {
   expo: {
     enabled: boolean;
@@ -33,6 +40,10 @@ type NotificationsConfig = {
       body?: string;
     };
     challengeReceived?: {
+      title?: string;
+      body?: string;
+    };
+    challengeAccepted?: {
       title?: string;
       body?: string;
     };
@@ -67,6 +78,10 @@ const mergeNotificationsConfig = (
       challengeReceived: {
         ...(base.templates?.challengeReceived ?? {}),
         ...(overrides.templates?.challengeReceived ?? {}),
+      },
+      challengeAccepted: {
+        ...(base.templates?.challengeAccepted ?? {}),
+        ...(overrides.templates?.challengeAccepted ?? {}),
       },
     },
   };
@@ -143,6 +158,28 @@ export class NotificationService {
     }
   }
 
+  async notifyChallengeAccepted(
+    payload: ChallengeAcceptedNotificationPayload,
+  ): Promise<ExpoPushTicket[] | void> {
+    if (!this.settings.expo.enabled) {
+      this.logger.info(
+        { event: "notifications.challenge_accepted", reason: "disabled" },
+        "Skipping challenge accepted notification because notifications are disabled.",
+      );
+      return;
+    }
+
+    try {
+      const tickets = await this.sendChallengeAcceptedNotification(payload);
+      return tickets;
+    } catch (error) {
+      this.logger.error(
+        { err: error, event: "notifications.challenge_accepted" },
+        "Failed to send challenge accepted notification.",
+      );
+    }
+  }
+
   private async sendFriendRequestNotification(
     { senderId, receiverId }: FriendRequestPayload,
   ): Promise<ExpoPushTicket[] | void> {
@@ -213,6 +250,106 @@ export class NotificationService {
         type: "friend_request",
         senderId,
         receiverId,
+      },
+    }));
+
+    if (messages.length === 0) {
+      return;
+    }
+
+    return this.dispatch(messages);
+  }
+
+  private async sendChallengeAcceptedNotification(
+    {
+      challengerId,
+      challengedId,
+      roomId,
+      difficulty,
+    }: ChallengeAcceptedNotificationPayload,
+  ): Promise<ExpoPushTicket[] | void> {
+    if (!this.expo) {
+      this.logger.info(
+        {
+          event: "notifications.challenge_accepted",
+          reason: "expo_not_configured",
+        },
+        "Expo client not configured. Skipping notification.",
+      );
+      return;
+    }
+
+    const userRepository = this.ormConnection.getRepository(User);
+
+    const [challenger, challenged] = await Promise.all([
+      userRepository
+        .createQueryBuilder("user")
+        .select(["user.id", "user.username"])
+        .addSelect("user.attributes")
+        .where("user.id = :challengerId", { challengerId })
+        .getOne(),
+      userRepository.findOne({
+        where: { id: challengedId },
+        select: ["id", "username"],
+      }),
+    ]);
+
+    if (!challenger) {
+      this.logger.warn(
+        {
+          event: "notifications.challenge_accepted",
+          reason: "challenger_missing",
+          challengerId,
+        },
+        "Challenger not found; cannot send challenge accepted notification.",
+      );
+      return;
+    }
+
+    const tokens = this.extractExpoTokens(challenger.attributes);
+    if (tokens.length === 0) {
+      this.logger.debug(
+        {
+          event: "notifications.challenge_accepted",
+          reason: "no_tokens",
+          challengerId,
+        },
+        "No Expo push tokens for challenger; skipping challenge accepted notification.",
+      );
+      return;
+    }
+
+    const challengedName = challenged?.username || "Your friend";
+    const title = this.settings.templates?.challengeAccepted?.title ||
+      "Challenge Accepted";
+    const bodyTemplate = this.settings.templates?.challengeAccepted?.body ||
+      "{{challenged}} accepted your {{difficulty}} challenge";
+    const difficultyLabel =
+      difficulty.charAt(0).toUpperCase() + difficulty.slice(1);
+    const body = bodyTemplate
+      .replace("{{challenged}}", challengedName)
+      .replace("{{difficulty}}", difficultyLabel);
+
+    const navigate = {
+      pathname: "/game",
+      params: { roomId },
+    };
+
+    const url = `/game?roomId=${roomId}`;
+
+    const messages: ExpoPushMessage[] = tokens.map((token) => ({
+      to: token,
+      sound: this.settings.defaults?.sound ?? "default",
+      title,
+      body,
+      data: {
+        type: "challenge_accepted",
+        roomId,
+        challengerId,
+        challengedId,
+        difficulty,
+        navigate,
+        url,
       },
     }));
 

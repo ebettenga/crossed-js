@@ -26,6 +26,8 @@ export const commonConfig = {
   social: {
     reddit: {
       url: "https://www.reddit.com/user/Crossed_Mobile_Game/",
+      community: "r/crossed_mobile",
+      submitUrl: "https://www.reddit.com/submit",
       color: "#FF4500",
     },
     facebook: {

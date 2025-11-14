@@ -259,7 +259,11 @@ export class RoomService {
       await gameTimeoutQueue.remove(timeoutJobId);
       await gameTimeoutQueue.add(
         "game-timeout",
-        { roomId: savedRoom.id },
+        {
+          roomId: savedRoom.id,
+          reason: "pending_timeout",
+          message: "We couldn't find another player in time.",
+        },
         {
           delay: config.game.timeout.pending,
           jobId: timeoutJobId,
@@ -493,7 +497,17 @@ export class RoomService {
       throw new Error("User is not a participant in this room");
     }
 
-    const shouldDeleteRoom = !(await this.hasRecordedCorrectGuess(room));
+    const hasRecordedGuess = await this.hasRecordedCorrectGuess(room);
+    const isUnplayed = !hasRecordedGuess;
+
+    if (room.type === "free4all" && isUnplayed) {
+      return await this.handleFreeForAllForfeit(room, userId);
+    }
+
+    const shouldDeleteRoom = isUnplayed &&
+      (room.type === "time_trial" ||
+        room.type === "1v1" ||
+        room.status !== "playing");
 
     if (shouldDeleteRoom) {
       fastify.log.info(
@@ -638,7 +652,25 @@ export class RoomService {
         select: ["correctGuesses"],
       });
 
-    return statsSource?.some((stat) => stat.correctGuesses > 0) || false;
+    if (statsSource?.some((stat) => stat.correctGuesses > 0)) {
+      return true;
+    }
+
+    const hasFoundLetters = Array.isArray(room.found_letters) &&
+      room.found_letters.some((letter) =>
+        letter && letter !== "*" && letter !== "."
+      );
+    if (hasFoundLetters) {
+      return true;
+    }
+
+    const hasPositiveScore = room.scores &&
+      Object.values(room.scores).some((score) => Number(score) > 0);
+    if (hasPositiveScore) {
+      return true;
+    }
+
+    return false;
   }
 
   private async emitGameCancelled(room: Room, message: string): Promise<void> {
@@ -682,7 +714,6 @@ export class RoomService {
   }
 
   private async cleanupUnplayedRoom(room: Room): Promise<void> {
-    await this.emitGameCancelled(room, "Game cancelled");
     await this.removeAutoRevealJobsForRoom(room.id);
     await this.redisService.deleteKey(room.id.toString());
 
@@ -690,7 +721,65 @@ export class RoomService {
       roomId: room.id,
     });
 
+    const roomId = room.id;
     await this.ormConnection.getRepository(Room).remove(room);
+    room.id = roomId;
+    await this.emitGameCancelled(room, "Game cancelled");
+  }
+
+  private async handleFreeForAllForfeit(
+    room: Room,
+    forfeitingUserId: number,
+  ): Promise<Room> {
+    const remainingPlayers = room.players.filter((player) =>
+      player.id !== forfeitingUserId
+    );
+
+    if (remainingPlayers.length === room.players.length) {
+      return room;
+    }
+
+    room.players = remainingPlayers;
+    delete room.scores[forfeitingUserId];
+    room.markModified();
+    await this.ormConnection.getRepository(Room).save(room);
+
+    // TODO: do this better
+    const cachedGameInfo = await this.redisService.getGame(room.id.toString());
+    if (cachedGameInfo) {
+      delete cachedGameInfo.scores[forfeitingUserId];
+      if (cachedGameInfo.userGuessCounts) {
+        delete cachedGameInfo.userGuessCounts[forfeitingUserId];
+      }
+      if (cachedGameInfo.correctGuessDetails) {
+        delete cachedGameInfo.correctGuessDetails[forfeitingUserId];
+      }
+      await this.redisService.cacheGame(room.id.toString(), cachedGameInfo);
+    }
+
+    await this.ormConnection.getRepository(GameStats).delete({
+      roomId: room.id,
+      userId: forfeitingUserId,
+    });
+
+    if (room.players.length >= 3) {
+      fastify.io.to(room.id.toString()).emit("room", room.toJSON());
+      return room;
+    }
+
+    const hasProgress = await this.hasRecordedCorrectGuess(room);
+    if (room.players.length <= 2 && !hasProgress) {
+      await this.cleanupUnplayedRoom(room);
+      room.status = "cancelled";
+      room.completed_at = null;
+      return room;
+    }
+
+    room.status = "cancelled";
+    room.completed_at = new Date();
+    room.markModified();
+    await this.ormConnection.getRepository(Room).save(room);
+    return room;
   }
 
   async handleGuess(
@@ -969,6 +1058,21 @@ export class RoomService {
       },
     );
 
+    const timeoutJobId = `room-timeout-${savedRoom.id}`;
+    await gameTimeoutQueue.remove(timeoutJobId);
+    await gameTimeoutQueue.add(
+      "game-timeout",
+      {
+        roomId: savedRoom.id,
+        reason: "challenge_timeout",
+        message: "This challenge expired because it wasn't accepted in time.",
+      },
+      {
+        delay: config.game.timeout.challenge,
+        jobId: timeoutJobId,
+      },
+    );
+
     return savedRoom;
   }
 
@@ -1007,7 +1111,7 @@ export class RoomService {
 
     room.status = "cancelled";
     room.markModified();
-
+    await gameTimeoutQueue.remove(`room-timeout-${room.id}`);
     await this.ormConnection.getRepository(Room).save(room);
     return room;
   }

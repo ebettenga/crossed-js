@@ -713,7 +713,8 @@ describe("sockets routes", () => {
       status: "playing",
     });
 
-    const { app: secondaryApp, url: secondaryUrl } = await startAdditionalServer();
+    const { app: secondaryApp, url: secondaryUrl } =
+      await startAdditionalServer();
 
     const clientA = await connectClient(userA);
     const clientB = await connectClient(userB, secondaryUrl);
@@ -750,7 +751,7 @@ describe("sockets routes", () => {
     await disconnectClient(clientB);
   });
 
-  it("notifies players when a room is forfeited", async () => {
+  it("notifies players when an unplayed room is forfeited and cancelled", async () => {
     const userA = await createUser();
     const userB = await createUser();
     const room = await createRoomWithPlayers([userA, userB], {
@@ -759,17 +760,21 @@ describe("sockets routes", () => {
     const clientA = await connectClient(userA);
     const clientB = await connectClient(userB);
 
-    const roomPromise = waitForClientEvent<any>(clientA, "room");
-    const forfeitPromise = waitForClientEvent<any>(clientB, "game_forfeited");
+    const cancelledA = waitForClientEvent<any>(clientA, "game_cancelled");
+    const cancelledB = waitForClientEvent<any>(clientB, "game_cancelled");
 
     clientA.emit("forfeit", { roomId: room.id });
 
-    const updatedRoom = await roomPromise;
-    expect(updatedRoom.id).toBe(room.id);
+    const [payloadA, payloadB] = await Promise.all([cancelledA, cancelledB]);
+    expect(payloadA.roomId).toBe(room.id);
+    expect(payloadB.roomId).toBe(room.id);
+    expect(payloadA.message).toBe("Game cancelled");
+    expect(payloadB.message).toBe("Game cancelled");
 
-    const forfeitEvent = await forfeitPromise;
-    expect(forfeitEvent.forfeitedBy).toBe(userA.id);
-    expect(forfeitEvent.room.id).toBe(room.id);
+    const persisted = await dataSource
+      .getRepository(Room)
+      .findOneBy({ id: room.id });
+    expect(persisted).toBeNull();
 
     await disconnectClient(clientA);
     await disconnectClient(clientB);

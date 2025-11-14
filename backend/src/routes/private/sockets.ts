@@ -7,6 +7,7 @@ import { Socket } from "socket.io";
 import { redisService } from "../../services/RedisService";
 import { createSocketEventService } from "../../services/SocketEventService";
 import { Room } from "../../entities/Room";
+import { NotificationService } from "../../services/NotificationService";
 
 export type Guess = {
   roomId: number;
@@ -70,6 +71,10 @@ export default function (
   const authService = new AuthService(fastify.orm);
   const roomService = new RoomService(fastify.orm);
   const socketEventService = createSocketEventService(fastify);
+  const notificationService = new NotificationService(
+    fastify.orm,
+    fastify.log,
+  );
   fastify.addHook("onClose", async () => {
     await roomService.close();
   });
@@ -282,6 +287,14 @@ export default function (
         try {
           const room = await roomService.forfeitGame(roomId, user.id);
 
+          if (room.status === "cancelled") {
+            fastify.io.to(room.id.toString()).emit("game_cancelled", {
+              message: "Game cancelled",
+              roomId: room.id,
+            });
+            return;
+          }
+
           // Emit the updated room state to all players
           fastify.io.to(room.id.toString()).emit("room", room);
         } catch (e) {
@@ -338,6 +351,17 @@ export default function (
               action: "accepted",
             },
           );
+          const challenger = room.players.find((player) =>
+            player.id !== user.id
+          );
+          if (challenger) {
+            await notificationService.notifyChallengeAccepted({
+              challengerId: challenger.id,
+              challengedId: user.id,
+              roomId: room.id,
+              difficulty: room.difficulty,
+            });
+          }
         } catch (error) {
           fastify.log.error({ err: error });
           socket.emit("error", { message: "Failed to accept challenge" });

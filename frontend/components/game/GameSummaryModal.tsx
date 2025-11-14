@@ -1,9 +1,9 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, TouchableOpacity, Pressable, ScrollView, useColorScheme, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, Pressable, ScrollView, useColorScheme, ActivityIndicator, Linking } from 'react-native';
 import { Dialog, DialogContent } from '~/components/ui/dialog';
 import { Room, SquareType } from '~/hooks/useJoinRoom';
 import { useUser } from '~/hooks/users';
-import { Home, Star, ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Swords } from 'lucide-react-native';
+import { Home, Star, ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Swords, Reddit, Facebook, Instagram, Twitter } from 'lucide-react-native';
 import { useRateDifficulty, useRateQuality } from '~/hooks/useRatings';
 import { useTimeTrialLeaderboard } from '~/hooks/useLeaderboard';
 import { useGameStats, GameStats } from '~/hooks/useGameStats';
@@ -21,6 +21,9 @@ import { useChallenge } from '~/hooks/useChallenge';
 import { useJoinRoom } from '~/hooks/useJoinRoom';
 import { useRouter } from 'expo-router';
 import { showToast } from '~/components/shared/Toast';
+import * as WebBrowser from 'expo-web-browser';
+import * as Clipboard from 'expo-clipboard';
+import { config } from '~/config/config';
 
 const formatMs = (ms: number | null) => {
     if (ms == null || ms < 0) return '—';
@@ -91,6 +94,175 @@ const getMatchOutcome = (room: Room, userId: number): { isWinner: boolean; margi
     const margin = isWinner ? userScore - (sortedScores[1] || 0) : maxScore - userScore;
 
     return { isWinner, margin };
+};
+
+const MODE_LABELS: Record<Room['type'], string> = {
+    '1v1': '1v1 Duel',
+    '2v2': '2v2 Tag Team',
+    'free4all': 'Free-for-all',
+    'time_trial': 'Time Trial',
+};
+
+const toTitleCase = (value: string | undefined) => {
+    if (!value) return '';
+    return value
+        .replace(/_/g, ' ')
+        .split(' ')
+        .filter(Boolean)
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+};
+
+const truncateForTweet = (text: string, maxLength: number = 270) => {
+    if (!text) return '';
+    if (text.length <= maxLength) return text;
+    return `${text.slice(0, maxLength - 1)}…`;
+};
+
+interface StandingsBlock {
+    markdown: string;
+    plain: string;
+}
+
+const formatStandingsBlock = (room: Room): StandingsBlock | null => {
+    if (!room.players?.length) return null;
+    const sortedPlayers = [...room.players].sort((a, b) =>
+        (room.scores[b.id] || 0) - (room.scores[a.id] || 0)
+    );
+    const limit = Math.min(sortedPlayers.length, 6);
+    const lines = sortedPlayers.slice(0, limit).map((player, index) => {
+        const rank = `${index + 1}.`.padEnd(4, ' ');
+        const name = (player.username || 'Player').slice(0, 16).padEnd(16, ' ');
+        const score = `${room.scores[player.id] || 0} pts`;
+        return `${rank}${name}${score}`;
+    });
+    if (sortedPlayers.length > limit) {
+        lines.push('...more players');
+    }
+    const header = '#  Player          Score';
+    const markdown = ['```', header, ...lines, '```'].join('\n');
+    const plain = [header, ...lines].join('\n');
+    return { markdown, plain };
+};
+
+type SharePayload = { title: string; markdown: string; plain: string };
+
+const createSharePayload = (
+    room: Room,
+    currentUserId: number,
+    currentUsername: string,
+    gameStats: GameStats[] | undefined,
+    redditCommunity: string
+): SharePayload | null => {
+    const playerStats = gameStats?.find(stat => stat.userId === currentUserId);
+
+    const difficultyLabel = toTitleCase(room.difficulty);
+    const modeLabel = MODE_LABELS[room.type] || toTitleCase(room.type);
+    const gridCompletion = playerStats ? calculatePlayerGridCompletion(room, playerStats) : null;
+    const accuracy = playerStats ? calculateAccuracy(playerStats.correctGuesses, playerStats.incorrectGuesses) : null;
+    const contribution = playerStats && gameStats ? calculateContribution(playerStats.correctGuesses, gameStats) : null;
+    const outcome = room.type !== 'time_trial' ? getMatchOutcome(room, currentUserId) : null;
+    const createdAt = room.created_at ? new Date(room.created_at).getTime() : null;
+    const completedAt = room.completed_at ? new Date(room.completed_at).getTime() : null;
+    const durationMs = createdAt && completedAt ? completedAt - createdAt : null;
+    const formattedDuration = durationMs ? formatMs(durationMs) : null;
+    const userScore = room.scores[currentUserId] || 0;
+    const standingsBlock = formatStandingsBlock(room);
+    const totalGuesses = playerStats ? (playerStats.correctGuesses + playerStats.incorrectGuesses) : null;
+    const emoji = room.type === 'time_trial'
+        ? '⏱️'
+        : playerStats?.isWinner
+            ? '🏆'
+            : '🧩';
+    const metaParts = [`${difficultyLabel} ${modeLabel}`.trim()];
+    if (formattedDuration && formattedDuration !== '—') {
+        metaParts.push(formattedDuration);
+    }
+    const titleSuffix = metaParts.length ? ` — ${metaParts.join(' • ')}` : '';
+    const title = `${emoji} ${room.crossword?.title || 'Crossed run'}${titleSuffix}`;
+
+    const markdownLines: string[] = [
+        `**Mode:** ${modeLabel}`,
+        `**Difficulty:** ${difficultyLabel || '—'}`,
+        `**Puzzle:** ${room.crossword?.title || 'Unknown puzzle'}${room.crossword?.author ? ` by ${room.crossword.author}` : ''}`,
+    ];
+
+    const plainLines: string[] = [
+        `Mode: ${modeLabel}`,
+        `Difficulty: ${difficultyLabel || '—'}`,
+        `Puzzle: ${room.crossword?.title || 'Unknown puzzle'}${room.crossword?.author ? ` by ${room.crossword.author}` : ''}`,
+    ];
+
+    if (formattedDuration && formattedDuration !== '—') {
+        markdownLines.push(`**Time:** ${formattedDuration}`);
+        plainLines.push(`Time: ${formattedDuration}`);
+    }
+
+    markdownLines.push(
+        '',
+        `**My Run (${currentUsername})**`,
+        `- Score: ${userScore} pts`,
+    );
+    plainLines.push(
+        '',
+        `My Run (${currentUsername})`,
+        `- Score: ${userScore} pts`,
+    );
+
+    if (playerStats && accuracy !== null) {
+        const accuracyLine = `- Accuracy: ${accuracy.toFixed(1)}% (${playerStats.correctGuesses}/${totalGuesses || 0})`;
+        markdownLines.push(accuracyLine);
+        plainLines.push(accuracyLine);
+    }
+
+    if (playerStats && gridCompletion !== null) {
+        const gridLine = `- Grid Solved: ${gridCompletion.toFixed(1)}%`;
+        markdownLines.push(gridLine);
+        plainLines.push(gridLine);
+    }
+
+    if (playerStats && contribution !== null && gameStats && gameStats.length > 1) {
+        const contributionLine = `- Contribution: ${contribution.toFixed(1)}%`;
+        markdownLines.push(contributionLine);
+        plainLines.push(contributionLine);
+    }
+
+    if (playerStats && playerStats.eloAtGame !== undefined && playerStats.eloAtGame !== null) {
+        if (typeof playerStats.eloChange === 'number' && playerStats.eloChange !== 0) {
+            const ratingLine = `- Rating: ${playerStats.eloAtGame} (${playerStats.eloChange > 0 ? '+' : ''}${playerStats.eloChange})`;
+            markdownLines.push(ratingLine);
+            plainLines.push(ratingLine);
+        } else {
+            const ratingLine = `- Rating: ${playerStats.eloAtGame}`;
+            markdownLines.push(ratingLine);
+            plainLines.push(ratingLine);
+        }
+    }
+
+    if (outcome) {
+        const resultLine = `- Result: ${outcome.isWinner ? 'Win' : 'Loss'} (${(outcome.isWinner ? '+' : '-')}${Math.abs(outcome.margin)} pts)`;
+        markdownLines.push(resultLine);
+        plainLines.push(resultLine);
+        if (room.type === '2v2' && outcome.teamScore !== undefined && outcome.opponentScore !== undefined) {
+            const teamLine = `- Team Score: ${outcome.teamScore} - ${outcome.opponentScore}`;
+            markdownLines.push(teamLine);
+            plainLines.push(teamLine);
+        }
+    }
+
+    if (standingsBlock) {
+        markdownLines.push('', '**Final Standings**', standingsBlock.markdown);
+        plainLines.push('', 'Final Standings', standingsBlock.plain);
+    }
+
+    markdownLines.push('', `Come play with us in ${redditCommunity}!`);
+    plainLines.push('', `Come play with us in ${redditCommunity}!`);
+
+    return {
+        title,
+        markdown: markdownLines.join('\n'),
+        plain: plainLines.join('\n'),
+    };
 };
 
 interface GameSummaryModalProps {
@@ -477,6 +649,16 @@ export const GameSummaryModal: React.FC<GameSummaryModalProps> = ({
     const colorScheme = useColorScheme();
     const isDarkMode = colorScheme === 'dark';
     const homeIconColor = isDarkMode ? '#FFFFFF' : '#343434';
+    const redditBrandColor = config.social?.reddit?.color || '#FF4500';
+    const facebookBrandColor = config.social?.facebook?.color || '#1877F2';
+    const twitterBrandColor = config.social?.twitter?.color || '#1DA1F2';
+    const instagramBrandColor = config.social?.instagram?.color || '#E4405F';
+    const rawRedditCommunity = config.social?.reddit?.community || 'r/crossed_mobile';
+    const normalizedRedditCommunity = rawRedditCommunity.startsWith('r/')
+        ? rawRedditCommunity
+        : `r/${rawRedditCommunity.replace(/^\/+/, '')}`;
+    const redditCommunitySlug = normalizedRedditCommunity.replace(/^r\//i, '');
+    const redditSubmitUrl = config.social?.reddit?.submitUrl || 'https://www.reddit.com/submit';
     const isPlayAgainProcessing = joinRoomMutation.isPending || sendChallenge.isPending;
 
     // Fetch game stats using React Query
@@ -498,6 +680,20 @@ export const GameSummaryModal: React.FC<GameSummaryModalProps> = ({
         isVisible && room?.type === 'time_trial' ? room.id : undefined,
         5
     );
+
+    const sharePayload = useMemo(() => {
+        if (!room || !currentUser?.id || !currentUser?.username) {
+            return null;
+        }
+        return createSharePayload(
+            room,
+            currentUser.id,
+            currentUser.username,
+            gameStats,
+            normalizedRedditCommunity
+        );
+    }, [room, currentUser?.id, currentUser?.username, gameStats, normalizedRedditCommunity]);
+    const isShareDisabled = statsLoading || !sharePayload;
 
     if (!room || !currentUser) return null;
 
@@ -639,6 +835,106 @@ export const GameSummaryModal: React.FC<GameSummaryModalProps> = ({
         } catch (error) {
             logger.mutate({ log: { context: 'handlePlayAgain queue failed', error }, severity: 'error' });
             showToast('error', 'Failed to start a new game.');
+        }
+    };
+
+    const handleShareToReddit = async () => {
+        if (!sharePayload) {
+            showToast('info', 'Stats are still loading. Please try again in a moment.');
+            return;
+        }
+
+        try {
+            const params = new URLSearchParams();
+            if (redditCommunitySlug) {
+                params.append('sr', redditCommunitySlug);
+            }
+            params.append('title', sharePayload.title);
+            params.append('text', sharePayload.markdown);
+            const separator = redditSubmitUrl.includes('?') ? '&' : '?';
+            const targetUrl = `${redditSubmitUrl}${separator}${params.toString()}`;
+            await WebBrowser.openBrowserAsync(targetUrl);
+            showToast('success', 'Opening Reddit composer...');
+        } catch (error) {
+            logger.mutate({ log: { context: 'handleShareToReddit failed', error }, severity: 'error' });
+            showToast('error', 'Unable to open Reddit right now.');
+        }
+    };
+
+    const handleShareToFacebook = async () => {
+        if (!sharePayload) {
+            showToast('info', 'Stats are still loading. Please try again in a moment.');
+            return;
+        }
+
+        try {
+            const targetLink = config.social?.facebook?.url || 'https://www.facebook.com/';
+            const params = new URLSearchParams();
+            params.append('u', targetLink);
+            params.append('quote', sharePayload.plain);
+            const url = `https://www.facebook.com/sharer/sharer.php?${params.toString()}`;
+            await WebBrowser.openBrowserAsync(url);
+            showToast('success', 'Opening Facebook composer...');
+        } catch (error) {
+            logger.mutate({ log: { context: 'handleShareToFacebook failed', error }, severity: 'error' });
+            showToast('error', 'Unable to open Facebook right now.');
+        }
+    };
+
+    const handleShareToTwitter = async () => {
+        if (!sharePayload) {
+            showToast('info', 'Stats are still loading. Please try again in a moment.');
+            return;
+        }
+
+        try {
+            const params = new URLSearchParams();
+            const text = truncateForTweet(`${sharePayload.title}\n\n${sharePayload.plain}`);
+            params.append('text', text);
+            if (config.social?.twitter?.url) {
+                params.append('url', config.social.twitter.url);
+            }
+            const url = `https://twitter.com/intent/tweet?${params.toString()}`;
+            await WebBrowser.openBrowserAsync(url);
+            showToast('success', 'Opening X composer...');
+        } catch (error) {
+            logger.mutate({ log: { context: 'handleShareToTwitter failed', error }, severity: 'error' });
+            showToast('error', 'Unable to open X right now.');
+        }
+    };
+
+    const handleShareToInstagram = async () => {
+        if (!sharePayload) {
+            showToast('info', 'Stats are still loading. Please try again in a moment.');
+            return;
+        }
+
+        try {
+            await Clipboard.setStringAsync(`${sharePayload.title}\n\n${sharePayload.plain}`);
+            showToast('success', 'Copied stats! Paste into your Instagram post.');
+        } catch (error) {
+            logger.mutate({ log: { context: 'copyStatsForInstagram failed', error }, severity: 'error' });
+            showToast('error', 'Unable to copy stats right now.');
+            return;
+        }
+
+        try {
+            const instagramDeepLink = 'instagram://app';
+            const canOpen = await Linking.canOpenURL(instagramDeepLink);
+            if (canOpen) {
+                await Linking.openURL(instagramDeepLink);
+                return;
+            }
+        } catch (error) {
+            logger.mutate({ log: { context: 'openInstagramDeepLink failed', error }, severity: 'warn' });
+        }
+
+        try {
+            const fallbackUrl = config.social?.instagram?.url || 'https://www.instagram.com/';
+            await WebBrowser.openBrowserAsync(fallbackUrl);
+        } catch (error) {
+            logger.mutate({ log: { context: 'handleShareToInstagram fallback failed', error }, severity: 'error' });
+            showToast('error', 'Unable to open Instagram right now.');
         }
     };
 
@@ -816,6 +1112,57 @@ export const GameSummaryModal: React.FC<GameSummaryModalProps> = ({
                                 </Pressable>
                             </View>
                         )}
+
+                        <View className="flex-row gap-2 mt-2">
+                            {[
+                                {
+                                    key: 'reddit',
+                                    Icon: Reddit,
+                                    color: redditBrandColor,
+                                    onPress: handleShareToReddit,
+                                },
+                                {
+                                    key: 'facebook',
+                                    Icon: Facebook,
+                                    color: facebookBrandColor,
+                                    onPress: handleShareToFacebook,
+                                },
+                                {
+                                    key: 'twitter',
+                                    Icon: Twitter,
+                                    color: twitterBrandColor,
+                                    onPress: handleShareToTwitter,
+                                },
+                                {
+                                    key: 'instagram',
+                                    Icon: Instagram,
+                                    color: instagramBrandColor,
+                                    onPress: handleShareToInstagram,
+                                },
+                            ].map(({ key, Icon, color, onPress }) => (
+                                <Pressable
+                                    key={key}
+                                    onPress={onPress}
+                                    disabled={isShareDisabled}
+                                    style={({ pressed }) => ({
+                                        backgroundColor: pressed
+                                            ? '#F0F0ED'
+                                            : '#FAFAF7'
+                                    })}
+                                    className={cn(
+                                        "flex-1 h-16 border-[1.5px] border-[#343434] dark:border-neutral-600 rounded-sm items-center justify-center dark:bg-neutral-800",
+                                        isShareDisabled && "opacity-75",
+                                        "active:bg-[#F0F0ED] active:dark:bg-neutral-700",
+                                    )}
+                                >
+                                    {statsLoading ? (
+                                        <ActivityIndicator size="small" color={color} />
+                                    ) : (
+                                        <Icon color={color} />
+                                    )}
+                                </Pressable>
+                            ))}
+                        </View>
 
                         <View
                             className={cn(

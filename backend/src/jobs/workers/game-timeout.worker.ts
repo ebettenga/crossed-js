@@ -40,10 +40,16 @@ export const createGameTimeoutWorker = (
         await roomRepository.save(room);
 
         // Notify all players in the room using the SocketEventService
+        const reason = job.data.reason ?? "pending_timeout";
+        const message = job.data.message ??
+          (reason === "challenge_timeout"
+            ? "This challenge expired before it was accepted."
+            : "We couldn't find another player in time.");
+
         const timeoutPayload = {
-          message: "We couldn't find another player in time.",
+          message,
           roomId: room.id,
-          reason: "pending_timeout",
+          reason,
         };
 
         await socketEventService.emitToRoom(

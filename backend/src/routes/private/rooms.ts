@@ -195,6 +195,17 @@ export default function (
       status: room.status,
       action: "accepted",
     });
+    const challenger = room.players.find((player) =>
+      player.id !== request.user.id
+    );
+    if (challenger) {
+      await notificationService.notifyChallengeAccepted({
+        challengerId: challenger.id,
+        challengedId: request.user.id,
+        roomId: room.id,
+        difficulty: room.difficulty,
+      });
+    }
     reply.send(room.toJSON());
   });
 
