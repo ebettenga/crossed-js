@@ -287,8 +287,15 @@ export default function (
         try {
           const room = await roomService.forfeitGame(roomId, user.id);
 
-          // Emit the updated room state to all players
-          fastify.io.to(room.id.toString()).emit("room", room);
+          if (room.status === "cancelled") {
+            fastify.io.to(room.id.toString()).emit("room_cancelled", {
+              message: "Game cancelled",
+              roomId: room.id,
+            });
+          } else {
+            // Emit the updated room state to all players
+            fastify.io.to(room.id.toString()).emit("room", room);
+          }
         } catch (e) {
           if (e instanceof UserNotFoundError) {
             socket.emit("error", "Authentication failed");
