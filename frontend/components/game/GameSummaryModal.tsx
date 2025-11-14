@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, Pressable, ScrollView, useColorScheme, Ac
 import { Dialog, DialogContent } from '~/components/ui/dialog';
 import { Room, SquareType } from '~/hooks/useJoinRoom';
 import { useUser } from '~/hooks/users';
-import { Home, Star, ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Swords } from 'lucide-react-native';
+import { Home, Star, ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Swords, Share2 } from 'lucide-react-native';
 import { useRateDifficulty, useRateQuality } from '~/hooks/useRatings';
 import { useTimeTrialLeaderboard } from '~/hooks/useLeaderboard';
 import { useGameStats, GameStats } from '~/hooks/useGameStats';
@@ -21,6 +21,8 @@ import { useChallenge } from '~/hooks/useChallenge';
 import { useJoinRoom } from '~/hooks/useJoinRoom';
 import { useRouter } from 'expo-router';
 import { showToast } from '~/components/shared/Toast';
+import * as WebBrowser from 'expo-web-browser';
+import { config } from '~/config/config';
 
 const formatMs = (ms: number | null) => {
     if (ms == null || ms < 0) return '—';
@@ -91,6 +93,132 @@ const getMatchOutcome = (room: Room, userId: number): { isWinner: boolean; margi
     const margin = isWinner ? userScore - (sortedScores[1] || 0) : maxScore - userScore;
 
     return { isWinner, margin };
+};
+
+const MODE_LABELS: Record<Room['type'], string> = {
+    '1v1': '1v1 Duel',
+    '2v2': '2v2 Tag Team',
+    'free4all': 'Free-for-all',
+    'time_trial': 'Time Trial',
+};
+
+const toTitleCase = (value: string | undefined) => {
+    if (!value) return '';
+    return value
+        .replace(/_/g, ' ')
+        .split(' ')
+        .filter(Boolean)
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+};
+
+const formatStandingsBlock = (room: Room) => {
+    if (!room.players?.length) return null;
+    const sortedPlayers = [...room.players].sort((a, b) =>
+        (room.scores[b.id] || 0) - (room.scores[a.id] || 0)
+    );
+    const limit = Math.min(sortedPlayers.length, 6);
+    const lines = sortedPlayers.slice(0, limit).map((player, index) => {
+        const rank = `${index + 1}.`.padEnd(4, ' ');
+        const name = (player.username || 'Player').slice(0, 16).padEnd(16, ' ');
+        const score = `${room.scores[player.id] || 0} pts`;
+        return `${rank}${name}${score}`;
+    });
+    if (sortedPlayers.length > limit) {
+        lines.push('...more players');
+    }
+    return ['```', '#  Player          Score', ...lines, '```'].join('\n');
+};
+
+type RedditSharePayload = { title: string; text: string };
+
+const createRedditSharePayload = (
+    room: Room,
+    currentUserId: number,
+    currentUsername: string,
+    gameStats: GameStats[] | undefined,
+    redditCommunity: string
+): RedditSharePayload | null => {
+    const playerStats = gameStats?.find(stat => stat.userId === currentUserId);
+
+    const difficultyLabel = toTitleCase(room.difficulty);
+    const modeLabel = MODE_LABELS[room.type] || toTitleCase(room.type);
+    const gridCompletion = playerStats ? calculatePlayerGridCompletion(room, playerStats) : null;
+    const accuracy = playerStats ? calculateAccuracy(playerStats.correctGuesses, playerStats.incorrectGuesses) : null;
+    const contribution = playerStats && gameStats ? calculateContribution(playerStats.correctGuesses, gameStats) : null;
+    const outcome = room.type !== 'time_trial' ? getMatchOutcome(room, currentUserId) : null;
+    const createdAt = room.created_at ? new Date(room.created_at).getTime() : null;
+    const completedAt = room.completed_at ? new Date(room.completed_at).getTime() : null;
+    const durationMs = createdAt && completedAt ? completedAt - createdAt : null;
+    const formattedDuration = durationMs ? formatMs(durationMs) : null;
+    const userScore = room.scores[currentUserId] || 0;
+    const standingsBlock = formatStandingsBlock(room);
+    const totalGuesses = playerStats ? (playerStats.correctGuesses + playerStats.incorrectGuesses) : null;
+    const emoji = room.type === 'time_trial'
+        ? '⏱️'
+        : playerStats?.isWinner
+            ? '🏆'
+            : '🧩';
+    const metaParts = [`${difficultyLabel} ${modeLabel}`.trim()];
+    if (formattedDuration && formattedDuration !== '—') {
+        metaParts.push(formattedDuration);
+    }
+    const titleSuffix = metaParts.length ? ` — ${metaParts.join(' • ')}` : '';
+    const title = `${emoji} ${room.crossword?.title || 'Crossed run'}${titleSuffix}`;
+
+    const lines: string[] = [
+        `**Mode:** ${modeLabel}`,
+        `**Difficulty:** ${difficultyLabel || '—'}`,
+        `**Puzzle:** ${room.crossword?.title || 'Unknown puzzle'}${room.crossword?.author ? ` by ${room.crossword.author}` : ''}`,
+    ];
+
+    if (formattedDuration && formattedDuration !== '—') {
+        lines.push(`**Time:** ${formattedDuration}`);
+    }
+
+    lines.push(
+        '',
+        `**My Run (${currentUsername})**`,
+        `- Score: ${userScore} pts`,
+    );
+
+    if (playerStats && accuracy !== null) {
+        lines.push(`- Accuracy: ${accuracy.toFixed(1)}% (${playerStats.correctGuesses}/${totalGuesses || 0})`);
+    }
+
+    if (playerStats && gridCompletion !== null) {
+        lines.push(`- Grid Solved: ${gridCompletion.toFixed(1)}%`);
+    }
+
+    if (playerStats && contribution !== null && gameStats && gameStats.length > 1) {
+        lines.push(`- Contribution: ${contribution.toFixed(1)}%`);
+    }
+
+    if (playerStats && playerStats.eloAtGame !== undefined && playerStats.eloAtGame !== null) {
+        if (typeof playerStats.eloChange === 'number' && playerStats.eloChange !== 0) {
+            lines.push(`- Rating: ${playerStats.eloAtGame} (${playerStats.eloChange > 0 ? '+' : ''}${playerStats.eloChange})`);
+        } else {
+            lines.push(`- Rating: ${playerStats.eloAtGame}`);
+        }
+    }
+
+    if (outcome) {
+        lines.push(`- Result: ${outcome.isWinner ? 'Win' : 'Loss'} (${(outcome.isWinner ? '+' : '-')}${Math.abs(outcome.margin)} pts)`);
+        if (room.type === '2v2' && outcome.teamScore !== undefined && outcome.opponentScore !== undefined) {
+            lines.push(`- Team Score: ${outcome.teamScore} - ${outcome.opponentScore}`);
+        }
+    }
+
+    if (standingsBlock) {
+        lines.push('', '**Final Standings**', standingsBlock);
+    }
+
+    lines.push('', `Come play with us in ${redditCommunity}!`);
+
+    return {
+        title,
+        text: lines.join('\n'),
+    };
 };
 
 interface GameSummaryModalProps {
@@ -477,6 +605,13 @@ export const GameSummaryModal: React.FC<GameSummaryModalProps> = ({
     const colorScheme = useColorScheme();
     const isDarkMode = colorScheme === 'dark';
     const homeIconColor = isDarkMode ? '#FFFFFF' : '#343434';
+    const redditBrandColor = config.social?.reddit?.color || '#FF4500';
+    const rawRedditCommunity = config.social?.reddit?.community || 'r/crossed_mobile';
+    const normalizedRedditCommunity = rawRedditCommunity.startsWith('r/')
+        ? rawRedditCommunity
+        : `r/${rawRedditCommunity.replace(/^\/+/, '')}`;
+    const redditCommunitySlug = normalizedRedditCommunity.replace(/^r\//i, '');
+    const redditSubmitUrl = config.social?.reddit?.submitUrl || 'https://www.reddit.com/submit';
     const isPlayAgainProcessing = joinRoomMutation.isPending || sendChallenge.isPending;
 
     // Fetch game stats using React Query
@@ -498,6 +633,20 @@ export const GameSummaryModal: React.FC<GameSummaryModalProps> = ({
         isVisible && room?.type === 'time_trial' ? room.id : undefined,
         5
     );
+
+    const redditSharePayload = useMemo(() => {
+        if (!room || !currentUser?.id || !currentUser?.username) {
+            return null;
+        }
+        return createRedditSharePayload(
+            room,
+            currentUser.id,
+            currentUser.username,
+            gameStats,
+            normalizedRedditCommunity
+        );
+    }, [room, currentUser?.id, currentUser?.username, gameStats, normalizedRedditCommunity]);
+    const isShareDisabled = statsLoading || !redditSharePayload;
 
     if (!room || !currentUser) return null;
 
@@ -639,6 +788,29 @@ export const GameSummaryModal: React.FC<GameSummaryModalProps> = ({
         } catch (error) {
             logger.mutate({ log: { context: 'handlePlayAgain queue failed', error }, severity: 'error' });
             showToast('error', 'Failed to start a new game.');
+        }
+    };
+
+    const handleShareToReddit = async () => {
+        if (!redditSharePayload) {
+            showToast('info', 'Stats are still loading. Please try again in a moment.');
+            return;
+        }
+
+        try {
+            const params = new URLSearchParams();
+            if (redditCommunitySlug) {
+                params.append('sr', redditCommunitySlug);
+            }
+            params.append('title', redditSharePayload.title);
+            params.append('text', redditSharePayload.text);
+            const separator = redditSubmitUrl.includes('?') ? '&' : '?';
+            const targetUrl = `${redditSubmitUrl}${separator}${params.toString()}`;
+            await WebBrowser.openBrowserAsync(targetUrl);
+            showToast('success', 'Opening Reddit composer...');
+        } catch (error) {
+            logger.mutate({ log: { context: 'handleShareToReddit failed', error }, severity: 'error' });
+            showToast('error', 'Unable to open Reddit right now.');
         }
     };
 
@@ -816,6 +988,43 @@ export const GameSummaryModal: React.FC<GameSummaryModalProps> = ({
                                 </Pressable>
                             </View>
                         )}
+
+                        <View
+                            className={cn(
+                                "border-[1.5px] border-[#343434] dark:border-neutral-600 bg-[#FAFAF7] dark:bg-neutral-800 w-full h-16 rounded-sm mt-2",
+                                isShareDisabled && "opacity-75"
+                            )}
+                        >
+                            <Pressable
+                                onPress={handleShareToReddit}
+                                disabled={isShareDisabled}
+                                style={({ pressed }) => ({
+                                    backgroundColor: pressed
+                                        ? '#F0F0ED'
+                                        : '#FAFAF7'
+                                })}
+                                className={cn(
+                                    "flex-1 justify-center items-center relative dark:bg-neutral-800",
+                                    "active:bg-[#F0F0ED] active:dark:bg-neutral-700",
+                                )}
+                            >
+                                <View className="w-full h-full flex flex-row items-center justify-center gap-3 px-4">
+                                    {statsLoading ? (
+                                        <ActivityIndicator size="small" color={redditBrandColor} />
+                                    ) : (
+                                        <Share2 color={redditBrandColor} />
+                                    )}
+                                    <View className="flex flex-col items-start">
+                                        <Text className="text-base font-rubik text-[#2B2B2B] dark:text-[#DDE1E5]">
+                                            Share to Reddit
+                                        </Text>
+                                        <Text className="text-xs font-rubik text-[#666666] dark:text-neutral-400">
+                                            {normalizedRedditCommunity}
+                                        </Text>
+                                    </View>
+                                </View>
+                            </Pressable>
+                        </View>
 
                         <View
                             className={cn(
