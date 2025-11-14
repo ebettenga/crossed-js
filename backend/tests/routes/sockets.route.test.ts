@@ -713,7 +713,8 @@ describe("sockets routes", () => {
       status: "playing",
     });
 
-    const { app: secondaryApp, url: secondaryUrl } = await startAdditionalServer();
+    const { app: secondaryApp, url: secondaryUrl } =
+      await startAdditionalServer();
 
     const clientA = await connectClient(userA);
     const clientB = await connectClient(userB, secondaryUrl);
@@ -759,8 +760,8 @@ describe("sockets routes", () => {
     const clientA = await connectClient(userA);
     const clientB = await connectClient(userB);
 
-    const cancelledA = waitForClientEvent<any>(clientA, "room_cancelled");
-    const cancelledB = waitForClientEvent<any>(clientB, "room_cancelled");
+    const cancelledA = waitForClientEvent<any>(clientA, "game_cancelled");
+    const cancelledB = waitForClientEvent<any>(clientB, "game_cancelled");
 
     clientA.emit("forfeit", { roomId: room.id });
 

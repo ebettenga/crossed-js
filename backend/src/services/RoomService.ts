@@ -657,7 +657,9 @@ export class RoomService {
     }
 
     const hasFoundLetters = Array.isArray(room.found_letters) &&
-      room.found_letters.some((letter) => letter && letter !== "*");
+      room.found_letters.some((letter) =>
+        letter && letter !== "*" && letter !== "."
+      );
     if (hasFoundLetters) {
       return true;
     }
@@ -712,7 +714,6 @@ export class RoomService {
   }
 
   private async cleanupUnplayedRoom(room: Room): Promise<void> {
-    await this.emitGameCancelled(room, "Game cancelled");
     await this.removeAutoRevealJobsForRoom(room.id);
     await this.redisService.deleteKey(room.id.toString());
 
@@ -720,7 +721,10 @@ export class RoomService {
       roomId: room.id,
     });
 
+    const roomId = room.id;
     await this.ormConnection.getRepository(Room).remove(room);
+    room.id = roomId;
+    await this.emitGameCancelled(room, "Game cancelled");
   }
 
   private async handleFreeForAllForfeit(

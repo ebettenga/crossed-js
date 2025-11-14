@@ -288,14 +288,15 @@ export default function (
           const room = await roomService.forfeitGame(roomId, user.id);
 
           if (room.status === "cancelled") {
-            fastify.io.to(room.id.toString()).emit("room_cancelled", {
+            fastify.io.to(room.id.toString()).emit("game_cancelled", {
               message: "Game cancelled",
               roomId: room.id,
             });
-          } else {
-            // Emit the updated room state to all players
-            fastify.io.to(room.id.toString()).emit("room", room);
+            return;
           }
+
+          // Emit the updated room state to all players
+          fastify.io.to(room.id.toString()).emit("room", room);
         } catch (e) {
           if (e instanceof UserNotFoundError) {
             socket.emit("error", "Authentication failed");
@@ -350,7 +351,9 @@ export default function (
               action: "accepted",
             },
           );
-          const challenger = room.players.find((player) => player.id !== user.id);
+          const challenger = room.players.find((player) =>
+            player.id !== user.id
+          );
           if (challenger) {
             await notificationService.notifyChallengeAccepted({
               challengerId: challenger.id,
