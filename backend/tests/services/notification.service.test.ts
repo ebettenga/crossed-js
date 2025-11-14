@@ -319,4 +319,50 @@ describe("NotificationService", () => {
     expect(expoMock.sent).toHaveLength(0);
     expect(tickets).toBeUndefined();
   });
+
+  it("sends a challenge accepted notification to the challenger", async () => {
+    const expoMock = new ExpoClientMock();
+    const service = new NotificationService(
+      dataSource,
+      createLogger(),
+      expoMock as unknown as Expo,
+      {
+        expo: { enabled: true },
+      },
+    );
+
+    const challengerToken = "ExponentPushToken[challengeaccepted123]";
+    const challenger = await createUser({
+      username: "ChallengeInitiator",
+      attributes: [
+        { key: "expoPushToken", value: challengerToken },
+      ],
+    });
+    const challenged = await createUser({ username: "Challengee" });
+
+    const payload = {
+      challengerId: challenger.id,
+      challengedId: challenged.id,
+      roomId: 789,
+      difficulty: "hard",
+    };
+
+    const tickets = await service.notifyChallengeAccepted(payload);
+
+    expect(expoMock.sent).toHaveLength(1);
+    const message = expoMock.sent[0][0];
+    expect(message.to).toBe(challengerToken);
+    expect(message.title).toBe("Challenge Accepted");
+    expect(message.body).toContain("Challengee");
+    expect(message.body).toContain("Hard");
+    expect(message.data).toMatchObject({
+      type: "challenge_accepted",
+      roomId: payload.roomId,
+      challengerId: payload.challengerId,
+      challengedId: payload.challengedId,
+      difficulty: payload.difficulty,
+    });
+    expect(tickets).toBeDefined();
+    expect(tickets?.[0].status).toBe("ok");
+  });
 });

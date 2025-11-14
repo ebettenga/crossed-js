@@ -44,6 +44,7 @@ export const commonConfig = {
     },
     timeout: {
       pending: 60000, // 1 minutes in milliseconds
+      challenge: 5 * 60 * 1000, // 5 minutes
       autoReveal: {
         initial: 5000, // Initial delay before the auto-reveal system kicks in
         minimum: 5000, // Floor for how fast auto-reveal can tick
@@ -101,6 +102,10 @@ export const commonConfig = {
       challengeReceived: {
         title: "New Challenge",
         body: "{{challenger}} challenged you to a {{difficulty}} match",
+      },
+      challengeAccepted: {
+        title: "Challenge Accepted",
+        body: "{{challenged}} accepted your {{difficulty}} challenge",
       },
     },
   },

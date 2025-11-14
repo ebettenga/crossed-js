@@ -94,7 +94,13 @@ describe("game timeout worker", () => {
     createGameTimeoutWorker(dataSource, fastify);
     expect(workerInstances).toHaveLength(1);
 
-    const job = { data: { roomId: room.id } };
+    const job = {
+      data: {
+        roomId: room.id,
+        reason: "pending_timeout",
+        message: "We couldn't find another player in time.",
+      },
+    };
     await workerInstances[0].process(job);
 
     expect(repository.save).toHaveBeenCalledWith(
@@ -115,6 +121,46 @@ describe("game timeout worker", () => {
         message: expect.stringContaining("couldn't find"),
         roomId: room.id,
         reason: "pending_timeout",
+      }),
+    );
+  });
+
+  it("emits challenge timeout payloads when specified", async () => {
+    const room = new Room();
+    room.id = 99;
+    room.status = "pending";
+    room.players = [{ id: 5 } as any];
+
+    repository.findOne.mockResolvedValue(room);
+    repository.save.mockResolvedValue({ ...room });
+
+    createGameTimeoutWorker(dataSource, fastify);
+    expect(workerInstances).toHaveLength(1);
+
+    const job = {
+      data: {
+        roomId: room.id,
+        reason: "challenge_timeout",
+        message: "Challenge expired",
+      },
+    };
+
+    await workerInstances[0].process(job);
+
+    expect(emitToRoom).toHaveBeenCalledWith(
+      room.id,
+      "room_cancelled",
+      expect.objectContaining({
+        message: "Challenge expired",
+        reason: "challenge_timeout",
+      }),
+    );
+    expect(emitToUsers).toHaveBeenCalledWith(
+      [room.players[0].id],
+      "room_cancelled",
+      expect.objectContaining({
+        message: "Challenge expired",
+        reason: "challenge_timeout",
       }),
     );
   });

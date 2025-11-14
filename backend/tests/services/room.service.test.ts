@@ -248,7 +248,11 @@ describe("RoomService integration", () => {
     const timeoutJobId = `room-timeout-${room.id}`;
     const timeoutJob = await gameTimeoutQueue.getJob(timeoutJobId);
     expect(timeoutJob).not.toBeNull();
-    expect(timeoutJob?.data).toEqual({ roomId: room.id });
+    expect(timeoutJob?.data).toEqual({
+      roomId: room.id,
+      reason: "pending_timeout",
+      message: "We couldn't find another player in time.",
+    });
     expect(timeoutJob?.opts?.delay).toBe(config.game.timeout.pending);
   });
 
@@ -1472,6 +1476,29 @@ describe("RoomService integration", () => {
       );
 
       expect(room.type).toBe("1v1");
+    });
+
+    it("enqueues a timeout job that expires the challenge after five minutes", async () => {
+      const challenger = await createUser();
+      const challenged = await createUser();
+      await createCrossword();
+      const service = createRoomService();
+
+      const room = await service.createChallengeRoom(
+        challenger.id,
+        challenged.id,
+        "easy",
+      );
+
+      const timeoutJobId = `room-timeout-${room.id}`;
+      const timeoutJob = await gameTimeoutQueue.getJob(timeoutJobId);
+      expect(timeoutJob).not.toBeNull();
+      expect(timeoutJob?.data).toEqual({
+        roomId: room.id,
+        reason: "challenge_timeout",
+        message: "This challenge expired because it wasn't accepted in time.",
+      });
+      expect(timeoutJob?.opts?.delay).toBe(config.game.timeout.challenge);
     });
 
     it("assigns correct difficulty", async () => {

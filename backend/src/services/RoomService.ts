@@ -259,7 +259,11 @@ export class RoomService {
       await gameTimeoutQueue.remove(timeoutJobId);
       await gameTimeoutQueue.add(
         "game-timeout",
-        { roomId: savedRoom.id },
+        {
+          roomId: savedRoom.id,
+          reason: "pending_timeout",
+          message: "We couldn't find another player in time.",
+        },
         {
           delay: config.game.timeout.pending,
           jobId: timeoutJobId,
@@ -969,6 +973,21 @@ export class RoomService {
       },
     );
 
+    const timeoutJobId = `room-timeout-${savedRoom.id}`;
+    await gameTimeoutQueue.remove(timeoutJobId);
+    await gameTimeoutQueue.add(
+      "game-timeout",
+      {
+        roomId: savedRoom.id,
+        reason: "challenge_timeout",
+        message: "This challenge expired because it wasn't accepted in time.",
+      },
+      {
+        delay: config.game.timeout.challenge,
+        jobId: timeoutJobId,
+      },
+    );
+
     return savedRoom;
   }
 
@@ -1007,7 +1026,7 @@ export class RoomService {
 
     room.status = "cancelled";
     room.markModified();
-
+    await gameTimeoutQueue.remove(`room-timeout-${room.id}`);
     await this.ormConnection.getRepository(Room).save(room);
     return room;
   }
