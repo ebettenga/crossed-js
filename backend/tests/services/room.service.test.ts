@@ -1,4 +1,5 @@
 import { DataSource } from "typeorm";
+import type { JobType } from "bullmq";
 import Redis from "ioredis";
 import { RoomService } from "../../src/services/RoomService";
 import { JoinMethod, Room } from "../../src/entities/Room";
@@ -966,6 +967,144 @@ describe("RoomService integration", () => {
       expect(updated?.status).toBe("finished");
       // Verify forfeit penalty was applied
       expect(updated?.scores[user1.id]).toBeLessThan(0);
+    });
+
+    it("does not apply forfeit penalty when a time trial is forfeited", async () => {
+      const user = await createUser();
+      await createCrossword();
+      const service = createRoomService();
+
+      const room = await service.createRoom(user.id, "easy", "time_trial");
+      const roomRepo = dataSource.getRepository(Room);
+      const reloadedRoom = await roomRepo.findOne({
+        where: { id: room.id },
+        relations: ["players", "crossword"],
+      });
+
+      expect(reloadedRoom).not.toBeNull();
+
+      reloadedRoom!.scores = { [user.id]: 33 };
+      reloadedRoom!.found_letters = reloadedRoom!.found_letters.map(
+        (letter, index) =>
+          letter === "*" && index === 0 ? "A" : letter,
+      );
+      await roomRepo.save(reloadedRoom!);
+
+      const forfeited = await service.forfeitGame(room.id, user.id);
+
+      expect(forfeited.scores[user.id]).toBe(33);
+
+      const persisted = await roomRepo.findOneBy({ id: room.id });
+      expect(persisted?.scores[user.id]).toBe(33);
+    });
+
+    it("deletes empty time trial rooms on forfeit and clears auto-reveal jobs", async () => {
+      const user = await createUser();
+      await createCrossword();
+      const service = createRoomService();
+
+      const room = await service.createRoom(user.id, "easy", "time_trial");
+
+      const jobStates: JobType[] = ["waiting", "delayed", "paused"];
+      const initialJobs = await gameAutoRevealQueue.getJobs(
+        jobStates,
+        0,
+        -1,
+        false,
+      );
+      expect(
+        initialJobs.some((job) => job?.data?.roomId === room.id),
+      ).toBe(true);
+
+      await service.forfeitGame(room.id, user.id);
+
+      const deletedRoom = await dataSource
+        .getRepository(Room)
+        .findOneBy({ id: room.id });
+      expect(deletedRoom).toBeNull();
+
+      const statsForRoom = await dataSource
+        .getRepository(GameStats)
+        .find({
+          where: { roomId: room.id },
+        });
+      expect(statsForRoom).toHaveLength(0);
+
+      const remainingJobs = await gameAutoRevealQueue.getJobs(
+        jobStates,
+        0,
+        -1,
+        false,
+      );
+      expect(
+        remainingJobs.some((job) => job?.data?.roomId === room.id),
+      ).toBe(false);
+
+      expect(toSpy).toHaveBeenCalledWith(`user_${user.id}`);
+      expect(emitSpy).toHaveBeenCalledWith(
+        "game_cancelled",
+        expect.objectContaining({
+          message: "Game cancelled",
+          roomId: room.id,
+        }),
+      );
+    });
+
+    it("keeps time trial rooms when players have recorded correct guesses", async () => {
+      const user = await createUser();
+      await createCrossword();
+      const service = createRoomService();
+
+      const room = await service.createRoom(user.id, "easy", "time_trial");
+
+      await service.handleGuess(room.id, user.id, 0, 0, "A");
+
+      const forfeited = await service.forfeitGame(room.id, user.id);
+
+      expect(forfeited.status).toBe("finished");
+
+      const persistedRoom = await dataSource
+        .getRepository(Room)
+        .findOneBy({ id: room.id });
+
+      expect(persistedRoom).not.toBeNull();
+      expect(persistedRoom?.status).toBe("finished");
+
+      const cancelEvent = emitSpy.mock.calls.find(
+        ([eventName]) => eventName === "game_cancelled",
+      );
+      expect(cancelEvent).toBeUndefined();
+    });
+
+    it("deletes unplayed multiplayer rooms on forfeit and emits cancellation event", async () => {
+      const user1 = await createUser();
+      const user2 = await createUser();
+      await createCrossword();
+      const service = createRoomService();
+
+      const room = await service.createRoom(user1.id, "easy", "1v1");
+      const reloadedRoom = await dataSource
+        .getRepository(Room)
+        .findOne({
+          where: { id: room.id },
+          relations: ["players", "crossword"],
+        });
+      await service.joinExistingRoom(reloadedRoom!, user2.id);
+
+      await service.forfeitGame(room.id, user1.id);
+
+      const persistedRoom = await dataSource
+        .getRepository(Room)
+        .findOneBy({ id: room.id });
+      expect(persistedRoom).toBeNull();
+
+      expect(emitSpy).toHaveBeenCalledWith(
+        "game_cancelled",
+        expect.objectContaining({
+          message: "Game cancelled",
+          roomId: room.id,
+        }),
+      );
     });
   });
 
