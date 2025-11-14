@@ -744,6 +744,7 @@ export class RoomService {
     room.markModified();
     await this.ormConnection.getRepository(Room).save(room);
 
+    // TODO: do this better
     const cachedGameInfo = await this.redisService.getGame(room.id.toString());
     if (cachedGameInfo) {
       delete cachedGameInfo.scores[forfeitingUserId];
@@ -766,9 +767,18 @@ export class RoomService {
       return room;
     }
 
-    await this.cleanupUnplayedRoom(room);
+    const hasProgress = await this.hasRecordedCorrectGuess(room);
+    if (room.players.length <= 2 && !hasProgress) {
+      await this.cleanupUnplayedRoom(room);
+      room.status = "cancelled";
+      room.completed_at = null;
+      return room;
+    }
+
     room.status = "cancelled";
-    room.completed_at = null;
+    room.completed_at = new Date();
+    room.markModified();
+    await this.ormConnection.getRepository(Room).save(room);
     return room;
   }
 
