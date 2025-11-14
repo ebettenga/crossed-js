@@ -8,8 +8,12 @@ export interface EmailJobData {
   body: string;
 }
 
+export type GameTimeoutReason = "pending_timeout" | "challenge_timeout";
+
 export interface GameTimeoutJobData {
   roomId: number;
+  reason?: GameTimeoutReason;
+  message?: string;
 }
 
 export interface GameAutoRevealJobData {
