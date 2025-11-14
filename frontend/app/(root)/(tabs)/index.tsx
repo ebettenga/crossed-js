@@ -138,7 +138,6 @@ export default function Home() {
 
     useFocusEffect(React.useCallback(() => {
         refreshRooms();
-        console.log("getting here");
 
         if (
             hasActiveGame &&

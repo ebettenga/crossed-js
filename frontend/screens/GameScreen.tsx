@@ -155,21 +155,9 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
     }, [room, roomId, isConnected, refresh]);
 
     useEffect(() => {
-        if (isCancelledRoom) {
-            router.replace('/(root)/(tabs)');
-        }
-    }, [isCancelledRoom, router]);
-
-    useEffect(() => {
         if (fallbackTimeoutRef.current) {
             clearTimeout(fallbackTimeoutRef.current);
             fallbackTimeoutRef.current = null;
-        }
-        console.log({ cancellationState, roomId, room })
-        if (cancellationState.stage === 'redirecting') {
-            startRedirect(roomId);
-            completeCancellation(roomId);
-            router.replace('/(root)/(tabs)');
         }
 
         if (!roomId) {
@@ -184,7 +172,11 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
 
 
 
-        if (hasFallbackTriggeredRef.current) {
+        if (
+            hasFallbackTriggeredRef.current ||
+            isCancelledRoom ||
+            cancellationState.stage !== "idle"
+        ) {
             return;
         }
 
@@ -204,7 +196,7 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
                 fallbackTimeoutRef.current = null;
             }
         };
-    }, [room, roomId, router, isCancelledRoom]);
+    }, [room, roomId, router, isCancelledRoom, cancellationState.stage]);
 
     useEffect(() => {
         return () => {
