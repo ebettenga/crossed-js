@@ -709,87 +709,92 @@ export class RoomService {
     });
     if (!room) throw new NotFoundError("Room not found");
 
-    // Load or initialize game cache
-    let cachedGameInfo = await this.redisService.getGame(room.id.toString());
-    if (!cachedGameInfo) {
-      // Initialize cache from the current DB state
-      cachedGameInfo = room.createRoomCache();
-    }
+    const lockToken = await this.redisService.acquireGameLock(roomId.toString());
+    try {
+      // Load or initialize game cache
+      let cachedGameInfo = await this.redisService.getGame(room.id.toString());
+      if (!cachedGameInfo) {
+        // Initialize cache from the current DB state
+        cachedGameInfo = room.createRoomCache();
+      }
 
-    // Ensure user tracking structures exist
-    if (!cachedGameInfo.userGuessCounts[userId]) {
-      cachedGameInfo.userGuessCounts[userId] = { correct: 0, incorrect: 0 };
-    }
-    if (!cachedGameInfo.correctGuessDetails) {
-      cachedGameInfo.correctGuessDetails = {};
-    }
-    if (!cachedGameInfo.correctGuessDetails[userId]) {
-      cachedGameInfo.correctGuessDetails[userId] = [];
-    }
-    if (cachedGameInfo.scores[userId] === undefined) {
-      cachedGameInfo.scores[userId] = 0;
-    }
+      // Ensure user tracking structures exist
+      if (!cachedGameInfo.userGuessCounts[userId]) {
+        cachedGameInfo.userGuessCounts[userId] = { correct: 0, incorrect: 0 };
+      }
+      if (!cachedGameInfo.correctGuessDetails) {
+        cachedGameInfo.correctGuessDetails = {};
+      }
+      if (!cachedGameInfo.correctGuessDetails[userId]) {
+        cachedGameInfo.correctGuessDetails[userId] = [];
+      }
+      if (cachedGameInfo.scores[userId] === undefined) {
+        cachedGameInfo.scores[userId] = 0;
+      }
 
-    // Compute letter index
-    const letterIndex = x * room.crossword.col_size + y;
-    if (cachedGameInfo.foundLetters[letterIndex] !== "*") {
-      return room;
-    }
+      // Compute letter index
+      const letterIndex = x * room.crossword.col_size + y;
+      if (cachedGameInfo.foundLetters[letterIndex] !== "*") {
+        return room;
+      }
 
-    const isCorrect = await this.crosswordService.checkGuess(
-      room.crossword,
-      { x, y },
-      guess,
-    );
+      const isCorrect = await this.crosswordService.checkGuess(
+        room.crossword,
+        { x, y },
+        guess,
+      );
 
-    // Update stats based on guess result
-    if (isCorrect) {
-      // Update last activity timestamp
-      cachedGameInfo.lastActivityAt = Date.now();
+      // Update stats based on guess result
+      if (isCorrect) {
+        // Update last activity timestamp
+        cachedGameInfo.lastActivityAt = Date.now();
 
-      cachedGameInfo.userGuessCounts[userId].correct++;
-      cachedGameInfo.correctGuessDetails[userId].push({
-        row: x,
-        col: y,
-        letter: guess,
-        timestamp: Date.now(),
-      });
+        cachedGameInfo.userGuessCounts[userId].correct++;
+        cachedGameInfo.correctGuessDetails[userId].push({
+          row: x,
+          col: y,
+          letter: guess,
+          timestamp: Date.now(),
+        });
 
-      // Update board + score
-      cachedGameInfo.foundLetters[letterIndex] = guess;
-      cachedGameInfo.scores[userId] = (cachedGameInfo.scores[userId] || 0) +
-        config.game.points.correct;
-    } else {
-      cachedGameInfo.userGuessCounts[userId].incorrect++;
-      cachedGameInfo.scores[userId] = (cachedGameInfo.scores[userId] || 0) +
-        config.game.points.incorrect;
-    }
+        // Update board + score
+        cachedGameInfo.foundLetters[letterIndex] = guess;
+        cachedGameInfo.scores[userId] = (cachedGameInfo.scores[userId] || 0) +
+          config.game.points.correct;
+      } else {
+        cachedGameInfo.userGuessCounts[userId].incorrect++;
+        cachedGameInfo.scores[userId] = (cachedGameInfo.scores[userId] || 0) +
+          config.game.points.incorrect;
+      }
 
-    // Persist authoritative state to DB to avoid cache reinitialization wiping progress
-    room.found_letters = cachedGameInfo.foundLetters;
-    room.scores = cachedGameInfo.scores;
-    if (cachedGameInfo.lastActivityAt) {
-      room.last_activity_at = new Date(cachedGameInfo.lastActivityAt);
-    }
+      // Persist authoritative state to DB to avoid cache reinitialization wiping progress
+      room.found_letters = cachedGameInfo.foundLetters;
+      room.scores = cachedGameInfo.scores;
+      if (cachedGameInfo.lastActivityAt) {
+        room.last_activity_at = new Date(cachedGameInfo.lastActivityAt);
+      }
 
-    // Determine if the game is finished based on the updated state
-    const finished = !cachedGameInfo.foundLetters.includes("*");
+      // Determine if the game is finished based on the updated state
+      const finished = !cachedGameInfo.foundLetters.includes("*");
 
-    if (finished) {
-      // Mark modified so toJSON invalidates cache
+      if (finished) {
+        // Mark modified so toJSON invalidates cache
+        room.markModified();
+        await this.onGameEnd(room);
+      } else {
+        // Save room if game is not finished
+        await manager.getRepository(Room).save(room);
+      }
+
+      // Update cache after DB write
+      await this.redisService.cacheGame(room.id.toString(), cachedGameInfo);
+
+      // Invalidate view cache so clients receive updated view
       room.markModified();
-      await this.onGameEnd(room);
-    } else {
-      // Save room if game is not finished
-      await manager.getRepository(Room).save(room);
+      return room;
+    } finally {
+      await this.redisService.releaseGameLock(roomId.toString(), lockToken);
     }
-
-    // Update cache after DB write
-    await this.redisService.cacheGame(room.id.toString(), cachedGameInfo);
-
-    // Invalidate view cache so clients receive updated view
-    room.markModified();
-    return room;
   }
 
   addCacheToRoom(room: Room, cachedGameInfo: CachedGameInfo): Room {

@@ -120,6 +120,28 @@ export class RedisService {
     this.subscriber.unsubscribe(channel);
   }
 
+  async acquireGameLock(
+    roomId: string,
+    ttlMs = 5000,
+    retries = 50,
+    retryDelayMs = 100,
+  ): Promise<string> {
+    const token = uuidv4();
+    const key = `game_lock:${roomId}`;
+    for (let i = 0; i < retries; i++) {
+      const result = await this.redis.set(key, token, "PX", ttlMs, "NX");
+      if (result === "OK") return token;
+      await new Promise((r) => setTimeout(r, retryDelayMs));
+    }
+    throw new Error(`Failed to acquire game lock for room ${roomId}`);
+  }
+
+  async releaseGameLock(roomId: string, token: string): Promise<void> {
+    const key = `game_lock:${roomId}`;
+    const script = `if redis.call("get", KEYS[1]) == ARGV[1] then return redis.call("del", KEYS[1]) else return 0 end`;
+    await this.redis.eval(script, 1, key, token);
+  }
+
   // Close connections
   async close() {
     await this.publisher.quit();

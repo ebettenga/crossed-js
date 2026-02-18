@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { View, Text, Image, TouchableOpacity } from 'react-native';
 import { TrendingUp, TrendingDown, Users } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useUser } from '~/hooks/users';
 import { useRecentGames } from '~/hooks/useRecentGames';
 import { useEloVisibility } from '~/hooks/useEloVisibility';
@@ -9,6 +10,7 @@ import { useActiveUsers } from '~/hooks/useActiveUsers';
 
 export const PageHeader = () => {
     const router = useRouter();
+    const insets = useSafeAreaInsets();
     const { data: user } = useUser();
     const { isEloVisible } = useEloVisibility();
     const { data: activeUsers } = useActiveUsers();
@@ -41,7 +43,10 @@ export const PageHeader = () => {
     }, [weeklyStats, user.eloRating, user.gamesWon, user.gamesLost]);
 
     return (
-        <View className="bg-[#F6FAFE] dark:bg-[#0F1417] px-4 py-5 border-b border-neutral-200 dark:border-neutral-800">
+        <View
+            className="bg-[#F6FAFE] dark:bg-[#0F1417] px-4 pb-5 border-b border-neutral-200 dark:border-neutral-800"
+            style={{ paddingTop: insets.top + 20 }}
+        >
             <View className="flex-row justify-between items-center">
                 <TouchableOpacity
                     className="flex-row items-center gap-3"

@@ -6,7 +6,7 @@ export default function RootLayout() {
   const pathname = usePathname();
   const onGameScreen = pathname === '/game';
 
-  const edges: Edge[] = ['left', 'right', 'top'];
+  const edges: Edge[] = ['left', 'right'];
 
   if (onGameScreen || __DEV__) {
     edges.push('bottom');
