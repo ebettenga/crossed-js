@@ -759,6 +759,11 @@ describe("sockets routes", () => {
     const clientA = await connectClient(userA);
     const clientB = await connectClient(userB);
 
+    // Seed Redis so forfeit goes through onGameEnd (emits game_forfeited), not cleanup
+    const cached = room.createRoomCache();
+    cached.userGuessCounts[userA.id] = { correct: 1, incorrect: 0 };
+    await redisService.cacheGame(room.id.toString(), cached);
+
     const roomPromise = waitForClientEvent<any>(clientA, "room");
     const forfeitPromise = waitForClientEvent<any>(clientB, "game_forfeited");
 

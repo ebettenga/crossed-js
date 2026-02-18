@@ -893,6 +893,13 @@ describe("RoomService integration", () => {
         });
       await service.joinExistingRoom(reloadedRoom!, user2.id);
 
+      // Seed Redis so hasRecordedCorrectGuess is true (room is "played")
+      const cached = await redisService.getGame(room.id.toString());
+      if (cached) {
+        cached.userGuessCounts[user1.id] = { correct: 1, incorrect: 0 };
+        await redisService.cacheGame(room.id.toString(), cached);
+      }
+
       const forfeited = await service.forfeitGame(room.id, user1.id);
 
       expect(forfeited.status).toBe("finished");
@@ -934,6 +941,12 @@ describe("RoomService integration", () => {
         });
       await service.joinExistingRoom(reloadedRoom!, user2.id);
 
+      const cached = await redisService.getGame(room.id.toString());
+      if (cached) {
+        cached.userGuessCounts[user1.id] = { correct: 1, incorrect: 0 };
+        await redisService.cacheGame(room.id.toString(), cached);
+      }
+
       await service.forfeitGame(room.id, user1.id);
 
       const stats = await dataSource.getRepository(GameStats).find({
@@ -957,6 +970,12 @@ describe("RoomService integration", () => {
           relations: ["players", "crossword"],
         });
       await service.joinExistingRoom(reloadedRoom!, user2.id);
+
+      const cached = await redisService.getGame(room.id.toString());
+      if (cached) {
+        cached.userGuessCounts[user1.id] = { correct: 1, incorrect: 0 };
+        await redisService.cacheGame(room.id.toString(), cached);
+      }
 
       await service.forfeitGame(room.id, user1.id);
 
@@ -989,6 +1008,24 @@ describe("RoomService integration", () => {
           letter === "*" && index === 0 ? "A" : letter,
       );
       await roomRepo.save(reloadedRoom!);
+
+      // Seed Redis so hasRecordedCorrectGuess is true (room is "played"), so forfeit uses onGameEnd not cleanup
+      let cached = await redisService.getGame(room.id.toString());
+      if (!cached) {
+        cached = reloadedRoom!.createRoomCache();
+        cached.foundLetters = [...reloadedRoom!.found_letters];
+        cached.scores = { [user.id]: 33 };
+      }
+      cached.userGuessCounts[user.id] = { correct: 1, incorrect: 0 };
+      cached.correctGuessDetails[user.id] = [
+        {
+          row: 0,
+          col: 0,
+          letter: reloadedRoom!.found_letters[0] ?? "A",
+          timestamp: Date.now(),
+        },
+      ];
+      await redisService.cacheGame(room.id.toString(), cached);
 
       const forfeited = await service.forfeitGame(room.id, user.id);
 

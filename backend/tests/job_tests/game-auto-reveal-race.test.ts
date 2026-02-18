@@ -103,6 +103,10 @@ jest.mock("../../src/services/RedisService", () => {
     async isUserOnThisServer() {
       return true;
     }
+    async acquireGameLock() {
+      return "test-lock-token";
+    }
+    async releaseGameLock() {}
   }
   return { RedisService };
 });
