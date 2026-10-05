@@ -1,327 +1,254 @@
 import { EloService } from "../../src/services/EloService";
-import { config } from "../../src/config/config";
-import { GameStats } from "../../src/entities/GameStats";
+import { inflateDeviation, rate } from "../../src/services/glicko2";
 import { Room } from "../../src/entities/Room";
 import { User } from "../../src/entities/User";
 
-type GamesPlayedMap = Record<number, number>;
-
-const createQueryBuilderMock = (gamesPlayed: GamesPlayedMap) => {
-  return () => {
-    const qb: any = {
-      __userId: undefined as number | undefined,
-      innerJoin: jest.fn(() => qb),
-      where: jest.fn(() => qb),
-      andWhere: jest.fn((_condition: string, params?: { userId?: number }) => {
-        if (params && typeof params.userId === "number") {
-          qb.__userId = params.userId;
-        }
-        return qb;
-      }),
-      getCount: jest.fn(async () => {
-        const id = qb.__userId ?? -1;
-        return gamesPlayed[id] ?? 0;
-      }),
-    };
-
-    return qb;
-  };
+type PlayerSeed = {
+  id: number;
+  eloRating: number;
+  ratingDeviation?: number;
+  ratingVolatility?: number;
+  ratingUpdatedAt?: Date | null;
 };
 
-const createService = (gamesPlayed: GamesPlayedMap = {}) => {
+const NOW = new Date("2026-10-05T12:00:00Z");
+
+const createService = (seeds: PlayerSeed[]) => {
+  const users = new Map(
+    seeds.map((seed) => [
+      seed.id,
+      Object.assign(new User(), {
+        ratingDeviation: 500,
+        ratingVolatility: 0.09,
+        ratingUpdatedAt: null,
+        ...seed,
+      }),
+    ]),
+  );
+
   const userRepository = {
-    findOne: jest.fn(),
+    findOne: jest.fn(async ({ where }: { where: { id: number } }) =>
+      users.get(where.id) ?? null
+    ),
     update: jest.fn(),
   };
 
-  const roomRepository = {
-    createQueryBuilder: jest.fn(createQueryBuilderMock(gamesPlayed)),
-  };
-
-  const service = new EloService(
-    userRepository as any,
-    roomRepository as any,
-    {} as any,
-  );
-
-  return { service, userRepository, roomRepository };
+  const service = new EloService(userRepository as any, {} as any, {} as any);
+  return { service, userRepository };
 };
 
-const expectedScore = (playerRating: number, opponentRating: number) =>
-  1 / (1 + Math.pow(10, (opponentRating - playerRating) / 400));
-
-const createEloTestScenario = () => {
-  const roomId = 101;
-
-  const rookie = Object.assign(new User(), {
-    id: 1,
-    username: "rookie_player",
-    eloRating: 1200,
-    gameStats: [] as GameStats[],
-  });
-
-  const veteran = Object.assign(new User(), {
-    id: 2,
-    username: "veteran_player",
-    eloRating: 1200,
-    gameStats: [] as GameStats[],
-  });
-
-  const room = Object.assign(new Room(), {
-    id: roomId,
-    type: "1v1" as Room["type"],
+const createRoom = (
+  type: Room["type"],
+  scores: Record<number, number>,
+): Room =>
+  Object.assign(new Room(), {
+    id: 101,
+    type,
     status: "finished" as Room["status"],
-    players: [
-      { id: rookie.id } as User,
-      { id: veteran.id } as User,
-    ],
-    scores: {
-      [rookie.id]: 15,
-      [veteran.id]: 10,
-    },
+    players: Object.keys(scores).map((id) => ({ id: Number(id) }) as User),
+    scores,
   });
 
-  return {
-    room,
-    rookie,
-    veteran,
+const updateFor = (userRepository: { update: jest.Mock }, id: number) =>
+  userRepository.update.mock.calls.find(([userId]) => userId === id)?.[1];
+
+describe("glicko2", () => {
+  const options = {
+    tau: 0.5,
+    minDeviation: 0,
+    maxDeviation: 1000,
+    maxVolatility: 1,
   };
-};
 
-const createFreeForAllScenario = () => {
-  const roomId = 202;
+  it("matches the worked example from Glickman's paper", () => {
+    const player = { rating: 1500, deviation: 200, volatility: 0.06 };
+    // The paper rates over one full period, so deviation grows by one first
+    const updated = rate(
+      { ...player, deviation: inflateDeviation(player, 1, options) },
+      [
+        { opponent: { rating: 1400, deviation: 30, volatility: 0.06 }, score: 1 },
+        { opponent: { rating: 1550, deviation: 100, volatility: 0.06 }, score: 0 },
+        { opponent: { rating: 1700, deviation: 300, volatility: 0.06 }, score: 0 },
+      ],
+      options,
+    );
 
-  const leader = Object.assign(new User(), {
-    id: 10,
-    username: "ffa_leader",
-    eloRating: 1400,
-    gameStats: [] as GameStats[],
+    expect(updated.rating).toBeCloseTo(1464.06, 1);
+    expect(updated.deviation).toBeCloseTo(151.52, 1);
+    expect(updated.volatility).toBeCloseTo(0.05999, 4);
   });
 
-  const chaser = Object.assign(new User(), {
-    id: 11,
-    username: "ffa_chaser",
-    eloRating: 1300,
-    gameStats: [] as GameStats[],
-  });
+  it("grows deviation with inactivity, capped at the max", () => {
+    const player = { rating: 1500, deviation: 60, volatility: 0.09 };
+    const limits = { minDeviation: 45, maxDeviation: 500 };
 
-  const challenger = Object.assign(new User(), {
-    id: 12,
-    username: "ffa_challenger",
-    eloRating: 1200,
-    gameStats: [] as GameStats[],
+    expect(inflateDeviation(player, 0, limits)).toBeCloseTo(60, 5);
+    expect(inflateDeviation(player, 30 * 0.21436, limits)).toBeGreaterThan(70);
+    expect(inflateDeviation(player, 1e6, limits)).toBe(500);
   });
-
-  const room = Object.assign(new Room(), {
-    id: roomId,
-    type: "free4all" as Room["type"],
-    status: "finished" as Room["status"],
-    players: [
-      { id: leader.id } as User,
-      { id: chaser.id } as User,
-      { id: challenger.id } as User,
-    ],
-    scores: {
-      [leader.id]: 30,
-      [chaser.id]: 20,
-      [challenger.id]: 10,
-    },
-  });
-
-  return {
-    room,
-    players: [leader, chaser, challenger] satisfies User[],
-  };
-};
+});
 
 describe("EloService", () => {
-  afterEach(() => {
-    jest.restoreAllMocks();
+  it("swings established 1v1 players by roughly 10 points", async () => {
+    const { service } = createService([
+      { id: 1, eloRating: 1500, ratingDeviation: 60, ratingUpdatedAt: NOW },
+      { id: 2, eloRating: 1500, ratingDeviation: 60, ratingUpdatedAt: NOW },
+    ]);
+
+    const ratings = await service.updateEloRatings(
+      createRoom("1v1", { 1: 20, 2: 10 }),
+      NOW,
+    );
+
+    const gain = ratings.get(1)! - 1500;
+    const loss = 1500 - ratings.get(2)!;
+    expect(gain).toBeGreaterThanOrEqual(8);
+    expect(gain).toBeLessThanOrEqual(12);
+    expect(loss).toBeGreaterThanOrEqual(8);
+    expect(loss).toBeLessThanOrEqual(12);
   });
 
-  it("applies rookie base K and veteran dampening through updateEloRatings", async () => {
-    const { room, rookie, veteran } = createEloTestScenario();
-    const { service, userRepository, roomRepository } = createService({
-      [rookie.id]: 0,
-      [veteran.id]: 100,
-    });
+  it("moves new players quickly toward their strength", async () => {
+    const { service } = createService([
+      { id: 1, eloRating: 1200 },
+      { id: 2, eloRating: 1200 },
+    ]);
 
-    userRepository.findOne.mockImplementation(
-      async ({ where: { id } }: { where: { id: number } }) => {
-        if (id === rookie.id) return rookie;
-        if (id === veteran.id) return veteran;
-        return null;
-      },
+    const ratings = await service.updateEloRatings(
+      createRoom("1v1", { 1: 20, 2: 10 }),
+      NOW,
     );
-    userRepository.update.mockResolvedValue({} as any);
 
-    const result = await service.updateEloRatings(room);
+    expect(ratings.get(1)! - 1200).toBeGreaterThan(150);
+    expect(1200 - ratings.get(2)!).toBeGreaterThan(150);
+  });
 
-    const baseK = config.game.elo.kFactorBase;
-    const rookieExpected = expectedScore(rookie.eloRating, veteran.eloRating);
-    const veteranExpected = expectedScore(veteran.eloRating, rookie.eloRating);
-    const rookieRating = Math.max(
-      rookie.eloRating,
-      Math.round(rookie.eloRating + baseK * (1 - rookieExpected)),
+  it("barely moves an established player who loses to a new player", async () => {
+    const { service } = createService([
+      { id: 1, eloRating: 1500, ratingDeviation: 50, ratingUpdatedAt: NOW },
+      { id: 2, eloRating: 1500 },
+    ]);
+
+    const ratings = await service.updateEloRatings(
+      createRoom("1v1", { 1: 10, 2: 20 }),
+      NOW,
     );
-    const veteranK = baseK *
-      Math.max(
-        0.5,
-        config.game.elo.gamesPlayedDampening /
-          (100 + config.game.elo.gamesPlayedDampening),
+
+    expect(1500 - ratings.get(1)!).toBeLessThanOrEqual(5);
+    expect(ratings.get(2)! - 1500).toBeGreaterThan(150);
+  });
+
+  it("costs the favorite more when losing to a lower-rated player", async () => {
+    const { service } = createService([
+      { id: 1, eloRating: 1700, ratingDeviation: 80, ratingUpdatedAt: NOW },
+      { id: 2, eloRating: 1500, ratingDeviation: 80, ratingUpdatedAt: NOW },
+    ]);
+
+    const ratings = await service.updateEloRatings(
+      createRoom("1v1", { 1: 10, 2: 20 }),
+      NOW,
+    );
+
+    expect(1700 - ratings.get(1)!).toBeGreaterThan(15);
+    expect(ratings.get(2)! - 1500).toBeGreaterThan(15);
+  });
+
+  it("leaves equal players unchanged on a draw but tightens deviation", async () => {
+    const { service, userRepository } = createService([
+      { id: 1, eloRating: 1500, ratingDeviation: 150, ratingUpdatedAt: NOW },
+      { id: 2, eloRating: 1500, ratingDeviation: 150, ratingUpdatedAt: NOW },
+    ]);
+
+    const ratings = await service.updateEloRatings(
+      createRoom("1v1", { 1: 15, 2: 15 }),
+      NOW,
+    );
+
+    expect(ratings.get(1)).toBe(1500);
+    expect(ratings.get(2)).toBe(1500);
+    expect(updateFor(userRepository, 1).ratingDeviation).toBeLessThan(150);
+  });
+
+  it("rates free-for-all players against each opponent by finish order", async () => {
+    const seeds = [1, 2, 3, 4].map((id) => ({
+      id,
+      eloRating: 1500,
+      ratingDeviation: 80,
+      ratingUpdatedAt: NOW,
+    }));
+    const { service } = createService(seeds);
+
+    const ratings = await service.updateEloRatings(
+      createRoom("free4all", { 1: 40, 2: 30, 3: 20, 4: 10 }),
+      NOW,
+    );
+
+    expect(ratings.get(1)!).toBeGreaterThan(ratings.get(2)!);
+    expect(ratings.get(2)!).toBeGreaterThan(ratings.get(3)!);
+    expect(ratings.get(3)!).toBeGreaterThan(ratings.get(4)!);
+    expect(ratings.get(1)!).toBeGreaterThan(1500);
+    expect(ratings.get(4)!).toBeLessThan(1500);
+  });
+
+  it("never drops the top scorer's rating", async () => {
+    const { service } = createService([
+      { id: 1, eloRating: 1500, ratingDeviation: 60, ratingUpdatedAt: NOW },
+      { id: 2, eloRating: 2200, ratingDeviation: 60, ratingUpdatedAt: NOW },
+      { id: 3, eloRating: 2200, ratingDeviation: 60, ratingUpdatedAt: NOW },
+      { id: 4, eloRating: 2200, ratingDeviation: 60, ratingUpdatedAt: NOW },
+    ]);
+
+    const ratings = await service.updateEloRatings(
+      createRoom("2v2", { 1: 30, 2: 30, 3: 30, 4: 30 }),
+      NOW,
+    );
+
+    for (const id of [1, 2, 3, 4]) {
+      const before = id === 1 ? 1500 : 2200;
+      expect(ratings.get(id)!).toBeGreaterThanOrEqual(before);
+    }
+  });
+
+  it("swings more after a long break", async () => {
+    const lastYear = new Date(NOW.getTime() - 365 * 24 * 60 * 60 * 1000);
+    const play = async (ratingUpdatedAt: Date) => {
+      const { service } = createService([
+        { id: 1, eloRating: 1500, ratingDeviation: 60, ratingUpdatedAt },
+        { id: 2, eloRating: 1500, ratingDeviation: 60, ratingUpdatedAt: NOW },
+      ]);
+      const ratings = await service.updateEloRatings(
+        createRoom("1v1", { 1: 10, 2: 20 }),
+        NOW,
       );
-    const veteranRating = Math.round(
-      veteran.eloRating + veteranK * (0 - veteranExpected),
-    );
-
-    expect(roomRepository.createQueryBuilder).toHaveBeenCalledTimes(2);
-    expect(userRepository.update).toHaveBeenNthCalledWith(1, rookie.id, {
-      eloRating: rookieRating,
-    });
-    expect(userRepository.update).toHaveBeenNthCalledWith(2, veteran.id, {
-      eloRating: veteranRating,
-    });
-    expect(result.get(rookie.id)).toBe(rookieRating);
-    expect(result.get(veteran.id)).toBe(veteranRating);
-  });
-
-  it("caps win streak bonus via updateEloRatings", async () => {
-    const { room, rookie, veteran } = createEloTestScenario();
-    const { service, userRepository } = createService({
-      [rookie.id]: 0,
-      [veteran.id]: 0,
-    });
-
-    const streakStats = Object.assign(new GameStats(), {
-      roomId: room.id,
-      winStreak: 10,
-    });
-    rookie.gameStats = [streakStats];
-    veteran.gameStats = [];
-
-    userRepository.findOne.mockImplementation(
-      async ({ where: { id } }: { where: { id: number } }) => {
-        if (id === rookie.id) return rookie;
-        if (id === veteran.id) return veteran;
-        return null;
-      },
-    );
-    userRepository.update.mockResolvedValue({} as any);
-
-    const result = await service.updateEloRatings(room);
-
-    const baseK = config.game.elo.kFactorBase;
-    const expected = expectedScore(rookie.eloRating, veteran.eloRating);
-    const cappedBonus = 1 + config.game.elo.maxWinStreakBonus;
-    const rookieRating = Math.max(
-      rookie.eloRating,
-      Math.round(rookie.eloRating + baseK * cappedBonus * (1 - expected)),
-    );
-
-    expect(userRepository.update).toHaveBeenCalledWith(rookie.id, {
-      eloRating: rookieRating,
-    });
-    expect(result.get(rookie.id)).toBe(rookieRating);
-  });
-
-  it("treats 1v1 draws as neutral outcomes", async () => {
-    const { room, rookie, veteran } = createEloTestScenario();
-    room.scores = {
-      [rookie.id]: 15,
-      [veteran.id]: 15,
+      return 1500 - ratings.get(1)!;
     };
 
-    const { service, userRepository, roomRepository } = createService({
-      [rookie.id]: 25,
-      [veteran.id]: 40,
-    });
-
-    userRepository.findOne.mockImplementation(
-      async ({ where: { id } }: { where: { id: number } }) => {
-        if (id === rookie.id) return rookie;
-        if (id === veteran.id) return veteran;
-        return null;
-      },
-    );
-    userRepository.update.mockResolvedValue({} as any);
-
-    const result = await service.updateEloRatings(room);
-
-    expect(roomRepository.createQueryBuilder).toHaveBeenCalledTimes(2);
-    expect(userRepository.update).toHaveBeenNthCalledWith(1, rookie.id, {
-      eloRating: rookie.eloRating,
-    });
-    expect(userRepository.update).toHaveBeenNthCalledWith(2, veteran.id, {
-      eloRating: veteran.eloRating,
-    });
-    expect(result.get(rookie.id)).toBe(rookie.eloRating);
-    expect(result.get(veteran.id)).toBe(veteran.eloRating);
+    expect(await play(lastYear)).toBeGreaterThan(await play(NOW));
   });
 
-  it("updates free-for-all ratings with dampening and protects winners", async () => {
-    const { room, players } = createFreeForAllScenario();
-    const [leader, chaser, challenger] = players;
+  it("persists deviation, volatility and rating time", async () => {
+    const { service, userRepository } = createService([
+      { id: 1, eloRating: 1500 },
+      { id: 2, eloRating: 1500 },
+    ]);
 
-    const { service, userRepository, roomRepository } = createService({
-      [leader.id]: 0,
-      [chaser.id]: 80,
-      [challenger.id]: 80,
-    });
+    await service.updateEloRatings(createRoom("1v1", { 1: 20, 2: 10 }), NOW);
 
-    userRepository.findOne.mockImplementation(
-      async ({ where: { id } }: { where: { id: number } }) => {
-        return players.find((player) => player.id === id) ?? null;
-      },
-    );
-    userRepository.update.mockResolvedValue({} as any);
+    expect(userRepository.update).toHaveBeenCalledTimes(2);
+    const update = updateFor(userRepository, 1);
+    expect(update.ratingDeviation).toBeLessThan(500);
+    expect(update.ratingVolatility).toBeGreaterThan(0);
+    expect(update.ratingUpdatedAt).toBe(NOW);
+  });
 
-    const result = await service.updateEloRatings(room);
+  it("does not rate time trials", async () => {
+    const { service, userRepository } = createService([
+      { id: 1, eloRating: 1500 },
+    ]);
 
-    const baseK = config.game.elo.kFactorBase;
-    const leaderExpected = (
-      expectedScore(leader.eloRating, chaser.eloRating) +
-      expectedScore(leader.eloRating, challenger.eloRating)
-    ) / 2;
-    const leaderActual = 1;
-    const leaderRating = Math.round(
-      leader.eloRating + baseK * (leaderActual - leaderExpected),
-    );
-
-    const veteranK = baseK *
-      Math.max(
-        0.5,
-        config.game.elo.gamesPlayedDampening /
-          (80 + config.game.elo.gamesPlayedDampening),
-      );
-    const chaserExpected = (
-      expectedScore(chaser.eloRating, leader.eloRating) +
-      expectedScore(chaser.eloRating, challenger.eloRating)
-    ) / 2;
-    const challengerExpected = (
-      expectedScore(challenger.eloRating, leader.eloRating) +
-      expectedScore(challenger.eloRating, chaser.eloRating)
-    ) / 2;
-
-    const chaserRating = Math.round(
-      chaser.eloRating + veteranK * (0.5 - chaserExpected),
-    );
-    const challengerRating = Math.round(
-      challenger.eloRating + veteranK * (0 - challengerExpected),
-    );
-
-    expect(roomRepository.createQueryBuilder).toHaveBeenCalledTimes(3);
-    expect(userRepository.update).toHaveBeenNthCalledWith(1, leader.id, {
-      eloRating: Math.max(leader.eloRating, leaderRating),
-    });
-    expect(userRepository.update).toHaveBeenNthCalledWith(2, chaser.id, {
-      eloRating: chaserRating,
-    });
-    expect(userRepository.update).toHaveBeenNthCalledWith(3, challenger.id, {
-      eloRating: challengerRating,
-    });
-
-    expect(result.get(leader.id)).toBe(Math.max(leader.eloRating, leaderRating));
-    expect(result.get(chaser.id)).toBe(chaserRating);
-    expect(result.get(challenger.id)).toBe(challengerRating);
+    await expect(
+      service.updateEloRatings(createRoom("time_trial", { 1: 20 }), NOW),
+    ).rejects.toThrow("Invalid game type");
+    expect(userRepository.update).not.toHaveBeenCalled();
   });
 });

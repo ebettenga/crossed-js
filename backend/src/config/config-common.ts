@@ -10,7 +10,7 @@ const notificationTokenKeys = process.env.EXPO_NOTIFICATIONS_TOKEN_KEYS
 export const commonConfig = {
   api: {
     prefix: "/api",
-    port: 3000,
+    port: parseInt(process.env.API_PORT || "3000", 10),
     host: "0.0.0.0",
   },
   cors: {
@@ -25,11 +25,14 @@ export const commonConfig = {
       incorrect: -1,
       forfeit: -300,
     },
-    elo: {
-      kFactorBase: 25,
-      winStreakMultiplier: 0.1,
-      maxWinStreakBonus: 0.3,
-      gamesPlayedDampening: 30,
+    // Glicko-2 with Lichess's parameters
+    rating: {
+      tau: 0.75,
+      minDeviation: 45,
+      maxDeviation: 500,
+      maxVolatility: 0.1,
+      ratingPeriodsPerDay: 0.21436,
+      minRating: 100,
     },
     maxPlayers: {
       "1v1": 2,
@@ -55,6 +58,12 @@ export const commonConfig = {
       },
     },
   },
+  socket: {
+    // How long a dropped client can reconnect and have missed events replayed
+    maxDisconnectionDuration: 2 * 60 * 1000,
+    // How long a processed guess id is remembered for dedupe
+    guessDedupeTTLSeconds: 300,
+  },
   status: {
     cleanup: {
       interval: 30000, // 30 seconds
@@ -68,6 +77,7 @@ export const commonConfig = {
       port: parseInt(redisURL?.port || "6379"),
       username: redisURL?.username || "default",
       password: redisURL?.password || "",
+      db: parseInt(redisURL?.pathname?.slice(1) || "0", 10) || 0,
     } as RedisOptions,
     gameTTL: 86400, // 1 day in seconds
     responseCacheTTL: parseInt(process.env.RESPONSE_CACHE_TTL || "15", 10),

@@ -63,6 +63,15 @@ export class User {
   @Column({ type: "integer", default: 1200 })
   eloRating!: number;
 
+  @Column({ type: "double precision", default: 500 })
+  ratingDeviation!: number;
+
+  @Column({ type: "double precision", default: 0.09 })
+  ratingVolatility!: number;
+
+  @Column({ type: "timestamp", nullable: true })
+  ratingUpdatedAt!: Date | null;
+
   // @ts-ignore
   @OneToMany("GameStats", (stats) => stats.user, { eager: true })
   gameStats!: GameStats[];
