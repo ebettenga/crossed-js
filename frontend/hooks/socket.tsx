@@ -668,6 +668,9 @@ export const useUserStatus = () => {
     if (!socket) return;
 
     const handleStatusChange = (data: { userId: number; status: 'online' | 'offline' }) => {
+      const applyStatus = <T extends { id: number; status?: 'online' | 'offline' }>(user: T): T =>
+        user.id === data.userId ? { ...user, status: data.status } : user;
+
       queryClient.setQueryData(['me'], (oldData: any) => {
         if (oldData?.id === data.userId) {
           return { ...oldData, status: data.status };
@@ -677,9 +680,16 @@ export const useUserStatus = () => {
 
       queryClient.setQueryData(['users'], (oldData: any[] | undefined) => {
         if (!oldData) return oldData;
-        return oldData.map((user: any) =>
-          user.id === data.userId ? { ...user, status: data.status } : user
-        );
+        return oldData.map((user: any) => applyStatus(user));
+      });
+
+      queryClient.setQueryData(['friends'], (oldData: any[] | undefined) => {
+        if (!oldData) return oldData;
+        return oldData.map((friendship: any) => ({
+          ...friendship,
+          sender: applyStatus(friendship.sender),
+          receiver: applyStatus(friendship.receiver),
+        }));
       });
     };
 

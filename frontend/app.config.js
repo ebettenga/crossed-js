@@ -18,7 +18,15 @@ module.exports = {
         "foregroundImage": "./assets/images/icon.png",
         "backgroundColor": "#92979b"
       },
-      "package": "com.bettengasolutions.crossed"
+      "package": "com.bettengasolutions.crossed",
+      "statusBar": {
+        "backgroundColor": "#F6FAFE",
+        "translucent": true,
+        "barStyle": "dark-content"
+      },
+      "navigationBar": {
+        "backgroundColor": "#F6FAFE"
+      }
     },
     "web": {
       "bundler": "metro",

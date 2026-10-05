@@ -1,8 +1,8 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Image, ActivityIndicator, TextInput, RefreshControl, FlatList } from 'react-native';
+import { View, Text, TouchableOpacity, Image, ActivityIndicator, TextInput, RefreshControl, FlatList } from 'react-native';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { Swords, X, UserPlus, Check } from 'lucide-react-native';
 import { PageHeader } from '~/components/Header';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
     Friend,
     useFriendsList,
@@ -180,7 +180,7 @@ const FriendRow: React.FC<FriendRowProps> = ({
 };
 
 export default function Friends() {
-    const insets = useSafeAreaInsets();
+    const tabBarHeight = useBottomTabBarHeight();
     const { data: user } = useUser();
     const logger = useLogger();
     const [username, setUsername] = useState('');
@@ -351,17 +351,20 @@ export default function Friends() {
     useUserStatus(); // Add this hook to listen for status changes
     useFriendsSocketEvents();
 
-    if (!user) return null;
-
     const getFriendStatus = useCallback((friend: Friend): OtherUser => {
+        if (!user?.id) {
+            const fallback = friend.sender;
+            return { ...fallback, status: fallback.status || 'offline' };
+        }
         const otherUser = friend.sender.id === user.id ? friend.receiver : friend.sender;
         return {
             ...otherUser,
             status: otherUser.status || 'offline'
         };
-    }, [user.id]);
+    }, [user?.id]);
 
     const hasOutgoingChallengeToFriend = useCallback((friendUserId: number) => {
+        if (!user?.id) return false;
         return challenges.some((room) => {
             if (!room?.players?.length) return false;
             const challenger = room.players[0];
@@ -369,7 +372,7 @@ export default function Friends() {
             if (room.status && room.status !== 'pending') return false;
             return room.players.some((player) => player.id === friendUserId);
         });
-    }, [challenges, user.id]);
+    }, [challenges, user?.id]);
 
     const handleChallenge = useCallback((friend: Friend) => {
         const target = getFriendStatus(friend);
@@ -384,9 +387,77 @@ export default function Friends() {
     const error = friendsError;
     const challengeCount = challenges?.length ?? 0;
     const displayChallengeCount = challengeCount > 99 ? '99+' : String(challengeCount);
+    const listBottomPadding = tabBarHeight + 16;
+
+    const renderAddFriendSection = () => (
+        <View className="relative flex-row gap-2 mb-4">
+            <TextInput
+                className="flex-1 h-[46px] border border-neutral-200 dark:border-neutral-700 rounded-lg px-3 bg-neutral-50 dark:bg-neutral-800 text-[#1D2124] dark:text-[#DDE1E5] font-rubik"
+                placeholder="Enter username"
+                placeholderTextColor="#666666"
+                value={username}
+                onChangeText={handleUsernameChange}
+                autoCapitalize="none"
+            />
+            <TouchableOpacity
+                className="flex-row items-center bg-[#8B0000] px-4 rounded-lg gap-1"
+                onPress={handleAddFriend}
+                disabled={isAddingFriend}
+            >
+                {isAddingFriend ? (
+                    <ActivityIndicator size="large" color="#FFFFFF" />
+                ) : (
+                    <>
+                        <UserPlus size={16} color="#FFFFFF" />
+                        <Text className="text-white text-sm font-rubik">Add</Text>
+                    </>
+                )}
+            </TouchableOpacity>
+            {filteredFoundUsers.length > 0 && (
+                <View className="absolute top-[46px] left-0 right-[76px] bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg mt-1 z-10 shadow-lg">
+                    <FlatList
+                        data={filteredFoundUsers}
+                        keyExtractor={(item) => item.id.toString()}
+                        renderItem={({ item }) => (
+                            <TouchableOpacity
+                                className="flex-row items-center p-3 border-b border-neutral-200 dark:border-neutral-700"
+                                onPress={() => handleSelectUser(item)}
+                            >
+                                <View className="relative">
+                                    {item.photo ? (
+                                        <Image
+                                            source={{ uri: item.photo }}
+                                            className="w-8 h-8 rounded-full bg-neutral-100 dark:bg-neutral-700"
+                                        />
+                                    ) : (
+                                        <View className="w-8 h-8 rounded-full bg-[#8B0000] items-center justify-center">
+                                            <Text className="text-white text-sm font-rubik-bold">
+                                                {item.username.charAt(0).toUpperCase()}
+                                            </Text>
+                                        </View>
+                                    )}
+                                    <View
+                                        className={`absolute bottom-0 right-0 w-2 h-2 rounded-full border-2 border-white ${item.status === 'online' ? 'bg-green-500' : 'bg-gray-400'
+                                            }`}
+                                    />
+                                </View>
+                                <Text className="ml-3 text-[#1D2124] dark:text-[#DDE1E5] font-rubik">
+                                    {item.username}
+                                </Text>
+                            </TouchableOpacity>
+                        )}
+                        style={{ maxHeight: 200 }}
+                        nestedScrollEnabled
+                    />
+                </View>
+            )}
+        </View>
+    );
+
+    if (!user) return null;
 
     return (
-        <View className="flex-1 bg-[#F6FAFE] dark:bg-[#0F1417]" style={{ paddingBottom: insets.bottom }}>
+        <View className="flex-1 bg-[#F6FAFE] dark:bg-[#0F1417]">
             <PageHeader />
 
             <View className="flex-row px-4 mb-4">
@@ -454,77 +525,25 @@ export default function Friends() {
 
             {activeTab === 'friends' ? (
                 <View className="flex-1 px-4">
-                    <View className="relative flex-row gap-2 mb-4">
-                        <TextInput
-                            className="flex-1 h-[46px] border border-neutral-200 dark:border-neutral-700 rounded-lg px-3 bg-neutral-50 dark:bg-neutral-800 text-[#1D2124] dark:text-[#DDE1E5] font-rubik"
-                            placeholder="Enter username"
-                            placeholderTextColor="#666666"
-                            value={username}
-                            onChangeText={handleUsernameChange}
-                            autoCapitalize="none"
-                        />
-                        <TouchableOpacity
-                            className="flex-row items-center bg-[#8B0000] px-4 rounded-lg gap-1"
-                            onPress={handleAddFriend}
-                            disabled={isAddingFriend}
-                        >
-                            {isAddingFriend ? (
-                                <ActivityIndicator size="large" color="#FFFFFF" />
-                            ) : (
-                                <>
-                                    <UserPlus size={16} color="#FFFFFF" />
-                                    <Text className="text-white text-sm font-rubik">Add</Text>
-                                </>
-                            )}
-                        </TouchableOpacity>
-                        {filteredFoundUsers.length > 0 && (
-                            <View className="absolute top-[46px] left-0 right-[76px] bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg mt-1 z-10 shadow-lg">
-                                <FlatList
-                                    data={filteredFoundUsers}
-                                    keyExtractor={(item) => item.id.toString()}
-                                    renderItem={({ item }) => (
-                                        <TouchableOpacity
-                                            className="flex-row items-center p-3 border-b border-neutral-200 dark:border-neutral-700"
-                                            onPress={() => handleSelectUser(item)}
-                                        >
-                                            <View className="relative">
-                                                {item.photo ? (
-                                                    <Image
-                                                        source={{ uri: item.photo }}
-                                                        className="w-8 h-8 rounded-full bg-neutral-100 dark:bg-neutral-700"
-                                                    />
-                                                ) : (
-                                                    <View className="w-8 h-8 rounded-full bg-[#8B0000] items-center justify-center">
-                                                        <Text className="text-white text-sm font-rubik-bold">
-                                                            {item.username.charAt(0).toUpperCase()}
-                                                        </Text>
-                                                    </View>
-                                                )}
-                                                <View
-                                                    className={`absolute bottom-0 right-0 w-2 h-2 rounded-full border-2 border-white ${item.status === 'online' ? 'bg-green-500' : 'bg-gray-400'
-                                                        }`}
-                                                />
-                                            </View>
-                                            <Text className="ml-3 text-[#1D2124] dark:text-[#DDE1E5] font-rubik">
-                                                {item.username}
-                                            </Text>
-                                        </TouchableOpacity>
-                                    )}
-                                    style={{ maxHeight: 200 }}
-                                />
-                            </View>
-                        )}
-                    </View>
-
                     {isLoading ? (
-                        <ActivityIndicator className="mt-5" size="large" color="#8B0000" />
+                        <>
+                            {renderAddFriendSection()}
+                            <ActivityIndicator className="mt-5" size="large" color="#8B0000" />
+                        </>
                     ) : error ? (
-                        <Text className="text-red-500 dark:text-red-400 text-center mt-5 font-rubik">
-                            Failed to load friends
-                        </Text>
+                        <>
+                            {renderAddFriendSection()}
+                            <Text className="text-red-500 dark:text-red-400 text-center mt-5 font-rubik">
+                                Failed to load friends
+                            </Text>
+                        </>
                     ) : (
-                        <ScrollView
-                            className="flex-1"
+                        <FlatList
+                            data={friends ?? []}
+                            keyExtractor={(item) => item.id.toString()}
+                            style={{ flex: 1 }}
+                            contentContainerStyle={{ paddingBottom: listBottomPadding }}
+                            keyboardShouldPersistTaps="handled"
                             refreshControl={
                                 <RefreshControl
                                     refreshing={refreshing}
@@ -533,33 +552,36 @@ export default function Friends() {
                                     colors={["#8B0000"]}
                                 />
                             }
-                        >
-                            {pendingRequests?.map((friend) => {
-                                const isSender = friend.sender.id === user.id;
+                            ListHeaderComponent={
+                                <>
+                                    {renderAddFriendSection()}
+                                    {pendingRequests?.map((friend) => {
+                                        const isSender = friend.sender.id === user.id;
+                                        const otherUser = getFriendStatus(friend);
+                                        const hasActiveChallenge = hasOutgoingChallengeToFriend(otherUser.id);
+                                        return (
+                                            <FriendRow
+                                                key={friend.id}
+                                                friend={friend}
+                                                currentUserId={user.id}
+                                                onChallenge={handleChallenge}
+                                                onRemove={handleRemoveFriend}
+                                                onAccept={handleAcceptFriend}
+                                                onReject={handleRejectFriend}
+                                                isPending={true}
+                                                isSender={isSender}
+                                                otherUser={otherUser}
+                                                hasActiveChallenge={hasActiveChallenge}
+                                            />
+                                        );
+                                    })}
+                                </>
+                            }
+                            renderItem={({ item: friend }) => {
                                 const otherUser = getFriendStatus(friend);
                                 const hasActiveChallenge = hasOutgoingChallengeToFriend(otherUser.id);
                                 return (
                                     <FriendRow
-                                        key={friend.id}
-                                        friend={friend}
-                                        currentUserId={user.id}
-                                        onChallenge={handleChallenge}
-                                        onRemove={handleRemoveFriend}
-                                        onAccept={handleAcceptFriend}
-                                        onReject={handleRejectFriend}
-                                        isPending={true}
-                                        isSender={isSender}
-                                        otherUser={otherUser}
-                                        hasActiveChallenge={hasActiveChallenge}
-                                    />
-                                );
-                            })}
-                            {friends?.map((friend) => {
-                                const otherUser = getFriendStatus(friend);
-                                const hasActiveChallenge = hasOutgoingChallengeToFriend(otherUser.id);
-                                return (
-                                    <FriendRow
-                                        key={friend.id}
                                         friend={friend}
                                         currentUserId={user.id}
                                         onChallenge={handleChallenge}
@@ -568,14 +590,17 @@ export default function Friends() {
                                         hasActiveChallenge={hasActiveChallenge}
                                     />
                                 );
-                            })}
-                        </ScrollView>
+                            }}
+                        />
                     )}
                 </View>
             ) : (
                 <View className="flex-1 px-4">
-                    <ScrollView
-                        className="flex-1"
+                    <FlatList
+                        data={challenges}
+                        keyExtractor={(room) => room.id.toString()}
+                        style={{ flex: 1 }}
+                        contentContainerStyle={{ paddingBottom: listBottomPadding }}
                         refreshControl={
                             <RefreshControl
                                 refreshing={refreshing}
@@ -584,13 +609,11 @@ export default function Friends() {
                                 colors={["#8B0000"]}
                             />
                         }
-                    >
-                        {challenges.map((room) => {
+                        renderItem={({ item: room }) => {
                             const isChallenger = room.players[0].id === user.id;
                             const otherUser = room.players.find(p => p.id !== user.id);
                             return (
                                 <ChallengeRow
-                                    key={room.id}
                                     room={room}
                                     challenger={isChallenger}
                                     username={otherUser?.username || ''}
@@ -600,8 +623,8 @@ export default function Friends() {
                                     isRejecting={rejectChallenge.isPending}
                                 />
                             );
-                        })}
-                    </ScrollView>
+                        }}
+                    />
                 </View>
             )}
 
