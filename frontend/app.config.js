@@ -26,6 +26,8 @@ module.exports = {
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
+      // Listed first so its styles mod runs after expo-splash-screen adds its theme
+      "./plugins/withEdgeToEdgeOptOut",
       "expo-notifications",
       [
         "expo-build-properties",
