@@ -2,5 +2,6 @@
   <color name="splashscreen_background">#000000</color>
   <color name="iconBackground">#92979b</color>
   <color name="colorPrimary">#023c69</color>
-  <color name="colorPrimaryDark">#000000</color>
+  <color name="colorPrimaryDark">#F6FAFE</color>
+  <color name="navigationBarColor">#F6FAFE</color>
 </resources>
