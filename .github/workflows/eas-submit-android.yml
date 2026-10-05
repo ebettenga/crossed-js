@@ -2,6 +2,11 @@ name: Release Android Play Store build
 
 on:
   workflow_dispatch:
+    inputs:
+      build_id:
+        description: "Existing EAS build ID to submit (leave empty to build first)"
+        required: false
+        default: ""
 
 jobs:
   eas-submit-android:
@@ -31,6 +36,7 @@ jobs:
           token: ${{ secrets.EXPO_TOKEN }}
 
       - name: Build production Android artifact
+        if: ${{ inputs.build_id == '' }}
         run: |
           eas build \
             --platform android \
@@ -38,14 +44,16 @@ jobs:
             --non-interactive \
             --wait
 
-      - name: Submit latest production build to Play Console
+      - name: Submit production build to Play Console
         env:
           GOOGLE_SERVICE_ACCOUNT_KEY: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}
+          BUILD_ID: ${{ inputs.build_id }}
         run: |
           printf '%s' "$GOOGLE_SERVICE_ACCOUNT_KEY" > eas-build-key.json
+          if [ -n "$BUILD_ID" ]; then target="--id $BUILD_ID"; else target="--latest"; fi
           eas submit \
             --platform android \
             --profile production \
-            --latest \
+            $target \
             --non-interactive
           rm -f eas-build-key.json
