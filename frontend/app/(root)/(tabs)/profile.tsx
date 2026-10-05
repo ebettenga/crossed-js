@@ -1,16 +1,28 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, ScrollView } from 'react-native';
-import { Link, useRouter } from 'expo-router';
-import { Users, Settings, BarChart3, CreditCard, LogOut, UserCog, HelpCircle } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
+import { Users, Settings, BarChart3, LogOut, UserCog, HelpCircle } from 'lucide-react-native';
 import { ProfileButton } from '~/components/profile/ProfileButton';
 import { PageHeader } from '~/components/Header';
 import { useLogout, useUser } from '~/hooks/users';
-import { useColorMode } from '~/hooks/useColorMode';
+import { useFriendsList } from '~/hooks/useFriends';
+import { useUserStatus } from '~/hooks/socket';
 
 export default function Profile() {
     const router = useRouter();
     const logout = useLogout();
     const { data: user } = useUser();
+    const { data: friends } = useFriendsList();
+    useUserStatus();
+
+    const onlineFriendsCount = useMemo(() => {
+        if (!user?.id || !friends?.length) return 0;
+        return friends.reduce((count, friendship) => {
+            const otherUser =
+                friendship.sender.id === user.id ? friendship.receiver : friendship.sender;
+            return otherUser.status === 'online' ? count + 1 : count;
+        }, 0);
+    }, [friends, user?.id]);
 
     const handleLogout = async () => {
         await logout();
@@ -32,7 +44,7 @@ export default function Profile() {
                         onPress={() => router.push('/friends')}
                         label="Friends"
                         icon={<Users size={24} />}
-                        number={3}
+                        number={onlineFriendsCount}
                     />
                     <ProfileButton
                         label="Stats"
