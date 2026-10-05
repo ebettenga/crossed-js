@@ -8,7 +8,7 @@ import { useFonts } from "expo-font";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { PortalHost } from '@rn-primitives/portal';
-import { RoomProvider, SocketProvider } from '~/hooks/socket';
+import { RoomProvider, SocketProvider, useRoomEvents } from '~/hooks/socket';
 import { CancellationProvider } from '~/hooks/useCancellationStore';
 import { ChallengeProvider } from '~/hooks/useChallenge';
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -135,6 +135,7 @@ const configureRubikFonts = () => {
 function AppContent() {
   const segments = useSegments();
   const router = useRouter();
+  const { navigateToGame } = useRoomEvents();
   const { data: user, isLoading } = useUser();
   const [isReady, setIsReady] = useState(false);
   const [hasCheckedHowTo, setHasCheckedHowTo] = useState(false);
@@ -196,7 +197,7 @@ function AppContent() {
           text1: "Challenge accepted",
           type: "success",
         });
-        router.push(`/game?roomId=${roomId}`);
+        navigateToGame(roomId);
       } else {
         Toast.show({
           text1: "Challenge rejected",
@@ -209,7 +210,7 @@ function AppContent() {
         type: "error",
       });
     }
-  }, [router]);
+  }, [navigateToGame]);
 
   useEffect(() => {
     if (!user) {

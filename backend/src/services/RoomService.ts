@@ -7,7 +7,13 @@ import { EloService } from "./EloService";
 import { config } from "../config/config";
 import { fastify } from "../fastify";
 import { GameStats } from "../entities/GameStats";
-import { BadRequestError, ForbiddenError, NotFoundError } from "../errors/api";
+import {
+  BadRequestError,
+  ForbiddenError,
+  NotFoundError,
+  RoomUnavailableError,
+} from "../errors/api";
+import { roomChannel, userChannel } from "./SocketEventService";
 import { gameAutoRevealQueue, gameTimeoutQueue } from "../jobs/queues";
 import { v4 as uuidv4 } from "uuid";
 import { EntityManager } from "typeorm";
@@ -88,28 +94,86 @@ export class RoomService {
       .find({ where: { players: { id: userId } } });
   }
 
+  async getOpenRoomsForUser(userId: number): Promise<Room[]> {
+    return this.ormConnection
+      .getRepository(Room)
+      .find({
+        where: {
+          players: { id: userId },
+          status: In(["pending", "playing"]),
+        },
+      });
+  }
+
+  // A random-matchmaking room the user is already queued in or playing.
+  // Challenge rooms are excluded so a pending challenge never blocks matchmaking.
+  private async findExistingMatchForUser(userId: number): Promise<Room | null> {
+    const rooms = await this.getOpenRoomsForUser(userId);
+    return rooms.find((room) =>
+      room.status === "playing" || room.join !== JoinMethod.CHALLENGE
+    ) ?? null;
+  }
+
   async joinRoom(
     user: User,
     difficulty: string,
     type: "1v1" | "2v2" | "free4all" | "time_trial" = "1v1",
   ): Promise<Room> {
-    // For time_trial, create a new room immediately since it's single player
-    if (type === "time_trial") {
-      return await this.createRoom(user.id, difficulty, type);
-    }
+    // Serialize joins per user so retries and double taps can't create
+    // multiple rooms, and return the room they already have instead.
+    return this.redisService.withLock(`join_lock:user:${user.id}`, async () => {
+      // Admins may join their own rooms to test against themselves
+      if (!user.roles.includes("admin")) {
+        const existing = await this.findExistingMatchForUser(user.id);
+        if (existing) {
+          fastify.log.info(
+            `User ${user.id} already has room ${existing.id}, returning it`,
+          );
+          return existing;
+        }
+      }
 
-    let room = await this.findEmptyRoomByDifficulty(difficulty, type, user);
+      // For time_trial, create a new room immediately since it's single player
+      if (type === "time_trial") {
+        return await this.createRoom(user.id, difficulty, type);
+      }
 
-    if (room) {
-      fastify.log.info(`Found room with id: ${room.id}`);
-      await this.joinExistingRoom(room, user.id);
-      return room;
-    } else {
+      // A candidate can fill up between the lookup and the join; try the next one
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const room = await this.findEmptyRoomByDifficulty(
+          difficulty,
+          type,
+          user,
+        );
+        if (!room) break;
+
+        fastify.log.info(`Found room with id: ${room.id}`);
+        try {
+          await this.joinExistingRoom(room, user.id);
+          return room;
+        } catch (error) {
+          if (error instanceof RoomUnavailableError) {
+            continue;
+          }
+          throw error;
+        }
+      }
+
       return await this.createRoom(user.id, difficulty, type);
-    }
+    });
   }
 
   async joinExistingRoom(room: Room, userId: number): Promise<void> {
+    await this.redisService.withLock(
+      `game_lock:${room.id}`,
+      () => this.joinExistingRoomLocked(room, userId),
+    );
+  }
+
+  private async joinExistingRoomLocked(
+    room: Room,
+    userId: number,
+  ): Promise<void> {
     fastify.log.info(`Joining room with id: ${room.id} by user: ${userId}`);
     const player = await this.ormConnection
       .getRepository(User)
@@ -117,9 +181,25 @@ export class RoomService {
 
     if (!player) throw new Error("User not found");
 
+    // Re-read membership under the lock so concurrent joiners can't overfill
+    const current = await this.ormConnection
+      .getRepository(Room)
+      .findOneBy({ id: room.id });
+    if (!current) throw new NotFoundError("Room not found");
+    room.players = current.players;
+    room.status = current.status;
+
     const isAlreadyPlayer = room.players.some(
       (existing) => existing.id === player.id,
     );
+    const maxPlayers = config.game.maxPlayers[room.type];
+
+    if (
+      !isAlreadyPlayer &&
+      (room.status !== "pending" || room.players.length >= maxPlayers)
+    ) {
+      throw new RoomUnavailableError(room.id);
+    }
 
     if (!isAlreadyPlayer) {
       room.players.push(player);
@@ -163,8 +243,9 @@ export class RoomService {
     }
 
     // If room is full based on game type, change status to playing
-    const maxPlayers = config.game.maxPlayers[room.type];
-    if (room.players.length >= maxPlayers) {
+    let gameStarted = false;
+    if (room.players.length >= maxPlayers && room.status === "pending") {
+      gameStarted = true;
       room.status = "playing";
       // Remove timeout job since the game is starting
       await gameTimeoutQueue.remove(`room-timeout-${room.id}`);
@@ -182,23 +263,42 @@ export class RoomService {
           delay: config.game.timeout.autoReveal.initial,
         },
       );
+    }
 
-      // Emit game_started event through fastify.io
-      fastify.io.to(room.id.toString()).emit("game_started", {
-        message: "All players have joined! Game is starting.",
+    await this.ormConnection.getRepository(Room).save(room);
+
+    // Only announce once the playing status is persisted, so any client that
+    // reacts by loading the room sees it as playing
+    if (gameStarted) {
+      this.emitGameStarted(
+        room,
+        room.join === JoinMethod.CHALLENGE
+          ? "Challenge accepted! Game is starting."
+          : "All players have joined! Game is starting.",
+      );
+    }
+
+    if (room.type === "time_trial") {
+      await this.updateTimeTrialLeaderboard(room);
+    }
+  }
+
+  // Sent to the room channel and every player's user channel, so players whose
+  // sockets haven't joined the room channel yet still receive it
+  private emitGameStarted(room: Room, message: string) {
+    fastify.io
+      .to([
+        roomChannel(room.id),
+        ...room.players.map((player) => userChannel(player.id)),
+      ])
+      .emit("game_started", {
+        message,
         room: room.toJSON(),
         navigate: {
           screen: "game",
           params: { roomId: room.id },
         },
       });
-    }
-
-    await this.ormConnection.getRepository(Room).save(room);
-
-    if (room.type === "time_trial") {
-      await this.updateTimeTrialLeaderboard(room);
-    }
   }
 
   async createRoom(
@@ -454,7 +554,7 @@ export class RoomService {
         )?.eloRating || 0;
         const ratingChange = newRating - oldRating;
 
-        fastify.io.to(playerId.toString()).emit("rating_change", {
+        fastify.io.to(userChannel(playerId)).emit("rating_change", {
           oldRating,
           newRating,
           change: ratingChange,
@@ -472,7 +572,10 @@ export class RoomService {
 
     // If game was forfeited, emit forfeit event
     if (forfeitedBy !== undefined) {
-      fastify.io.to(room.id.toString()).emit("game_forfeited", {
+      fastify.io.to([
+        roomChannel(room.id),
+        ...room.players.map((player) => userChannel(player.id)),
+      ]).emit("game_forfeited", {
         message: "A player has forfeited the game",
         forfeitedBy,
         room: room.toJSON(),
@@ -651,11 +754,10 @@ export class RoomService {
       roomId: room.id,
     };
 
-    for (const player of room.players) {
-      fastify.io.to(`user_${player.id}`).emit("game_cancelled", payload);
-    }
-
-    fastify.io.to(room.id.toString()).emit("game_cancelled", payload);
+    fastify.io.to([
+      roomChannel(room.id),
+      ...room.players.map((player) => userChannel(player.id)),
+    ]).emit("game_cancelled", payload);
   }
 
   private async removeAutoRevealJobsForRoom(roomId: number): Promise<void> {
@@ -986,17 +1088,8 @@ export class RoomService {
       );
     }
 
+    // joinExistingRoom emits game_started once the room is full and saved
     await this.joinExistingRoom(room, userId);
-
-    // Emit game_started event with navigation for both players
-    fastify.io.to(room.id.toString()).emit("game_started", {
-      message: "Challenge accepted! Game is starting.",
-      room: room.toJSON(),
-      navigate: {
-        screen: "game",
-        params: { roomId: room.id },
-      },
-    });
 
     return room;
   }

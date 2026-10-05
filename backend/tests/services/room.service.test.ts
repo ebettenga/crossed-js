@@ -16,7 +16,7 @@ import {
 } from "../../src/jobs/queues";
 import { config } from "../../src/config/config";
 import { RedisService, redisService } from "../../src/services/RedisService";
-import { ForbiddenError } from "../../src/errors/api";
+import { ForbiddenError, RoomUnavailableError } from "../../src/errors/api";
 import { createPostgresTestManager } from "../utils/postgres";
 import { createRedisTestManager, RedisTestManager } from "../utils/redis";
 import { TimeTrialLeaderboardEntry } from "../../src/entities/TimeTrialLeaderboardEntry";
@@ -301,7 +301,15 @@ describe("RoomService integration", () => {
     );
 
     expect(inSpy).toHaveBeenCalledWith(`user_${joiningRecord.id}`);
-    expect(toSpy).toHaveBeenCalledWith(pendingRoom.id.toString());
+    // Sent to the room and to each player's user channel, in case a socket
+    // has not joined the room channel yet
+    expect(toSpy).toHaveBeenCalledWith(
+      expect.arrayContaining([
+        pendingRoom.id.toString(),
+        `user_${existingRecord.id}`,
+        `user_${joiningRecord.id}`,
+      ]),
+    );
     expect(emitSpy).toHaveBeenCalledWith(
       "game_started",
       expect.objectContaining({
@@ -430,6 +438,104 @@ describe("RoomService integration", () => {
   // ============================================================================
   // getActiveRoomsForUser Tests
   // ============================================================================
+  describe("matchmaking concurrency", () => {
+    const roomsForUser = (userId: number) =>
+      dataSource
+        .getRepository(Room)
+        .createQueryBuilder("room")
+        .innerJoin("room.players", "player")
+        .where("player.id = :userId", { userId })
+        .getMany();
+
+    it("returns a single room when the same user joins concurrently", async () => {
+      const user = await createUser();
+      await createCrossword();
+      // Separate services stand in for separate API instances
+      const services = [createRoomService(), createRoomService(), createRoomService()];
+
+      const rooms = await Promise.all(
+        services.map((service) => service.joinRoom(user, "easy", "1v1")),
+      );
+
+      expect(new Set(rooms.map((room) => room.id)).size).toBe(1);
+      await expect(roomsForUser(user.id)).resolves.toHaveLength(1);
+    });
+
+    it("returns the user's existing pending room instead of queueing again", async () => {
+      const user = await createUser();
+      await createCrossword();
+      const service = createRoomService();
+
+      const first = await service.joinRoom(user, "easy", "1v1");
+      const second = await service.joinRoom(user, "medium", "1v1");
+
+      expect(second.id).toBe(first.id);
+      await expect(roomsForUser(user.id)).resolves.toHaveLength(1);
+    });
+
+    it("lets only one of two concurrent joiners take the last seat", async () => {
+      const host = await createUser();
+      const joinerA = await createUser();
+      const joinerB = await createUser();
+      await createCrossword();
+      const hostRoom = await createRoomService().joinRoom(host, "easy", "1v1");
+
+      const [roomA, roomB] = await Promise.all([
+        createRoomService().joinRoom(joinerA, "easy", "1v1"),
+        createRoomService().joinRoom(joinerB, "easy", "1v1"),
+      ]);
+
+      const joinedHostRoom = [roomA, roomB].filter((room) => room.id === hostRoom.id);
+      expect(joinedHostRoom).toHaveLength(1);
+
+      const persistedHostRoom = await dataSource
+        .getRepository(Room)
+        .findOneByOrFail({ id: hostRoom.id });
+      expect(persistedHostRoom.status).toBe("playing");
+      expect(persistedHostRoom.players).toHaveLength(2);
+
+      const loser = roomA.id === hostRoom.id ? roomB : roomA;
+      const loserRoom = await dataSource
+        .getRepository(Room)
+        .findOneByOrFail({ id: loser.id });
+      expect(loserRoom.status).toBe("pending");
+      expect(loserRoom.players).toHaveLength(1);
+
+      const gameStartedCalls = emitSpy.mock.calls.filter(
+        ([event]) => event === "game_started",
+      );
+      expect(gameStartedCalls).toHaveLength(1);
+      expect(gameStartedCalls[0][1].room.id).toBe(hostRoom.id);
+      expect(gameStartedCalls[0][1].room.status).toBe("playing");
+    });
+
+    it("rejects joining a full room and is idempotent for existing players", async () => {
+      const host = await createUser();
+      const guest = await createUser();
+      const outsider = await createUser();
+      await createCrossword();
+      const service = createRoomService();
+
+      const room = await service.createRoom(host.id, "easy", "1v1");
+      const load = () =>
+        dataSource.getRepository(Room).findOneByOrFail({ id: room.id });
+
+      await service.joinExistingRoom(await load(), guest.id);
+      await service.joinExistingRoom(await load(), guest.id);
+
+      const afterRejoin = await load();
+      expect(afterRejoin.players).toHaveLength(2);
+      expect(
+        emitSpy.mock.calls.filter(([event]) => event === "game_started"),
+      ).toHaveLength(1);
+
+      await expect(
+        service.joinExistingRoom(afterRejoin, outsider.id),
+      ).rejects.toBeInstanceOf(RoomUnavailableError);
+      expect((await load()).players).toHaveLength(2);
+    });
+  });
+
   describe("getActiveRoomsForUser", () => {
     it("returns only playing rooms for a user", async () => {
       const user = await createUser();
@@ -825,7 +931,13 @@ describe("RoomService integration", () => {
 
       await service.onGameEnd(updatedRoom!, user1.id);
 
-      expect(toSpy).toHaveBeenCalledWith(room.id.toString());
+      expect(toSpy).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          room.id.toString(),
+          `user_${user1.id}`,
+          `user_${user2.id}`,
+        ]),
+      );
       expect(emitSpy).toHaveBeenCalledWith(
         "game_forfeited",
         expect.objectContaining({
@@ -861,8 +973,8 @@ describe("RoomService integration", () => {
 
       await service.onGameEnd(updatedRoom!);
 
-      expect(toSpy).toHaveBeenCalledWith(user1.id.toString());
-      expect(toSpy).toHaveBeenCalledWith(user2.id.toString());
+      expect(toSpy).toHaveBeenCalledWith(`user_${user1.id}`);
+      expect(toSpy).toHaveBeenCalledWith(`user_${user2.id}`);
       expect(emitSpy).toHaveBeenCalledWith(
         "rating_change",
         expect.objectContaining({
@@ -1077,7 +1189,9 @@ describe("RoomService integration", () => {
         remainingJobs.some((job) => job?.data?.roomId === room.id),
       ).toBe(false);
 
-      expect(toSpy).toHaveBeenCalledWith(`user_${user.id}`);
+      expect(toSpy).toHaveBeenCalledWith(
+        expect.arrayContaining([`user_${user.id}`]),
+      );
       expect(emitSpy).toHaveBeenCalledWith(
         "game_cancelled",
         expect.objectContaining({
@@ -1575,7 +1689,16 @@ describe("RoomService integration", () => {
 
       await service.acceptChallenge(room.id, challenged.id);
 
-      expect(toSpy).toHaveBeenCalledWith(room.id.toString());
+      expect(toSpy).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          room.id.toString(),
+          `user_${challenger.id}`,
+          `user_${challenged.id}`,
+        ]),
+      );
+      expect(
+        emitSpy.mock.calls.filter(([event]) => event === "game_started"),
+      ).toHaveLength(1);
       expect(emitSpy).toHaveBeenCalledWith(
         "game_started",
         expect.objectContaining({

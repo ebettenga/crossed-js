@@ -25,7 +25,7 @@ const processQueue = (error: any, token: string | null = null) => {
   failedQueue = [];
 };
 
-async function refreshToken(): Promise<string> {
+export async function refreshToken(): Promise<string> {
   try {
     const refresh_token = await secureStorage.get("refresh_token");
     if (!refresh_token) throw new Error("No refresh token");

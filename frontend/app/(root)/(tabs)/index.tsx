@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { View, ScrollView, ActivityIndicator, Dimensions, RefreshControl } from 'react-native';
 import { Users, Timer, Swords } from 'lucide-react-native';
 import { HomeSquareButton } from '~/components/home/HomeSquareButton';
@@ -7,7 +7,7 @@ import { SocialSquare } from '~/components/home/SocialSquare';
 import { GameBanner } from '~/components/home/GameBanner';
 import { DifficultyDialog } from '~/components/home/DifficultyDialog';
 import { useJoinRoom, Room } from '~/hooks/useJoinRoom';
-import { Link, useRouter } from 'expo-router';
+import { Link } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { useActiveRooms, usePendingRooms } from '~/hooks/useActiveRooms';
 import { useUser } from '~/hooks/users';
@@ -18,6 +18,7 @@ import { useSoundPreference } from '~/hooks/useSoundPreference';
 import { useLogger } from '~/hooks/useLogs';
 import { useCancellationStore } from '~/hooks/useCancellationStore';
 import Toast from 'react-native-toast-message';
+import { useRoomEvents } from '~/hooks/socket';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const PADDING = 6;
@@ -28,8 +29,9 @@ const BUTTON_SIZE = (SCREEN_WIDTH - (PADDING * 2) - (GAP * (SQUARES_PER_ROW - 1)
 type GameMode = '1v1' | '2v2' | 'free4all' | 'time_trial';
 
 export default function Home() {
-    const { mutate: join } = useJoinRoom();
-    const router = useRouter();
+    const { mutate: join, isPending: isJoining } = useJoinRoom();
+    const joinInFlightRef = useRef(false);
+    const { navigateToGame } = useRoomEvents();
     const logger = useLogger()
     const { data: activeRooms, isLoading: isLoadingRooms, refetch: refetchActiveRooms } = useActiveRooms();
     const { data: pendingRooms, isLoading: isLoadingPendingRooms, refetch: refetchPendingRooms } = usePendingRooms();
@@ -60,28 +62,39 @@ export default function Home() {
     const handleDifficultySelect = async (difficulty: 'easy' | 'medium' | 'hard') => {
         setDifficultyDialogVisible(false);
         if (!selectedGameMode) return;
+        // Ref guards double taps that land before isPending re-renders
+        if (joinInFlightRef.current) return;
+        joinInFlightRef.current = true;
 
         const mode = selectedGameMode;
+        setSelectedGameMode(null);
 
         try {
-            console.log('[Home] Playing sound before navigation');
             await play(randomPencilKey());
-            console.log('[Home] Sound play completed');
         } catch { }
 
-        console.log('[Home] Joining room, may trigger navigation');
         join({
             difficulty,
             type: mode
         }, {
             onSuccess: (room) => {
-                if (mode === 'time_trial') {
-                    console.log('[Home] Navigating to game screen');
-                    router.push(`/game?roomId=${room.id}`);
+                // Multiplayer rooms navigate on game_started; time trials and
+                // already-full rooms are playable right away
+                if (mode === 'time_trial' || room.status === 'playing') {
+                    navigateToGame(room.id);
                 }
+            },
+            onError: () => {
+                Toast.show({
+                    text1: 'Could not join a game. Please try again.',
+                    type: 'error'
+                });
+            },
+            onSettled: () => {
+                joinInFlightRef.current = false;
+                refreshRooms();
             }
         });
-        setSelectedGameMode(null);
     };
 
     const handleDialogClose = () => {
@@ -122,14 +135,16 @@ export default function Home() {
             });
 
             if (hasActiveGame && activeRoomForUser && !isCancellationBlockingNavigation) {
-                router.replace(`/game?roomId=${activeRoomForUser.id}`);
+                navigateToGame(activeRoomForUser.id);
             }
             return;
         }
 
+        if (isJoining || joinInFlightRef.current) return;
+
         setSelectedGameMode(mode);
         setDifficultyDialogVisible(true);
-    }, [activeRoomForUser, hasActiveGame, hasPendingGame, isCancellationBlockingNavigation, router]);
+    }, [activeRoomForUser, hasActiveGame, hasPendingGame, isCancellationBlockingNavigation, navigateToGame, isJoining]);
 
     const refreshRooms = React.useCallback(() => {
         refetchActiveRooms();
@@ -145,7 +160,7 @@ export default function Home() {
             activeRoomForUser.status === 'playing' &&
             !isCancellationBlockingNavigation
         ) {
-            router.replace(`/game?roomId=${activeRoomForUser.id}`);
+            navigateToGame(activeRoomForUser.id);
         }
 
         if (
@@ -166,7 +181,7 @@ export default function Home() {
         activeRoomForUser,
         hasActiveGame,
         refreshRooms,
-        router,
+        navigateToGame,
         isCancellationBlockingNavigation,
         cancellationState.cancelledRoomId,
         completeCancellation,

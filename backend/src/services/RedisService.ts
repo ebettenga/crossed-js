@@ -26,23 +26,9 @@ export type CachedGameInfo = {
 
 export class RedisService {
   private redis: Redis;
-  private publisher: Redis;
-  private subscriber: Redis;
-  private serverId: string;
 
   constructor() {
-    // Generate a unique ID for this server instance
-    this.serverId = uuidv4();
-
-    // Create separate connections for pub/sub
-    this.publisher = new Redis(config.redis.default);
-    this.subscriber = new Redis(config.redis.default);
     this.redis = new Redis(config.redis.default);
-  }
-
-  // Get the server ID
-  getServerId(): string {
-    return this.serverId;
   }
 
   async cacheGame(gameId: string, game: CachedGameInfo): Promise<void> {
@@ -77,47 +63,33 @@ export class RedisService {
     await this.redis.del(key);
   }
 
-  // Register a user's socket connection with this server
-  async registerUserSocket(userId: number) {
-    await this.redis.hset("user_servers", userId.toString(), this.serverId);
+  async acquireLock(
+    key: string,
+    ttlMs = 5000,
+    retries = 50,
+    retryDelayMs = 100,
+  ): Promise<string> {
+    const token = uuidv4();
+    for (let i = 0; i < retries; i++) {
+      const result = await this.redis.set(key, token, "PX", ttlMs, "NX");
+      if (result === "OK") return token;
+      await new Promise((r) => setTimeout(r, retryDelayMs));
+    }
+    throw new Error(`Failed to acquire lock ${key}`);
   }
 
-  // Unregister a user's socket connection
-  async unregisterUserSocket(userId: number) {
-    await this.redis.hdel("user_servers", userId.toString());
+  async releaseLock(key: string, token: string): Promise<void> {
+    const script = `if redis.call("get", KEYS[1]) == ARGV[1] then return redis.call("del", KEYS[1]) else return 0 end`;
+    await this.redis.eval(script, 1, key, token);
   }
 
-  // Check if a user is connected to this server
-  async isUserOnThisServer(userId: number): Promise<boolean> {
-    const serverId = await this.redis.hget(
-      "user_servers",
-      userId.toString(),
-    );
-    return serverId === this.serverId;
-  }
-
-  // Get the server ID for a user
-  async getUserServer(userId: number): Promise<string | null> {
-    return await this.redis.hget("user_servers", userId.toString());
-  }
-
-  // Publish a message to a channel
-  async publish(channel: string, message: string) {
-    await this.publisher.publish(channel, message);
-  }
-
-  // Subscribe to a channel
-  subscribe(
-    channel: string,
-    callback: (channel: string, message: string) => void,
-  ) {
-    this.subscriber.subscribe(channel);
-    this.subscriber.on("message", callback);
-  }
-
-  // Unsubscribe from a channel
-  unsubscribe(channel: string) {
-    this.subscriber.unsubscribe(channel);
+  async withLock<T>(key: string, fn: () => Promise<T>): Promise<T> {
+    const token = await this.acquireLock(key);
+    try {
+      return await fn();
+    } finally {
+      await this.releaseLock(key, token);
+    }
   }
 
   async acquireGameLock(
@@ -126,26 +98,34 @@ export class RedisService {
     retries = 50,
     retryDelayMs = 100,
   ): Promise<string> {
-    const token = uuidv4();
-    const key = `game_lock:${roomId}`;
-    for (let i = 0; i < retries; i++) {
-      const result = await this.redis.set(key, token, "PX", ttlMs, "NX");
-      if (result === "OK") return token;
-      await new Promise((r) => setTimeout(r, retryDelayMs));
-    }
-    throw new Error(`Failed to acquire game lock for room ${roomId}`);
+    return this.acquireLock(`game_lock:${roomId}`, ttlMs, retries, retryDelayMs);
   }
 
   async releaseGameLock(roomId: string, token: string): Promise<void> {
-    const key = `game_lock:${roomId}`;
-    const script = `if redis.call("get", KEYS[1]) == ARGV[1] then return redis.call("del", KEYS[1]) else return 0 end`;
-    await this.redis.eval(script, 1, key, token);
+    await this.releaseLock(`game_lock:${roomId}`, token);
   }
 
-  // Close connections
+  // Returns true the first time a guess id is seen, false for retries/replays
+  async claimGuessId(
+    roomId: number,
+    guessId: string,
+    ttlSeconds: number,
+  ): Promise<boolean> {
+    const result = await this.redis.set(
+      `guess:${roomId}:${guessId}`,
+      "1",
+      "EX",
+      ttlSeconds,
+      "NX",
+    );
+    return result === "OK";
+  }
+
+  async releaseGuessId(roomId: number, guessId: string): Promise<void> {
+    await this.redis.del(`guess:${roomId}:${guessId}`);
+  }
+
   async close() {
-    await this.publisher.quit();
-    await this.subscriber.quit();
     await this.redis.quit();
   }
 }

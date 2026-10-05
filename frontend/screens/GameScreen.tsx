@@ -7,8 +7,8 @@ import { PlayerInfo } from '../components/game/PlayerInfo';
 import { GameMenu } from '../components/game/GameMenu';
 import { useRouter } from 'expo-router';
 import { ClueDisplay } from '../components/game/ClueDisplay';
-import { useRoom } from '~/hooks/socket';
-import { Square, SquareType, Room } from "~/hooks/useJoinRoom";
+import { useRoom, useRoomEvents } from '~/hooks/socket';
+import { Square, SquareType } from "~/hooks/useJoinRoom";
 import { LoadingGame } from '~/components/game/LoadingGame';
 import { useUser } from '~/hooks/users';
 import { Avatar } from '~/components/shared/Avatar';
@@ -32,7 +32,8 @@ const CLUE_DISPLAY_HEIGHT = 70;
 export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
     const insets = useSafeAreaInsets();
     const { height: windowHeight } = useWindowDimensions();
-    const { room: liveRoom, guess, refresh, forfeit, showGameSummary, onGameSummaryClose, revealedLetterIndex, isConnected, clearRoomState } = useRoom(roomId);
+    const { room, roomError, guess, refresh, forfeit, showGameSummary, onGameSummaryClose, revealedLetterIndex, clearRoomState } = useRoom(roomId);
+    const { registerGameScreen } = useRoomEvents();
     const { state: cancellationState, startRedirect } = useCancellationStore();
     const { data: currentUser } = useUser();
     const router = useRouter();
@@ -42,25 +43,12 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
     const [scoreChanges, setScoreChanges] = useState<{ [key: string]: number }>({});
     const [lastGuessCell, setLastGuessCell] = useState<{ x: number; y: number; playerId: string } | null>(null);
     const prevScores = useRef<{ [key: string]: number }>({});
-    const refreshCooldownRef = useRef<NodeJS.Timeout | null>(null);
-    const refreshPendingRef = useRef(false);
-    const fallbackTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-    const hasFallbackTriggeredRef = useRef(false);
     const [topSectionHeight, setTopSectionHeight] = useState(0);
     const [bottomSectionHeight, setBottomSectionHeight] = useState(0);
-    const [stableRoom, setStableRoom] = useState<Room | null>(null);
-
-    useEffect(() => {
-        if (liveRoom) {
-            setStableRoom(liveRoom);
-        } else {
-            setStableRoom(null);
-        }
-    }, [liveRoom]);
-
-    const room = liveRoom ?? stableRoom;
     const [navigatingHome, setNavigatingHome] = useState(false);
     const isCancelledRoom = cancellationState.cancelledRoomId === roomId;
+
+    useEffect(() => registerGameScreen(roomId), [registerGameScreen, roomId]);
 
 
     useEffect(() => {
@@ -127,89 +115,6 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
             }
         }
     }, [room?.board, room?.id, selectedCell]);
-
-    useEffect(() => {
-        if (!roomId || !isConnected) {
-            return;
-        }
-
-        if (room && room.id === roomId) {
-            return;
-        }
-
-        if (refreshPendingRef.current) {
-            return;
-        }
-
-        refreshPendingRef.current = true;
-        refresh(roomId);
-
-        if (refreshCooldownRef.current) {
-            clearTimeout(refreshCooldownRef.current);
-        }
-
-        refreshCooldownRef.current = setTimeout(() => {
-            refreshPendingRef.current = false;
-            refreshCooldownRef.current = null;
-        }, 2000);
-    }, [room, roomId, isConnected, refresh]);
-
-    useEffect(() => {
-        if (fallbackTimeoutRef.current) {
-            clearTimeout(fallbackTimeoutRef.current);
-            fallbackTimeoutRef.current = null;
-        }
-
-        if (!roomId) {
-            return;
-        }
-
-
-        if (room && room.id === roomId) {
-            hasFallbackTriggeredRef.current = false;
-            return;
-        }
-
-
-
-        if (
-            hasFallbackTriggeredRef.current ||
-            isCancelledRoom ||
-            cancellationState.stage !== "idle"
-        ) {
-            return;
-        }
-
-        fallbackTimeoutRef.current = setTimeout(() => {
-            hasFallbackTriggeredRef.current = true;
-            showToast(
-                'error',
-                'We had trouble loading your game.',
-                'Sending you home to try again.'
-            );
-            router.replace('/(root)/(tabs)');
-        }, 10000);
-
-        return () => {
-            if (fallbackTimeoutRef.current) {
-                clearTimeout(fallbackTimeoutRef.current);
-                fallbackTimeoutRef.current = null;
-            }
-        };
-    }, [room, roomId, router, isCancelledRoom, cancellationState.stage]);
-
-    useEffect(() => {
-        return () => {
-            if (refreshCooldownRef.current) {
-                clearTimeout(refreshCooldownRef.current);
-            }
-            if (fallbackTimeoutRef.current) {
-                clearTimeout(fallbackTimeoutRef.current);
-            }
-            refreshPendingRef.current = false;
-            hasFallbackTriggeredRef.current = false;
-        };
-    }, []);
 
 
     /*
@@ -543,7 +448,23 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
         return null;
     }
 
-    if (!room || room.id !== roomId) {
+    if (!room) {
+        // The room query retries with backoff; only give up after it does
+        if (roomError) {
+            return (
+                <View className="flex-1 justify-center items-center bg-[#F6FAFE] dark:bg-[#0F1417] gap-4 px-8">
+                    <Text className="text-lg text-[#1D2124] dark:text-[#DDE1E5] font-rubik text-center">
+                        We had trouble loading your game.
+                    </Text>
+                    <TouchableOpacity onPress={refresh} className="bg-[#8B0000] rounded-lg px-6 py-3">
+                        <Text className="text-white font-rubik">Try again</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => router.replace('/(root)/(tabs)')}>
+                        <Text className="text-[#8B0000] dark:text-[#FF6B6B] font-rubik">Go home</Text>
+                    </TouchableOpacity>
+                </View>
+            );
+        }
         return <LoadingGame />;
     }
 

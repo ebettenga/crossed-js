@@ -98,7 +98,10 @@ export default function (
     fastify.withResponseCache(
       {
         ttlSeconds: 5,
-        shouldCache: (request) => Boolean(request.query.status !== "playing"),
+        // Only cache settled rooms; pending/playing state drives matchmaking
+        shouldCache: (request) =>
+          request.query.status === "finished" ||
+          request.query.status === "cancelled",
         key: (request) => {
           const statusKey = request.query.status || "all";
           return `rooms:${request.user.id}:${statusKey}`;

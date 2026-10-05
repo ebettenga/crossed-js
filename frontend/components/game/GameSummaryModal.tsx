@@ -19,7 +19,7 @@ import { cn } from '~/lib/utils';
 import { useLogger } from '~/hooks/useLogs';
 import { useChallenge } from '~/hooks/useChallenge';
 import { useJoinRoom } from '~/hooks/useJoinRoom';
-import { useRouter } from 'expo-router';
+import { useRoomEvents } from '~/hooks/socket';
 import { showToast } from '~/components/shared/Toast';
 
 const formatMs = (ms: number | null) => {
@@ -463,7 +463,7 @@ export const GameSummaryModal: React.FC<GameSummaryModalProps> = ({
 }) => {
     const { data: currentUser } = useUser();
     const logger = useLogger();
-    const router = useRouter();
+    const { navigateToGame } = useRoomEvents();
     const joinRoomMutation = useJoinRoom();
     const { sendChallenge } = useChallenge();
     const [qualityRating, setQualityRating] = useState(0);
@@ -628,9 +628,7 @@ export const GameSummaryModal: React.FC<GameSummaryModalProps> = ({
                 showToast('success', 'Starting a new time trial!');
                 onClose();
                 if (newRoom?.id) {
-                    setTimeout(() => {
-                        router.push(`/game?roomId=${newRoom.id}`);
-                    }, 0);
+                    navigateToGame(newRoom.id);
                 }
             } else if (room.type === '2v2') {
                 showToast('success', 'Queued for a new 2v2 match.');

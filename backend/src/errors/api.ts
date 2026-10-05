@@ -34,6 +34,13 @@ export class BadRequestError extends Error {
   }
 }
 
+export class RoomUnavailableError extends BadRequestError {
+  constructor(roomId: number) {
+    super(`Room ${roomId} is no longer available to join`);
+    this.name = "RoomUnavailableError";
+  }
+}
+
 export class UserNotFoundError extends Error {
   constructor(userId: string) {
     super(`User with ID ${userId} not found`);

@@ -65,87 +65,84 @@ describe("RedisService", () => {
     await service.close();
   });
 
-  it("tracks user socket presence", async () => {
-    const service = createService();
-    const userId = 42;
-
-    await service.registerUserSocket(userId);
-
-    const stored = await adminRedis.hget("user_servers", userId.toString());
-    expect(stored).toBe(service.getServerId());
-
-    await expect(service.isUserOnThisServer(userId)).resolves.toBe(true);
-    await expect(service.getUserServer(userId)).resolves.toBe(
-      service.getServerId(),
-    );
-
-    await service.unregisterUserSocket(userId);
-    const after = await adminRedis.hget("user_servers", userId.toString());
-    expect(after).toBeNull();
-    await expect(service.isUserOnThisServer(userId)).resolves.toBe(false);
-
-    await service.close();
-  });
-
-  it("publishes messages to subscribers", async () => {
-    const service = createService();
-    const channel = `test-channel-${Date.now()}`;
-    const payload = "hello-world";
-
-    await new Promise<void>((resolve, reject) => {
-      const timer = setTimeout(() => {
-        reject(new Error("Timed out waiting for pub/sub message"));
-      }, 2000);
-
-      service.subscribe(channel, (receivedChannel, message) => {
-        try {
-          expect(receivedChannel).toBe(channel);
-          expect(message).toBe(payload);
-          clearTimeout(timer);
-          service.unsubscribe(channel);
-          resolve();
-        } catch (error) {
-          clearTimeout(timer);
-          reject(error);
-        }
-      });
-
-      setTimeout(() => {
-        service.publish(channel, payload);
-      }, 100);
-    });
-
-    await service.close();
-  });
-
-  it("exposes a stable unique server id per instance", async () => {
+  it("serializes work under withLock across service instances", async () => {
     const serviceA = createService();
     const serviceB = createService();
+    const events: string[] = [];
 
-    const idA1 = serviceA.getServerId();
-    const idA2 = serviceA.getServerId();
-    const idB = serviceB.getServerId();
+    const run = (service: RedisService, label: string) =>
+      service.withLock("lock:test", async () => {
+        events.push(`${label}:start`);
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        events.push(`${label}:end`);
+      });
 
-    expect(idA1).toBe(idA2);
-    expect(idA1).not.toBe(idB);
+    await Promise.all([run(serviceA, "a"), run(serviceB, "b")]);
+
+    expect(events).toHaveLength(4);
+    expect(events[0].split(":")[0]).toBe(events[1].split(":")[0]);
+    expect(events[2].split(":")[0]).toBe(events[3].split(":")[0]);
+    await expect(adminRedis.get("lock:test")).resolves.toBeNull();
 
     await serviceA.close();
     await serviceB.close();
   });
 
-  it("closes all underlying redis connections", async () => {
+  it("releases the lock when the critical section throws", async () => {
     const service = createService();
-    const internal = service as unknown as {
-      redis: Redis;
-      publisher: Redis;
-      subscriber: Redis;
-    };
+
+    await expect(
+      service.withLock("lock:throws", async () => {
+        throw new Error("boom");
+      }),
+    ).rejects.toThrow("boom");
+    await expect(adminRedis.get("lock:throws")).resolves.toBeNull();
+
+    await service.close();
+  });
+
+  it("does not release a lock owned by someone else", async () => {
+    const service = createService();
+
+    const token = await service.acquireLock("lock:owned", 5000);
+    await service.releaseLock("lock:owned", "not-the-owner");
+    await expect(adminRedis.get("lock:owned")).resolves.toBe(token);
+    await service.releaseLock("lock:owned", token);
+    await expect(adminRedis.get("lock:owned")).resolves.toBeNull();
+
+    await service.close();
+  });
+
+  it("claims a guess id exactly once until released", async () => {
+    const service = createService();
+
+    const claims = await Promise.all([
+      service.claimGuessId(7, "guess-1", 60),
+      service.claimGuessId(7, "guess-1", 60),
+      service.claimGuessId(7, "guess-1", 60),
+    ]);
+    expect(claims.filter(Boolean)).toHaveLength(1);
+
+    const ttl = await adminRedis.ttl("guess:7:guess-1");
+    expect(ttl).toBeGreaterThan(0);
+    expect(ttl).toBeLessThanOrEqual(60);
+
+    // Same id in another room is independent
+    await expect(service.claimGuessId(8, "guess-1", 60)).resolves.toBe(true);
+
+    await service.releaseGuessId(7, "guess-1");
+    await expect(service.claimGuessId(7, "guess-1", 60)).resolves.toBe(true);
+
+    await service.close();
+  });
+
+  it("closes the underlying redis connection", async () => {
+    const service = createService();
+    const internal = service as unknown as { redis: Redis };
 
     await service.close();
     await new Promise((resolve) => setTimeout(resolve, 10));
 
     expect(["end", "close"]).toContain(internal.redis.status);
-    expect(["end", "close"]).toContain(internal.publisher.status);
-    expect(["end", "close"]).toContain(internal.subscriber.status);
   });
 });

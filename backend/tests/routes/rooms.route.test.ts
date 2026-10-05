@@ -854,7 +854,7 @@ describe("rooms routes (integration)", () => {
             payload: expect.any(Object),
           },
           {
-            roomId: roomId.toString(),
+            roomId: expect.arrayContaining([roomId.toString()]),
             event: "game_started",
             payload: expect.objectContaining({
               message: "Challenge accepted! Game is starting.",
@@ -862,6 +862,9 @@ describe("rooms routes (integration)", () => {
           },
         ]),
       );
+      expect(
+        roomEmits.filter((emit: { event: string }) => emit.event === "game_started"),
+      ).toHaveLength(1);
     } finally {
       await app.close();
     }

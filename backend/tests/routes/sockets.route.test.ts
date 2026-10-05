@@ -5,6 +5,8 @@ import { AddressInfo } from "net";
 import jwt from "jsonwebtoken";
 import { DataSource } from "typeorm";
 import type { PluginDataSource } from "typeorm-fastify-plugin";
+import { Redis } from "ioredis";
+import { createAdapter } from "@socket.io/redis-streams-adapter";
 
 jest.mock("../../src/fastify", () => {
   const createFastify = require("fastify");
@@ -21,6 +23,7 @@ import { GameStats } from "../../src/entities/GameStats";
 import { UserCrosswordPack } from "../../src/entities/UserCrosswordPack";
 import { config } from "../../src/config/config";
 import { redisService } from "../../src/services/RedisService";
+import { createSocketEventService } from "../../src/services/SocketEventService";
 import { fastify as singletonFastify } from "../../src/fastify";
 import {
   emailQueue,
@@ -95,6 +98,29 @@ let app: FastifyInstance;
 let serverUrl: string;
 const activeClients: Socket[] = [];
 const additionalServers: FastifyInstance[] = [];
+const adapterClients = new Map<FastifyInstance, Redis>();
+
+// Mirrors the production setup in src/index.ts so instances share rooms and
+// sessions through Redis
+const registerSocketIO = async (target: FastifyInstance) => {
+  const adapterRedis = new Redis(config.redis.default);
+  adapterClients.set(target, adapterRedis);
+  await target.register(fastifyIO, {
+    cors: config.cors,
+    adapter: createAdapter(adapterRedis),
+    connectionStateRecovery: {
+      maxDisconnectionDuration: config.socket.maxDisconnectionDuration,
+      skipMiddlewares: true,
+    },
+  });
+};
+
+const closeServer = async (target: FastifyInstance) => {
+  await target.close();
+  const adapterRedis = adapterClients.get(target);
+  adapterClients.delete(target);
+  adapterRedis?.disconnect();
+};
 
 const TABLES_TO_TRUNCATE = [
   "game_stats",
@@ -239,19 +265,19 @@ const connectClient = async (user: User, targetServerUrl = serverUrl) => {
     return stored;
   });
 
-  await waitFor(async () => {
-    const isRegistered = await redisService.isUserOnThisServer(user.id);
-    if (!isRegistered) {
-      throw new Error("User not registered on this server");
-    }
-    return true;
-  });
-
-  // Reinforce the mapping in case Redis was flushed between tests
-  await redisService.registerUserSocket(user.id);
-
   return client;
 };
+
+const waitForUserStatus = (userId: number, status: "online" | "offline") =>
+  waitFor(async () => {
+    const stored = await dataSource.getRepository(User).findOneByOrFail({
+      id: userId,
+    });
+    if (stored.status !== status) {
+      throw new Error(`User not ${status} yet`);
+    }
+    return stored;
+  });
 
 const disconnectClient = async (client: Socket) => {
   if (!client.connected) {
@@ -343,7 +369,7 @@ const startAdditionalServer = async () => {
     throw new Error("Data source not initialized");
   }
   const extraApp = Fastify({ logger: false });
-  await extraApp.register(fastifyIO, { cors: config.cors });
+  await registerSocketIO(extraApp);
   extraApp.decorate("orm", dataSource as unknown as PluginDataSource);
   socketsRoutes(extraApp as any, {}, () => {});
   await extraApp.ready();
@@ -364,7 +390,7 @@ beforeAll(async () => {
   await redisManager.flush();
 
   app = Fastify({ logger: false });
-  await app.register(fastifyIO, { cors: config.cors });
+  await registerSocketIO(app);
   app.decorate("orm", dataSource as unknown as PluginDataSource);
 
   socketsRoutes(app as any, {}, () => {});
@@ -392,13 +418,13 @@ afterEach(async () => {
   while (additionalServers.length > 0) {
     const server = additionalServers.pop();
     if (server) {
-      await server.close();
+      await closeServer(server);
     }
   }
 });
 
 afterAll(async () => {
-  await app.close();
+  await closeServer(app);
   try {
     await redisManager.flush();
   } catch {
@@ -443,23 +469,7 @@ describe("sockets routes", () => {
     const payload = await connectionMessage;
     expect(payload.data).toContain("connected");
 
-    await waitFor(async () => {
-      const stored = await dataSource.getRepository(User).findOneByOrFail({
-        id: user.id,
-      });
-      if (stored.status !== "online") {
-        throw new Error("User not online yet");
-      }
-      return stored;
-    });
-
-    await waitFor(async () => {
-      const isRegistered = await redisService.isUserOnThisServer(user.id);
-      if (!isRegistered) {
-        throw new Error("User not registered on this server");
-      }
-      return true;
-    });
+    await waitForUserStatus(user.id, "online");
 
     const serverSocket = await waitFor(async () => {
       const s = app.io.of("/").sockets.get(client.id);
@@ -480,23 +490,38 @@ describe("sockets routes", () => {
 
     await disconnectClient(client);
 
-    await waitFor(async () => {
-      const stored = await dataSource.getRepository(User).findOneByOrFail({
-        id: user.id,
-      });
-      if (stored.status !== "offline") {
-        throw new Error("User not offline yet");
-      }
-      return stored;
-    });
+    await waitForUserStatus(user.id, "offline");
+  });
 
-    await waitFor(async () => {
-      const userServer = await redisService.getUserServer(user.id);
-      if (userServer !== null) {
-        throw new Error("User presence still registered");
-      }
-      return true;
+  it("joins room channels before the client sees connect", async () => {
+    const user = await createUser();
+    const room = await createRoomForUser(user, { status: "playing" });
+    const client = await connectClient(user);
+
+    // No waiting: membership must already be in place when connect fires
+    const serverSocket = app.io.of("/").sockets.get(client.id!);
+    expect(serverSocket?.rooms.has(room.id.toString())).toBe(true);
+    expect(serverSocket?.rooms.has(`user_${user.id}`)).toBe(true);
+  });
+
+  it("keeps a user online while another instance still holds a socket", async () => {
+    const user = await createUser();
+    await createRoomForUser(user);
+    const { url: secondaryUrl } = await startAdditionalServer();
+
+    const primaryClient = await connectClient(user);
+    const secondaryClient = await connectClient(user, secondaryUrl);
+
+    await disconnectClient(primaryClient);
+    // Give the disconnect handler time to (incorrectly) mark the user offline
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    const stillOnline = await dataSource.getRepository(User).findOneByOrFail({
+      id: user.id,
     });
+    expect(stillOnline.status).toBe("online");
+
+    await disconnectClient(secondaryClient);
+    await waitForUserStatus(user.id, "offline");
   });
 
   it("joins a room via join_room_bus and broadcasts the room state", async () => {
@@ -527,10 +552,11 @@ describe("sockets routes", () => {
     await disconnectClient(client);
   });
 
-  it("relays room_cancelled events published through Redis", async () => {
+  it("delivers user-channel events emitted from another instance", async () => {
     const user = await createUser();
     const room = await createRoomForUser(user);
     const client = await connectClient(user);
+    const { app: secondaryApp } = await startAdditionalServer();
 
     const cancellationEvent = new Promise<any>((resolve, reject) => {
       const timer = setTimeout(
@@ -543,17 +569,15 @@ describe("sockets routes", () => {
       });
     });
 
-    const message = {
-      type: "room_cancelled",
-      data: {
+    await createSocketEventService(secondaryApp).emitToUsers(
+      [user.id],
+      "room_cancelled",
+      {
         roomId: room.id,
         message: "Room cancelled by host",
         reason: "host_left",
-        players: [user.id],
       },
-    };
-
-    await redisService.publish("game_events", JSON.stringify(message));
+    );
 
     const payload = await cancellationEvent;
     expect(payload.roomId).toBe(room.id);
@@ -577,11 +601,11 @@ describe("sockets routes", () => {
       client,
       ["error", "connect_error"],
     );
-    if (event === "error") {
-      expect(payload).toEqual({ code: "auth/invalid-token" });
-    } else {
-      expect(payload).toBeInstanceOf(Error);
-    }
+    // Rejected in the handshake middleware, so the client never connects
+    expect(event).toBe("connect_error");
+    expect(payload).toBeInstanceOf(Error);
+    expect(payload.message).toBe("auth/invalid-token");
+    expect(payload.data).toEqual({ code: "auth/invalid-token" });
 
     await waitFor(async () => {
       if (client.connected) {
@@ -638,6 +662,120 @@ describe("sockets routes", () => {
     expect(errorPayload).toBe("Room not found");
 
     await disconnectClient(client);
+  });
+
+  it("answers room:sync through the ack", async () => {
+    const user = await createUser();
+    const room = await createRoomForUser(user, { status: "playing" });
+    const client = await connectClient(user);
+
+    const found = await client
+      .timeout(5000)
+      .emitWithAck("room:sync", { roomId: room.id });
+    expect(found.room.id).toBe(room.id);
+    expect(found.room.status).toBe("playing");
+
+    const missing = await client
+      .timeout(5000)
+      .emitWithAck("room:sync", { roomId: 999999 });
+    expect(missing).toEqual({ error: "Room not found" });
+  });
+
+  it("lists the user's open rooms through rooms:active", async () => {
+    const user = await createUser();
+    const pending = await createRoomForUser(user, { status: "pending" });
+    const playing = await createRoomForUser(user, { status: "playing" });
+    await createRoomForUser(user, { status: "finished" });
+    const client = await connectClient(user);
+
+    const response = await client.timeout(5000).emitWithAck("rooms:active", {});
+    const ids = response.rooms.map((room: any) => room.id).sort();
+    expect(ids).toEqual([pending.id, playing.id].sort());
+  });
+
+  it("acks guesses and applies a retried guessId only once", async () => {
+    const user = await createUser();
+    const room = await createRoomForUser(user, { status: "playing" });
+    const client = await connectClient(user);
+    const guess = { roomId: room.id, x: 0, y: 0, guess: "Z", guessId: "g-1" };
+
+    const first = await client.timeout(5000).emitWithAck("guess", guess);
+    expect(first.success).toBe(true);
+    expect(first.duplicate).toBeUndefined();
+    const scoreAfterFirst = first.room.scores[user.id];
+    expect(scoreAfterFirst).toBeLessThan(0);
+
+    const retry = await client.timeout(5000).emitWithAck("guess", guess);
+    expect(retry.success).toBe(true);
+    expect(retry.duplicate).toBe(true);
+    expect(retry.room.scores[user.id]).toBe(scoreAfterFirst);
+
+    const fresh = await client
+      .timeout(5000)
+      .emitWithAck("guess", { ...guess, guessId: "g-2" });
+    expect(fresh.duplicate).toBeUndefined();
+    expect(fresh.room.scores[user.id]).toBeLessThan(scoreAfterFirst);
+  });
+
+  it("lets a failed guess be retried with the same guessId", async () => {
+    const user = await createUser();
+    await createRoomForUser(user, { status: "playing" });
+    const client = await connectClient(user);
+    const guess = { roomId: 999999, x: 0, y: 0, guess: "A", guessId: "g-fail" };
+
+    const failed = await client.timeout(5000).emitWithAck("guess", guess);
+    expect(failed.success).toBe(false);
+    await expect(redisService.claimGuessId(999999, "g-fail", 60)).resolves.toBe(
+      true,
+    );
+  });
+
+  it("recovers the session and replays missed room events after a blip", async () => {
+    const user = await createUser();
+    const room = await createRoomForUser(user, { status: "playing" });
+    const client = createClient(serverUrl, {
+      auth: { authToken: buildAuthToken(user) },
+      transports: ["websocket"],
+      forceNew: true,
+      reconnectionDelay: 100,
+      reconnectionDelayMax: 200,
+    });
+    activeClients.push(client);
+    await waitForClientEvent(client, "connect");
+    await waitForUserStatus(user.id, "online");
+
+    // Recovery needs the offset of a broadcast the client has already received
+    const firstBroadcast = waitForClientEvent(client, "room");
+    app.io.to(room.id.toString()).emit("room", { id: room.id, marker: "seen" });
+    await firstBroadcast;
+
+    const missed: any[] = [];
+    client.on("room", (payload) => missed.push(payload));
+    // The socket's own connect (not the manager's reconnect) marks recovery
+    const reconnected = waitForClientEvent(client, "connect");
+
+    // Simulate a network drop, then emit while the client is away
+    client.io.engine.close();
+    await waitFor(async () => {
+      if (app.io.of("/").sockets.size !== 0) {
+        throw new Error("Server still sees the socket");
+      }
+      return true;
+    });
+    app.io.to(room.id.toString()).emit("room", { id: room.id, marker: "missed" });
+
+    await reconnected;
+    expect(client.recovered).toBe(true);
+    await waitFor(async () => {
+      if (!missed.some((payload) => payload.marker === "missed")) {
+        throw new Error("Missed event not replayed yet");
+      }
+      return true;
+    });
+
+    const serverSocket = app.io.of("/").sockets.get(client.id!);
+    expect(serverSocket?.data.userId).toBe(user.id);
+    expect(serverSocket?.rooms.has(room.id.toString())).toBe(true);
   });
 
   it("processes guesses and broadcasts updated room state", async () => {

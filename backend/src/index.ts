@@ -14,6 +14,8 @@ import { fileURLToPath } from "url";
 import fastifyAutoload from "@fastify/autoload";
 import { User } from "./entities/User";
 import { Server } from "socket.io";
+import { Redis } from "ioredis";
+import { createAdapter } from "@socket.io/redis-streams-adapter";
 import { closeWorkers, initializeWorkers } from "./jobs/workers/index";
 import responseCachePlugin from "./plugins/response-cache";
 import { registerProfilingRoutes } from "./routes/internal/profiling";
@@ -35,8 +37,20 @@ fastify.register(fastifySecureSession, {
 });
 
 // Socket Stuff
+// The streams adapter fans every emit out to all API and worker instances, and
+// stores sessions so brief disconnects replay missed events on reconnect.
+// It blocks on XREAD, so it needs its own Redis connection.
+const socketAdapterRedis = new Redis(config.redis.default);
 fastify.register(fastifyIO, {
   cors: config.cors,
+  adapter: createAdapter(socketAdapterRedis),
+  connectionStateRecovery: {
+    maxDisconnectionDuration: config.socket.maxDisconnectionDuration,
+    skipMiddlewares: true,
+  },
+});
+fastify.addHook("onClose", async () => {
+  await socketAdapterRedis.quit();
 });
 
 await fastify.register(responseCachePlugin);
