@@ -22,6 +22,12 @@ find-local-ip-mac: ## finds the local IP address so you can update the EXPO_PUBL
 build-android-dev: #creates a new eas build for android
 	cd frontend && eas build --platform android --profile development
 
+build-android-apk: ## build the release APK and replace Crossed.apk on the android-latest GitHub release
+	./scripts/build-android-apk.sh
+
+install-hooks: ## install the pre-push hook that republishes Crossed.apk on pushes to main
+	ln -sf ../../scripts/git-hooks/pre-push .git/hooks/pre-push
+
 create: ## set up the project
 	yarn install
 
