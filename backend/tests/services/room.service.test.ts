@@ -1488,6 +1488,67 @@ describe("RoomService integration", () => {
       );
       expect(room.join).toBe(JoinMethod.CHALLENGE);
       expect(room.status).toBe("pending");
+      expect(room.challenger_id).toBe(challenger.id);
+      expect(room.toJSON().challenger_id).toBe(challenger.id);
+    });
+
+    it("avoids boards either player had in their last three games", async () => {
+      const challenger = await createUser();
+      const challenged = await createUser();
+      const recent = await Promise.all(
+        [1, 2, 3].map((n) => createCrossword({ title: `Recent ${n}` })),
+      );
+      const fresh = await createCrossword({ title: "Fresh" });
+
+      const roomRepository = dataSource.getRepository(Room);
+      for (const [index, crossword] of recent.entries()) {
+        await roomRepository.save(roomRepository.create({
+          players: [index === 0 ? challenger : challenged],
+          crossword,
+          difficulty: "easy",
+          type: "1v1",
+          status: "finished",
+          scores: {},
+          found_letters: [],
+        }));
+      }
+
+      const service = createRoomService();
+      for (let attempt = 0; attempt < 5; attempt++) {
+        const room = await service.createChallengeRoom(
+          challenger.id,
+          challenged.id,
+          "easy",
+        );
+        expect(room.crossword.id).toBe(fresh.id);
+        await roomRepository.update(room.id, { status: "cancelled" });
+      }
+    });
+
+    it("falls back to a recent board when every candidate was played recently", async () => {
+      const challenger = await createUser();
+      const challenged = await createUser();
+      const only = await createCrossword({ title: "Only board" });
+
+      const roomRepository = dataSource.getRepository(Room);
+      await roomRepository.save(roomRepository.create({
+        players: [challenger],
+        crossword: only,
+        difficulty: "easy",
+        type: "1v1",
+        status: "finished",
+        scores: {},
+        found_letters: [],
+      }));
+
+      const service = createRoomService();
+      const room = await service.createChallengeRoom(
+        challenger.id,
+        challenged.id,
+        "easy",
+      );
+
+      expect(room.crossword.id).toBe(only.id);
     });
 
     it("selects a crossword from a shared pack when both players have access", async () => {

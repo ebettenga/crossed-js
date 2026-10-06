@@ -887,7 +887,7 @@ describe("users routes (integration)", () => {
   });
 
   describe("GET /users/active", () => {
-    it("returns count of online users", async () => {
+    it("returns count of other online users", async () => {
       const user1 = await createUser({ status: "online" });
       const user2 = await createUser({ status: "online" });
       const user3 = await createUser({ status: "offline" });
@@ -901,8 +901,7 @@ describe("users routes (integration)", () => {
 
         expect(response.statusCode).toBe(200);
         const payload = response.json();
-        // Should be 2 because user1 status is updated to online
-        expect(payload.count).toBeGreaterThanOrEqual(2);
+        expect(payload.count).toBe(1);
       } finally {
         await app.close();
       }
@@ -968,8 +967,8 @@ describe("users routes (integration)", () => {
 
         expect(response.statusCode).toBe(200);
         const payload = response.json();
-        // Will be 1 because the current user is set to online
-        expect(payload.count).toBe(1);
+        // The caller is marked online but never counts themselves
+        expect(payload.count).toBe(0);
       } finally {
         await app.close();
       }

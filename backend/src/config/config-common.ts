@@ -42,6 +42,7 @@ export const commonConfig = {
     },
     crossword: {
       firstCrosswordDate: "2000-01-01",
+      recentGamesToAvoid: 3,
       source: process.env.CROSSWORDS_SOURCE ||
         "https://github.com/ebettenga/crossed-js/tree/main/crosswords",
     },

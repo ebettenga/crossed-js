@@ -90,6 +90,9 @@ export class Room {
     this.join_type = value;
   }
 
+  @Column({ type: "integer", nullable: true })
+  challenger_id?: number | null;
+
   @ManyToMany("User", { eager: true })
   @JoinTable({
     name: "room_players",
@@ -179,6 +182,7 @@ export class Room {
       type: this.type,
       status: this.status,
       join_type: this.join_type ?? null,
+      challenger_id: this.challenger_id ?? null,
       player_count: this.player_count,
       players: this.players.map((player) => ({
         id: player.id,

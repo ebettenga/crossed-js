@@ -7,6 +7,7 @@ import * as path from "path";
 import { findDir } from "../scripts/findConfigDir";
 import { config } from "../config/config";
 import { UserCrosswordPack } from "../entities/UserCrosswordPack";
+import { Room } from "../entities/Room";
 
 const DEFAULT_BATCH_SIZE = 200;
 
@@ -104,7 +105,7 @@ export class CrosswordService {
 
   async getCrosswordByDifficulty(
     difficulty: string,
-    options: { packs?: string[] } = {},
+    options: { packs?: string[]; avoidRecentForUserIds?: number[] } = {},
   ): Promise<Crossword | null> {
     const days = this.getDaysByDifficulty(difficulty);
 
@@ -112,18 +113,51 @@ export class CrosswordService {
       ? Array.from(new Set(options.packs))
       : ["general"];
 
-    const crossword = await this.ormConnection
-      .getRepository(Crossword)
-      .createQueryBuilder("crossword")
-      .where("crossword.dow IN (:...days)", { days })
-      .andWhere("crossword.date >= :firstDate", {
-        firstDate: new Date(config.game.crossword.firstCrosswordDate),
-      })
-      .andWhere("crossword.pack IN (:...packs)", { packs })
-      .orderBy("RANDOM()")
-      .getOne();
+    const recentIds = options.avoidRecentForUserIds?.length
+      ? await this.getRecentCrosswordIds(options.avoidRecentForUserIds)
+      : [];
 
-    return crossword;
+    const pick = (excludeIds: number[]) => {
+      const query = this.ormConnection
+        .getRepository(Crossword)
+        .createQueryBuilder("crossword")
+        .where("crossword.dow IN (:...days)", { days })
+        .andWhere("crossword.date >= :firstDate", {
+          firstDate: new Date(config.game.crossword.firstCrosswordDate),
+        })
+        .andWhere("crossword.pack IN (:...packs)", { packs });
+      if (excludeIds.length > 0) {
+        query.andWhere("crossword.id NOT IN (:...excludeIds)", { excludeIds });
+      }
+      return query.orderBy("RANDOM()").limit(1).getOne();
+    };
+
+    // Fall back to any matching board when every candidate was played recently
+    return (await pick(recentIds)) ??
+      (recentIds.length > 0 ? await pick([]) : null);
+  }
+
+  async getRecentCrosswordIds(
+    userIds: number[],
+    gamesPerUser: number = config.game.crossword.recentGamesToAvoid,
+  ): Promise<number[]> {
+    const ids = new Set<number>();
+    for (const userId of new Set(userIds)) {
+      const rows = await this.ormConnection
+        .getRepository(Room)
+        .createQueryBuilder("room")
+        .innerJoin("room.players", "player", "player.id = :userId", { userId })
+        .innerJoin("room.crossword", "crossword")
+        .select("crossword.id", "crosswordId")
+        .where("room.status != :cancelled", { cancelled: "cancelled" })
+        .orderBy("room.created_at", "DESC")
+        .limit(gamesPerUser)
+        .getRawMany<{ crosswordId: number }>();
+      for (const row of rows) {
+        ids.add(Number(row.crosswordId));
+      }
+    }
+    return Array.from(ids);
   }
 
   async getSharedCrosswordPacks(userIds: number[]): Promise<string[]> {

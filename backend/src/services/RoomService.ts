@@ -317,7 +317,7 @@ export class RoomService {
     ]);
     const crossword = await this.crosswordService.getCrosswordByDifficulty(
       difficulty,
-      { packs: allowedPacks },
+      { packs: allowedPacks, avoidRecentForUserIds: [player.id] },
     );
 
     if (!crossword) {
@@ -932,7 +932,7 @@ export class RoomService {
 
     const replacement = await this.crosswordService.getCrosswordByDifficulty(
       room.difficulty,
-      { packs: allowedPacks },
+      { packs: allowedPacks, avoidRecentForUserIds: playerIds },
     );
 
     if (!replacement) {
@@ -1041,7 +1041,10 @@ export class RoomService {
     ]);
     const crossword = await this.crosswordService.getCrosswordByDifficulty(
       difficulty,
-      { packs: allowedPacks },
+      {
+        packs: allowedPacks,
+        avoidRecentForUserIds: [challenger.id, challenged.id],
+      },
     );
 
     if (!crossword) {
@@ -1058,6 +1061,7 @@ export class RoomService {
     room.status = "pending";
     room.scores = { [challenger.id]: 0, [challenged.id]: 0 };
     room.join = JoinMethod.CHALLENGE;
+    room.challenger_id = challenger.id;
 
     room.found_letters = this.maskCrosswordGrid(crossword.grid);
 
@@ -1118,6 +1122,7 @@ export class RoomService {
       .leftJoinAndSelect("room.crossword", "crossword")
       .where("room.status = :status", { status: "pending" })
       .andWhere("room.type = :type", { type: "1v1" })
+      .andWhere("room.join_type = :joinType")
       .andWhere((qb) => {
         const subQuery = qb
           .subQuery()
@@ -1130,6 +1135,7 @@ export class RoomService {
       .setParameters({
         status: "pending",
         type: "1v1",
+        joinType: JoinMethod.CHALLENGE,
         userId,
       });
 

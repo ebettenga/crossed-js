@@ -2,7 +2,7 @@ import { FastifyInstance } from "fastify";
 import { User } from "../../entities/User";
 import { PhotoService } from "../../services/PhotoService";
 import multipart from "@fastify/multipart";
-import { ILike } from "typeorm";
+import { ILike, Not } from "typeorm";
 import bcrypt from "bcrypt";
 import { config } from "../../config/config";
 
@@ -339,9 +339,6 @@ export default function (
       reply.code(403).send({ error: "Unauthorized" });
       return;
     }
-    fastify.log.info("Comparing password");
-    fastify.log.info(oldPassword);
-    fastify.log.info(user.password);
     const isPasswordValid = await bcrypt.compare(oldPassword, user.password);
     if (!isPasswordValid) {
       reply.code(401).send({ error: "Invalid old password" });
@@ -362,6 +359,7 @@ export default function (
     const count = await fastify.orm.getRepository(User).count({
       where: {
         status: "online",
+        id: Not(request.user.id),
       },
     });
 
