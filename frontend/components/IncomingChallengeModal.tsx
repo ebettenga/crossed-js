@@ -61,7 +61,7 @@ export const IncomingChallengeModal = () => {
                     disabled={isBusy}
                 />
                 <View className="flex-1 w-full h-full items-center justify-center px-6">
-                    <View className="w-full max-w-sm rounded-2xl bg-white dark:bg-[#1A2227] p-6 border border-[#E5E5E5] dark:border-[#2A3136]">
+                    <View className="w-full max-w-sm bg-[#FAFAF7] dark:bg-neutral-800 border-[1.5px] border-[#343434] dark:border-neutral-600 p-6">
                         <View className="items-center mb-4">
                             <View className="w-12 h-12 rounded-full bg-[#8B0000] items-center justify-center mb-3">
                                 <Swords size={28} color="#FFFFFF" />
@@ -76,7 +76,7 @@ export const IncomingChallengeModal = () => {
 
                         <View className="flex-row justify-between gap-3">
                             <TouchableOpacity
-                                className="flex-1 flex-row items-center justify-center gap-2 rounded-lg border border-[#FECACA] dark:border-[#2A3136] bg-[#FEF2F2] dark:bg-[#1A2227] py-2"
+                                className="flex-1 flex-row items-center justify-center gap-2 border border-[#FECACA] dark:border-[#2A3136] bg-[#FEF2F2] dark:bg-[#1A2227] py-2"
                                 onPress={handleReject}
                                 disabled={isBusy}
                                 activeOpacity={0.8}
@@ -93,7 +93,7 @@ export const IncomingChallengeModal = () => {
                                 )}
                             </TouchableOpacity>
                             <TouchableOpacity
-                                className="flex-1 flex-row items-center justify-center gap-2 rounded-lg border border-[#BBF7D0] dark:border-[#2A3136] bg-[#F0FDF4] dark:bg-[#1A2227] py-2"
+                                className="flex-1 flex-row items-center justify-center gap-2 border border-[#BBF7D0] dark:border-[#2A3136] bg-[#F0FDF4] dark:bg-[#1A2227] py-2"
                                 onPress={handleAccept}
                                 disabled={isBusy}
                                 activeOpacity={0.8}

@@ -9,17 +9,21 @@ import icons from '@/constants/icons'
 import { TAB_BAR_CONTENT_HEIGHT } from '~/constants/layout';
 import { useColorMode } from '~/hooks/useColorMode';
 import { useChallenge } from '~/hooks/useChallenge';
+import { useOnlineFriendsCount } from '~/hooks/useFriends';
+import { useUserStatus } from '~/hooks/socket';
 
 const TabIcon = ({
     focused,
     icon,
     title,
     badgeCount = 0,
+    onlineCount = 0,
 }: {
     focused: boolean;
     icon: any;
     title: string;
     badgeCount?: number;
+    onlineCount?: number;
 }) => (
     <View className="flex-1 mt-1 flex-col items-center relative">
         <Image
@@ -28,6 +32,28 @@ const TabIcon = ({
             resizeMode="contain"
             className="h-6 w-6"
         />
+        {onlineCount > 0 && (
+            <View
+                style={{
+                    position: 'absolute',
+                    top: -6,
+                    left: -6,
+                    minWidth: 18,
+                    height: 18,
+                    borderRadius: 9,
+                    backgroundColor: '#22C55E',
+                    borderWidth: 1,
+                    borderColor: '#FFFFFF',
+                    paddingHorizontal: 4,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                }}
+            >
+                <Text className="text-white text-[10px] font-rubik-medium">
+                    {onlineCount > 99 ? '99+' : onlineCount}
+                </Text>
+            </View>
+        )}
         {badgeCount > 0 && (
             <View
                 style={{
@@ -65,6 +91,8 @@ const TabsLayout = () => {
     const { isDark } = useColorMode();
     const { challenges } = useChallenge();
     const challengeCount = challenges?.length ?? 0;
+    const onlineFriendsCount = useOnlineFriendsCount();
+    useUserStatus();
     const insets = useSafeAreaInsets();
 
     const tabBarHeight = TAB_BAR_CONTENT_HEIGHT + insets.bottom;
@@ -150,6 +178,7 @@ const TabsLayout = () => {
                             focused={focused}
                             title="Friends"
                             badgeCount={challengeCount}
+                            onlineCount={onlineFriendsCount}
                         />
                     )
                 }}

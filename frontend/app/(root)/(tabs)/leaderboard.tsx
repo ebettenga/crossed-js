@@ -34,7 +34,7 @@ const LeaderboardSection: React.FC<{ title: string; children: React.ReactNode }>
     <Text className="text-lg font-rubik-medium text-[#1D2124] dark:text-[#DDE1E5] mb-3">
       {title}
     </Text>
-    <View className="bg-neutral-50 dark:bg-neutral-800 rounded-2xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
+    <View className="bg-[#FAFAF7] dark:bg-neutral-800 border-[1.5px] border-[#343434] dark:border-neutral-600 overflow-hidden">
       {children}
     </View>
   </View>

@@ -16,7 +16,8 @@ import {
 } from '~/hooks/useFriends';
 import { useUser, type User as SearchUser } from '~/hooks/users';
 import { ChallengeDialog } from '~/components/ChallengeDialog';
-import { useChallenge } from '~/hooks/useChallenge';
+import { isChallengeSender, useChallenge } from '~/hooks/useChallenge';
+import { useLocalSearchParams } from 'expo-router';
 import { ChallengeRow } from '~/components/ChallengeRow';
 import { cn } from '~/lib/utils';
 import { showToast } from '~/components/shared/Toast';
@@ -61,7 +62,7 @@ const FriendRow: React.FC<FriendRowProps> = ({
 }) => {
     const isReceiver = friend.receiver.id === currentUserId;
     return (
-        <View className="flex-row items-center justify-between bg-neutral-50 dark:bg-neutral-800 p-3 rounded-xl border border-neutral-200 dark:border-neutral-700 mb-2">
+        <View className="flex-row items-center justify-between p-3 bg-[#FAFAF7] dark:bg-neutral-800 border-[1.5px] border-[#343434] dark:border-neutral-600 mb-2">
             <View className="flex-1 flex-row items-center gap-3">
                 <View className="relative">
                     {otherUser.photo ? (
@@ -111,14 +112,14 @@ const FriendRow: React.FC<FriendRowProps> = ({
             {!isChallenge && !isPending && (
                 <View className="flex-row items-center gap-1.5 ml-auto pl-3">
                     <TouchableOpacity
-                        className={`flex-row items-center p-2 rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900 ${hasActiveChallenge ? 'opacity-50' : ''}`}
+                        className={`flex-row items-center p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900 ${hasActiveChallenge ? 'opacity-50' : ''}`}
                         onPress={() => onChallenge(friend)}
                         disabled={hasActiveChallenge}
                     >
                         <Swords size={16} color="#8B0000" />
                     </TouchableOpacity>
                     <TouchableOpacity
-                        className="flex-row items-center p-2 rounded-md bg-neutral-100 dark:bg-neutral-700 border border-neutral-200 dark:border-neutral-600"
+                        className="flex-row items-center p-2 bg-neutral-100 dark:bg-neutral-700 border border-neutral-200 dark:border-neutral-600"
                         onPress={() => onRemove(friend.id)}
                     >
                         <X size={16} color="#666666" />
@@ -129,13 +130,13 @@ const FriendRow: React.FC<FriendRowProps> = ({
             {isPending && isReceiver && (
                 <View className="flex-row items-center gap-1.5 ml-auto pl-3">
                     <TouchableOpacity
-                        className="flex-row items-center p-2 rounded-md bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-900"
+                        className="flex-row items-center p-2 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-900"
                         onPress={() => onAccept?.(friend.id)}
                     >
                         <Check size={16} color="#34D399" />
                     </TouchableOpacity>
                     <TouchableOpacity
-                        className="flex-row items-center p-2 rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900"
+                        className="flex-row items-center p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900"
                         onPress={() => onReject?.(friend.id)}
                     >
                         <X size={16} color="#EF4444" />
@@ -146,14 +147,14 @@ const FriendRow: React.FC<FriendRowProps> = ({
             {isChallenge && isReceiver && roomId && (
                 <View className="flex-row items-center gap-1.5 ml-auto pl-3">
                     <TouchableOpacity
-                        className="flex-row items-center p-2 gap-1 rounded-md bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-900"
+                        className="flex-row items-center p-2 gap-1 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-900"
                         onPress={() => onAccept?.(roomId)}
                     >
                         <Swords size={16} color="#34D399" />
                         <Text className="text-xs font-rubik">Accept</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
-                        className="flex-row items-center p-2 gap-1 rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900"
+                        className="flex-row items-center p-2 gap-1 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900"
                         onPress={() => onReject?.(roomId)}
                     >
                         <X size={16} color="#EF4444" />
@@ -165,7 +166,7 @@ const FriendRow: React.FC<FriendRowProps> = ({
             {isPending && isSender && (
                 <View className="flex-row items-center gap-1.5 ml-auto pl-3">
                     <TouchableOpacity
-                        className="flex-row items-center p-2 rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900"
+                        className="flex-row items-center p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900"
                         onPress={() => onRemove(friend.id)}
                     >
                         <X size={16} color="#EF4444" />
@@ -184,7 +185,16 @@ export default function Friends() {
     const { data: user } = useUser();
     const logger = useLogger();
     const [username, setUsername] = useState('');
-    const [activeTab, setActiveTab] = useState<'friends' | 'challenges'>('friends');
+    const { tab } = useLocalSearchParams<{ tab?: string }>();
+    const [activeTab, setActiveTab] = useState<'friends' | 'challenges'>(
+        tab === 'challenges' ? 'challenges' : 'friends'
+    );
+
+    useEffect(() => {
+        if (tab === 'challenges') {
+            setActiveTab('challenges');
+        }
+    }, [tab]);
     const [challengeTarget, setChallengeTarget] = useState<{ id: number; name: string } | null>(null);
     const [refreshing, setRefreshing] = useState(false);
 
@@ -367,8 +377,7 @@ export default function Friends() {
         if (!user?.id) return false;
         return challenges.some((room) => {
             if (!room?.players?.length) return false;
-            const challenger = room.players[0];
-            if (!challenger || challenger.id !== user.id) return false;
+            if (!isChallengeSender(room, user.id)) return false;
             if (room.status && room.status !== 'pending') return false;
             return room.players.some((player) => player.id === friendUserId);
         });
@@ -392,7 +401,7 @@ export default function Friends() {
     const renderAddFriendSection = () => (
         <View className="relative flex-row gap-2 mb-4">
             <TextInput
-                className="flex-1 h-[46px] border border-neutral-200 dark:border-neutral-700 rounded-lg px-3 bg-neutral-50 dark:bg-neutral-800 text-[#1D2124] dark:text-[#DDE1E5] font-rubik"
+                className="flex-1 h-[46px] border border-neutral-200 dark:border-neutral-700 px-3 bg-neutral-50 dark:bg-neutral-800 text-[#1D2124] dark:text-[#DDE1E5] font-rubik"
                 placeholder="Enter username"
                 placeholderTextColor="#666666"
                 value={username}
@@ -400,7 +409,7 @@ export default function Friends() {
                 autoCapitalize="none"
             />
             <TouchableOpacity
-                className="flex-row items-center bg-[#8B0000] px-4 rounded-lg gap-1"
+                className="flex-row items-center bg-[#8B0000] px-4 gap-1"
                 onPress={handleAddFriend}
                 disabled={isAddingFriend}
             >
@@ -414,7 +423,7 @@ export default function Friends() {
                 )}
             </TouchableOpacity>
             {filteredFoundUsers.length > 0 && (
-                <View className="absolute top-[46px] left-0 right-[76px] bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg mt-1 z-10 shadow-lg">
+                <View className="absolute top-[46px] left-0 right-[76px] bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 mt-1 z-10 shadow-lg">
                     <FlatList
                         data={filteredFoundUsers}
                         keyExtractor={(item) => item.id.toString()}
@@ -610,7 +619,7 @@ export default function Friends() {
                             />
                         }
                         renderItem={({ item: room }) => {
-                            const isChallenger = room.players[0].id === user.id;
+                            const isChallenger = isChallengeSender(room, user.id);
                             const otherUser = room.players.find(p => p.id !== user.id);
                             return (
                                 <ChallengeRow

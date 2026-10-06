@@ -37,6 +37,7 @@ export type Room = {
     type: '1v1' | '2v2' | 'free4all' | 'time_trial';
     status: 'playing' | 'pending' | 'finished' | 'cancelled';
     join_type?: 'challenge' | 'random' | 'cli' | null;
+    challenger_id?: number | null;
     player_count: number;
     players: Player[];
     scores: { [key: number]: number };

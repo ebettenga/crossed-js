@@ -2,10 +2,18 @@ import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { post, get } from "./api";
 import { useRoomEvents, useSocket } from "./socket";
 import React, { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { AppState } from "react-native";
+import * as Notifications from "expo-notifications";
 import { Room } from "./useJoinRoom";
 import { useHaptics } from "./useHaptics";
 
 export const CHALLENGES_UPDATED_EVENT = 'challenges:updated';
+
+// Rooms created before challenger_id existed fall back to player order
+export const isChallengeSender = (room: Room, userId: number) =>
+    room.challenger_id != null
+        ? room.challenger_id === userId
+        : room.players[0]?.id === userId;
 
 type IncomingChallengePayload = {
     room: Room;
@@ -51,12 +59,32 @@ export const ChallengeProvider = ({ children }: { children: React.ReactNode }) =
 
         socket.on("challenge_received", handleChallengeReceived);
         socket.on(CHALLENGES_UPDATED_EVENT, handleChallengesUpdated);
+        // Events sent while the socket was down are lost; resync on every connect
+        socket.on("connect", handleChallengesUpdated);
 
         return () => {
             socket.off("challenge_received", handleChallengeReceived);
             socket.off(CHALLENGES_UPDATED_EVENT, handleChallengesUpdated);
+            socket.off("connect", handleChallengesUpdated);
         };
     }, [socket, invalidateChallengeRelatedQueries, notification]);
+
+    useEffect(() => {
+        const appState = AppState.addEventListener('change', (state) => {
+            if (state === 'active') {
+                invalidateChallengeRelatedQueries();
+            }
+        });
+        const pushReceived = Notifications.addNotificationReceivedListener((received) => {
+            if (received.request.content.data?.type === 'challenge') {
+                invalidateChallengeRelatedQueries();
+            }
+        });
+        return () => {
+            appState.remove();
+            pushReceived.remove();
+        };
+    }, [invalidateChallengeRelatedQueries]);
 
     const value = useMemo(() => ({
         incomingChallenge,

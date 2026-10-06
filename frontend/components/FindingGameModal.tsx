@@ -1,15 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { Modal, View } from "react-native";
-import Animated, { 
-    useAnimatedStyle, 
-    withRepeat, 
-    withSequence, 
+import Animated, {
+    useAnimatedStyle,
+    withRepeat,
+    withSequence,
     withTiming,
     withDelay,
     withSpring
 } from 'react-native-reanimated';
 import { Search } from 'lucide-react-native';
-import { Text } from '~/components/ui/text'; 
+import { Text } from '~/components/ui/text';
 import { Text as RNText } from 'react-native';
 
 interface FindingGameModalProps {
@@ -70,8 +70,8 @@ export function FindingGameModal({ visible }: FindingGameModalProps) {
                     const isUpperCase = word === word.toUpperCase() && word.length > 1;
                     return (
                         <RNText key={index}>
-                            <RNText 
-                                style={{ 
+                            <RNText
+                                style={{
                                     color: isUpperCase ? '#ef4444' : '#6b7280'
                                 }}
                             >
@@ -94,7 +94,7 @@ export function FindingGameModal({ visible }: FindingGameModalProps) {
             <View className="flex-1 justify-center items-center bg-black/50">
                 <View className="items-center">
                     {/* Center content */}
-                    <View className="bg-white/90 backdrop-blur-md p-6 rounded-2xl items-center space-y-4 w-72">
+                    <View className="bg-[#FAFAF7] dark:bg-neutral-800 border-[1.5px] border-[#343434] dark:border-neutral-600 p-6 items-center space-y-4 w-72">
 
                         <View className="flex-row justify-center">
                             {text.map((letter, index) => (

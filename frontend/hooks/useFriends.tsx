@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { get, post, del } from './api';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { User, useUser } from './users';
 import { useSocket } from './socket';
 
@@ -33,6 +33,20 @@ export function useFriendsList() {
     queryKey: [FRIENDS_KEY],
     queryFn: () => get('/friends'),
   });
+}
+
+export function useOnlineFriendsCount() {
+  const { data: user } = useUser();
+  const { data: friends } = useFriendsList();
+
+  return useMemo(() => {
+    if (!user?.id || !friends?.length) return 0;
+    return friends.reduce((count, friendship) => {
+      const otherUser =
+        friendship.sender.id === user.id ? friendship.receiver : friendship.sender;
+      return otherUser.status === 'online' ? count + 1 : count;
+    }, 0);
+  }, [friends, user?.id]);
 }
 
 // Fetch pending requests

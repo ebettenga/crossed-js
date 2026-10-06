@@ -1,28 +1,19 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { View, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Users, Settings, BarChart3, LogOut, UserCog, HelpCircle } from 'lucide-react-native';
 import { ProfileButton } from '~/components/profile/ProfileButton';
 import { PageHeader } from '~/components/Header';
 import { useLogout, useUser } from '~/hooks/users';
-import { useFriendsList } from '~/hooks/useFriends';
+import { useOnlineFriendsCount } from '~/hooks/useFriends';
 import { useUserStatus } from '~/hooks/socket';
 
 export default function Profile() {
     const router = useRouter();
     const logout = useLogout();
     const { data: user } = useUser();
-    const { data: friends } = useFriendsList();
+    const onlineFriendsCount = useOnlineFriendsCount();
     useUserStatus();
-
-    const onlineFriendsCount = useMemo(() => {
-        if (!user?.id || !friends?.length) return 0;
-        return friends.reduce((count, friendship) => {
-            const otherUser =
-                friendship.sender.id === user.id ? friendship.receiver : friendship.sender;
-            return otherUser.status === 'online' ? count + 1 : count;
-        }, 0);
-    }, [friends, user?.id]);
 
     const handleLogout = async () => {
         await logout();

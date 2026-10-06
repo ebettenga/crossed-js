@@ -472,6 +472,7 @@ export const GameScreen: React.FC<{ roomId: number }> = ({ roomId }) => {
         <KeyboardAvoidingView
             style={{
                 flex: 1,
+                paddingTop: insets.top,
                 paddingLeft: insets.left,
                 paddingRight: insets.right,
             }}

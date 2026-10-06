@@ -2,11 +2,11 @@ import { Slot, SplashScreen, useRouter, useSegments } from "expo-router";
 import * as Notifications from "expo-notifications";
 
 import "./globals.css";
-import React, { cloneElement, useCallback, useEffect, useState } from "react";
-import { StyleProp, StyleSheet, Text, TextInput, TextStyle } from "react-native";
+import React, { cloneElement, useCallback, useEffect, useRef, useState } from "react";
+import { AppState, Platform, StyleProp, StyleSheet, Text, TextInput, TextStyle } from "react-native";
 import { useFonts } from "expo-font";
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { focusManager, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { PortalHost } from '@rn-primitives/portal';
 import { RoomProvider, SocketProvider, useRoomEvents } from '~/hooks/socket';
 import { CancellationProvider } from '~/hooks/useCancellationStore';
@@ -36,6 +36,15 @@ Notifications.setNotificationHandler({
 SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
+
+// React Query only knows about browser focus; tie it to the app coming to the foreground
+focusManager.setEventListener((handleFocus) => {
+  if (Platform.OS === "web") return;
+  const subscription = AppState.addEventListener("change", (state) => {
+    handleFocus(state === "active");
+  });
+  return () => subscription.remove();
+});
 
 const rubikWeightMap: Record<string, string> = {
   "100": "Rubik-Light",
@@ -140,6 +149,7 @@ function AppContent() {
   const [isReady, setIsReady] = useState(false);
   const [hasCheckedHowTo, setHasCheckedHowTo] = useState(false);
   const [shouldShowHowTo, setShouldShowHowTo] = useState(false);
+  const handledNotificationResponses = useRef(new Set<string>());
   const { loadColorScheme } = useColorMode();
   const {
     token: expoPushToken,
@@ -217,8 +227,15 @@ function AppContent() {
       return;
     }
 
-    const subscription = Notifications
-      .addNotificationResponseReceivedListener(async (response) => {
+    const handledResponses = handledNotificationResponses.current;
+
+    const handleResponse = async (response: Notifications.NotificationResponse) => {
+        const responseKey = `${response.notification.request.identifier}:${response.actionIdentifier}`;
+        if (handledResponses.has(responseKey)) {
+          return;
+        }
+        handledResponses.add(responseKey);
+
         try {
           await Notifications.dismissNotificationAsync(
             response.notification.request.identifier,
@@ -260,7 +277,19 @@ function AppContent() {
         if (response.actionIdentifier === CHALLENGE_REJECT_ACTION) {
           await handleChallengeAction(roomId, "reject");
         }
-      });
+    };
+
+    const subscription = Notifications
+      .addNotificationResponseReceivedListener(handleResponse);
+
+    // A tap that launched the app fires before this listener exists
+    Notifications.getLastNotificationResponseAsync()
+      .then((response) => {
+        if (response) {
+          handleResponse(response);
+        }
+      })
+      .catch(() => {});
 
     return () => {
       subscription.remove();

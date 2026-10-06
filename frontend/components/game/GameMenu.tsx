@@ -60,7 +60,7 @@ export const GameMenu: React.FC<GameMenuProps> = ({ options }) => {
       <Animated.View
         className={cn(
           "absolute bottom-[45px] right-0 bg-white dark:bg-neutral-800",
-          "rounded-lg p-2 shadow-lg",
+          "p-2 shadow-lg",
           "border border-neutral-200 dark:border-neutral-700"
         )}
         style={[menuItemStyle, { zIndex: isOpen ? 1000 : -1 }]}

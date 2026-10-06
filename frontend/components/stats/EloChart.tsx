@@ -39,7 +39,7 @@ export const EloChart: React.FC<EloChartProps> = ({ startDate }) => {
     const maxElo = Math.max(...data);
 
     return (
-        <View className="bg-neutral-50 dark:bg-neutral-800 p-4 rounded-xl border border-neutral-200 dark:border-neutral-700">
+        <View className="p-4 bg-[#FAFAF7] dark:bg-neutral-800 border-[1.5px] border-[#343434] dark:border-neutral-600">
             <View className="flex-row h-[200px]">
                 <YAxisComponent
                     data={data}

@@ -18,7 +18,7 @@ export const SupportModal: React.FC<SupportModalProps> = ({
     const isKeyboardVisible = useKeyboardVisible();
 
     return (
-        <Dialog style={{ borderRadius: 4 }} open={isVisible} onOpenChange={onClose}>
+        <Dialog open={isVisible} onOpenChange={onClose}>
             <DialogContent
                 className={cn(
                     "mx-4 my-safe-or-44",
@@ -30,7 +30,7 @@ export const SupportModal: React.FC<SupportModalProps> = ({
                     className="flex-1"
                 >
                     <SupportContent
-                        className="rounded-md"
+                        className=""
                         onClose={onClose}
                         initialType="support"
                     />

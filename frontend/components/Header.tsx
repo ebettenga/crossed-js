@@ -71,7 +71,7 @@ export const PageHeader = () => {
                     className="items-end"
                     onPress={() => router.push('/(root)/(tabs)/stats')}
                 >
-                    <View className="flex-row items-center gap-3 bg-neutral-50 dark:bg-neutral-800 px-3 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700">
+                    <View className="flex-row items-center gap-3 px-3 py-2 bg-[#FAFAF7] dark:bg-neutral-800 border-[1.5px] border-[#343434] dark:border-neutral-600">
                         {isEloVisible && (
                             <>
                                 <View className="items-center gap-0.5">

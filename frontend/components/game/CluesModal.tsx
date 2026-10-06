@@ -71,7 +71,7 @@ export const CluesModal: React.FC<CluesModalProps> = ({
             onRequestClose={onClose}
         >
             <View className="flex-1 bg-black/50">
-                <View className="flex-1 mt-20 bg-white dark:bg-[#1A2227] rounded-t-3xl">
+                <View className="flex-1 mt-20 bg-[#FAFAF7] dark:bg-neutral-800 border-[#343434] dark:border-neutral-600 border-t-[1.5px] border-x-[1.5px]">
                     <View className="flex-row justify-between items-center p-4 border-b border-neutral-200 dark:border-neutral-700">
                         <Text className="text-2xl font-semibold text-[#2B2B2B] dark:text-[#DDE1E5] font-rubik">
                             Clues

@@ -31,7 +31,7 @@ export const DifficultyDialog = ({ isVisible, onClose, onSelect }: DifficultyDia
       onRequestClose={onClose}
     >
       <View className="flex-1 justify-center items-center bg-black/50">
-        <View className="m-5 bg-white dark:bg-[#1A2227] rounded-[20px] p-8 items-center shadow-lg min-w-[300px]">
+        <View className="m-5 bg-[#FAFAF7] dark:bg-neutral-800 border-[1.5px] border-[#343434] dark:border-neutral-600 p-8 items-center min-w-[300px]">
           <Text className="text-2xl font-semibold mb-4 text-[#1D2124] dark:text-[#DDE1E5] font-rubik">
             Select Difficulty
           </Text>
@@ -47,7 +47,7 @@ export const DifficultyDialog = ({ isVisible, onClose, onSelect }: DifficultyDia
               {difficulties.map(({ label, value }, index) => (
                 <TouchableOpacity
                   key={value}
-                  className={`flex-1 p-2.5 rounded-lg border ${selectedDifficulty === value
+                  className={`flex-1 p-2.5 border ${selectedDifficulty === value
                     ? 'bg-[#8B0000] border-[#8B0000]'
                     : 'border-[#E5E5E5] dark:border-[#2A3136]'
                     }`}

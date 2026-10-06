@@ -23,7 +23,7 @@ export const ChallengeRow = ({
     isRejecting = false
 }: ChallengeRowProps) => {
     return (
-        <View className="flex-row items-center justify-between bg-[#F8F8F5] dark:bg-[#1A2227] p-3 rounded-xl border border-[#E5E5E5] dark:border-[#2A3136]">
+        <View className="flex-row items-center justify-between p-3 bg-[#FAFAF7] dark:bg-neutral-800 border-[1.5px] border-[#343434] dark:border-neutral-600">
             <View className="flex-1 flex-row items-center gap-3">
                 <View className="relative">
                     <View className="w-10 h-10 rounded-full bg-[#8B0000] items-center justify-center">
@@ -46,7 +46,7 @@ export const ChallengeRow = ({
                 <View className="flex-row items-center gap-1.5 pl-3">
                     {onAccept && (
                         <TouchableOpacity
-                            className="flex-row items-center p-2 rounded-md border border-[#BBF7D0] dark:border-[#2A3136] bg-[#F0FDF4] dark:bg-[#1A2227] gap-1"
+                            className="flex-row items-center p-2 border border-[#BBF7D0] dark:border-[#2A3136] bg-[#F0FDF4] dark:bg-[#1A2227] gap-1"
                             onPress={() => onAccept(room.id)}
                             disabled={isAccepting || isRejecting}
                         >
@@ -62,7 +62,7 @@ export const ChallengeRow = ({
                     )}
                     {onReject && (
                         <TouchableOpacity
-                            className="flex-row items-center p-2 rounded-md border border-[#FECACA] dark:border-[#2A3136] bg-[#FEF2F2] dark:bg-[#1A2227] gap-1"
+                            className="flex-row items-center p-2 border border-[#FECACA] dark:border-[#2A3136] bg-[#FEF2F2] dark:bg-[#1A2227] gap-1"
                             onPress={() => onReject(room.id)}
                             disabled={isAccepting || isRejecting}
                         >

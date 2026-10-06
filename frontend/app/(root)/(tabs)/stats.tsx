@@ -20,7 +20,7 @@ interface StatCardProps {
 }
 
 const StatCard: React.FC<StatCardProps> = ({ title, value, icon, suffix }) => (
-    <View className="flex-1 min-w-[45%] bg-neutral-50 dark:bg-neutral-800 p-4 rounded-xl border border-neutral-200 dark:border-neutral-700">
+    <View className="flex-1 min-w-[45%] p-4 bg-[#FAFAF7] dark:bg-neutral-800 border-[1.5px] border-[#343434] dark:border-neutral-600">
         <View className="flex-row justify-between items-center mb-2">
             <Text className="text-sm text-[#666666] dark:text-neutral-400 font-rubik">
                 {title}
@@ -61,7 +61,7 @@ const GameRow: React.FC<GameRowProps> = ({ game, userId }) => {
     const completedAt = parseServerDate(game.room.completed_at ?? game.room.created_at);
 
     return (
-        <View className="bg-neutral-50 dark:bg-neutral-800 p-4 rounded-xl border border-neutral-200 dark:border-neutral-700">
+        <View className="p-4 bg-[#FAFAF7] dark:bg-neutral-800 border-[1.5px] border-[#343434] dark:border-neutral-600">
             <View className="gap-2">
                 <View className="flex-row justify-between items-center">
                     <Text className="text-base font-semibold text-[#1D2124] dark:text-[#DDE1E5] font-rubik">

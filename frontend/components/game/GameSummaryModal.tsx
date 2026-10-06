@@ -151,7 +151,7 @@ const CompetitiveResults: React.FC<CompetitiveResultsProps> = ({ room, selectedP
     const eloAtGame = playerStats?.eloAtGame || currentElo;
 
     return (
-        <View className="rounded-sm border-[1.5px] border-[#343434] dark:border-neutral-600 bg-[#FAFAF7] dark:bg-neutral-800 w-full pt-6">
+        <View className="border-[1.5px] border-[#343434] dark:border-neutral-600 bg-[#FAFAF7] dark:bg-neutral-800 w-full pt-6">
             <Text className="text-lg text-center text-[#666666] dark:text-[#9CA3AF] font-rubik mb-4">
                 {outcome.isWinner ? 'Victory!' : 'Defeated'}
                 {room.type === '2v2' && outcome.teamScore !== undefined && (
@@ -256,7 +256,7 @@ const CompetitiveResults: React.FC<CompetitiveResultsProps> = ({ room, selectedP
             <View className="flex-row w-full mt-2">
                 <View
                     className={cn(
-                        "border-t-[2px] border-[#343434] dark:border-neutral-600 bg-[#FAFAF7] dark:bg-neutral-800 flex-1 h-10 rounded-sm",
+                        "border-t-[2px] border-[#343434] dark:border-neutral-600 bg-[#FAFAF7] dark:bg-neutral-800 flex-1 h-10 ",
                     )}
                 >
                     <Pressable
@@ -279,7 +279,7 @@ const CompetitiveResults: React.FC<CompetitiveResultsProps> = ({ room, selectedP
 
                 <View
                     className={cn(
-                        "border-t-2 border-l-2 border-[#343434] dark:border-neutral-600 bg-[#FAFAF7] dark:bg-neutral-800 flex-1 h-10 rounded-sm",
+                        "border-t-2 border-l-2 border-[#343434] dark:border-neutral-600 bg-[#FAFAF7] dark:bg-neutral-800 flex-1 h-10 ",
                     )}
                 >
                     <Pressable
@@ -342,7 +342,7 @@ const TimeTrialResults: React.FC<TimeTrialResultsProps> = ({
     const eloAtGame = playerStats?.eloAtGame || currentElo;
 
     return (
-        <View className="rounded-sm border-[1.5px] border-[#343434] dark:border-neutral-600 bg-[#FAFAF7] dark:bg-neutral-800 w-full pt-6">
+        <View className="border-[1.5px] border-[#343434] dark:border-neutral-600 bg-[#FAFAF7] dark:bg-neutral-800 w-full pt-6">
             <Text className="text-xl text-center text-[#2B2B2B] dark:text-[#DDE1E5] font-rubik mb-4">
                 {selectedPlayer?.username || 'Player'}
             </Text>
@@ -412,7 +412,7 @@ const TimeTrialResults: React.FC<TimeTrialResultsProps> = ({
                                 return (
                                     <View key={entry.roomId} className={cn(
                                         "flex-row justify-between py-1",
-                                        isYou && "bg-[#F0F0ED] dark:bg-neutral-700 px-2 rounded"
+                                        isYou && "bg-[#F0F0ED] dark:bg-neutral-700 px-2 "
                                     )}>
                                         <Text className={cn(
                                             "text-[#666666] dark:text-[#9CA3AF] font-rubik",
@@ -435,7 +435,7 @@ const TimeTrialResults: React.FC<TimeTrialResultsProps> = ({
                                             ⋯
                                         </Text>
                                     </View>
-                                    <View className="flex-row justify-between bg-[#F0F0ED] dark:bg-neutral-700 px-2 py-1 rounded">
+                                    <View className="flex-row justify-between bg-[#F0F0ED] dark:bg-neutral-700 px-2 py-1 ">
                                         <Text className="text-[#666666] dark:text-[#9CA3AF] font-rubik-semibold">
                                             {leaderboard.currentPlayerEntry.rank}. {leaderboard.currentPlayerEntry.user?.username ?? 'Anonymous'}
                                         </Text>
@@ -545,7 +545,7 @@ export const GameSummaryModal: React.FC<GameSummaryModalProps> = ({
         // Show loading state while fetching stats
         if (statsLoading) {
             return (
-                <View className="rounded-sm border-[1.5px] border-[#343434] dark:border-neutral-600 bg-[#FAFAF7] dark:bg-neutral-800 w-full pt-6 pb-6">
+                <View className="border-[1.5px] border-[#343434] dark:border-neutral-600 bg-[#FAFAF7] dark:bg-neutral-800 w-full pt-6 pb-6">
                     <Text className="text-center text-[#666666] dark:text-[#9CA3AF] font-rubik">
                         Loading stats...
                     </Text>
@@ -556,7 +556,7 @@ export const GameSummaryModal: React.FC<GameSummaryModalProps> = ({
         // Show error state if stats failed to load
         if (statsError) {
             return (
-                <View className="rounded-sm border-[1.5px] border-[#343434] dark:border-neutral-600 bg-[#FAFAF7] dark:bg-neutral-800 w-full pt-6 pb-6">
+                <View className="border-[1.5px] border-[#343434] dark:border-neutral-600 bg-[#FAFAF7] dark:bg-neutral-800 w-full pt-6 pb-6">
                     <Text className="text-center text-[#8B0000] dark:text-[#FF6B6B] font-rubik">
                         Failed to load game stats
                     </Text>
@@ -698,13 +698,13 @@ export const GameSummaryModal: React.FC<GameSummaryModalProps> = ({
                         {renderResults()}
 
                         <View className={cn(
-                            "rounded-sm border-[1.5px] border-[#343434] dark:border-neutral-600 bg-[#FAFAF7] dark:bg-neutral-800 w-full mt-4 mb-4",
+                            "border-[1.5px] border-[#343434] dark:border-neutral-600 bg-[#FAFAF7] dark:bg-neutral-800 w-full mt-4 mb-4",
                         )}>
                             <View className="flex-row justify-center gap-x-3 my-4">
                                 <TouchableOpacity
                                     onPress={() => handleDifficultyRate('too_easy')}
                                     className={cn(
-                                        "border-[1.5px] rounded-sm px-4 py-2 bg-[#FAFAF7] dark:bg-neutral-800",
+                                        "border-[1.5px] px-4 py-2 bg-[#FAFAF7] dark:bg-neutral-800",
                                         difficultyRating === 'too_easy'
                                             ? "border-[#8B0000] bg-[#FDEAEA] dark:bg-neutral-900"
                                             : "border-[#D1D5DB] dark:border-neutral-700"
@@ -724,7 +724,7 @@ export const GameSummaryModal: React.FC<GameSummaryModalProps> = ({
                                 <TouchableOpacity
                                     onPress={() => handleDifficultyRate('just_right')}
                                     className={cn(
-                                        "border-[1.5px] rounded-sm px-4 py-2 bg-[#FAFAF7] dark:bg-neutral-800",
+                                        "border-[1.5px] px-4 py-2 bg-[#FAFAF7] dark:bg-neutral-800",
                                         difficultyRating === 'just_right'
                                             ? "border-[#8B0000] bg-[#FDEAEA] dark:bg-neutral-900"
                                             : "border-[#D1D5DB] dark:border-neutral-700"
@@ -744,7 +744,7 @@ export const GameSummaryModal: React.FC<GameSummaryModalProps> = ({
                                 <TouchableOpacity
                                     onPress={() => handleDifficultyRate('too_hard')}
                                     className={cn(
-                                        "border-[1.5px] rounded-sm px-4 py-2 bg-[#FAFAF7] dark:bg-neutral-800",
+                                        "border-[1.5px] px-4 py-2 bg-[#FAFAF7] dark:bg-neutral-800",
                                         difficultyRating === 'too_hard'
                                             ? "border-[#8B0000] bg-[#FDEAEA] dark:bg-neutral-900"
                                             : "border-[#D1D5DB] dark:border-neutral-700"
@@ -782,7 +782,7 @@ export const GameSummaryModal: React.FC<GameSummaryModalProps> = ({
                         {room.type !== 'free4all' && (
                             <View
                                 className={cn(
-                                    "border-[1.5px] border-[#343434] dark:border-neutral-600 bg-[#FAFAF7] dark:bg-neutral-800 w-full h-16 rounded-sm mt-2",
+                                    "border-[1.5px] border-[#343434] dark:border-neutral-600 bg-[#FAFAF7] dark:bg-neutral-800 w-full h-16 mt-2",
                                     isPlayAgainProcessing && "opacity-75",
                                 )}
                             >
@@ -817,7 +817,7 @@ export const GameSummaryModal: React.FC<GameSummaryModalProps> = ({
 
                         <View
                             className={cn(
-                                "border-[1.5px] border-[#343434] dark:border-neutral-600 bg-[#FAFAF7] dark:bg-neutral-800 w-full h-16 rounded-sm mt-2",
+                                "border-[1.5px] border-[#343434] dark:border-neutral-600 bg-[#FAFAF7] dark:bg-neutral-800 w-full h-16 mt-2",
                             )}
                         >
                             <Pressable
